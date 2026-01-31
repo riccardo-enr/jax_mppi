@@ -5,43 +5,43 @@ repo_url: https://github.com/riccardo-enr/jax_mppi
 repo_name: jax_mppi
 
 theme:
-  name: material
-  features:
-    - navigation.sections
-    - navigation.expand
-    - navigation.top
-  palette:
-    - scheme: default
-      primary: indigo
-      accent: indigo
-    - scheme: slate
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-4
-        name: Switch to dark mode
-    - scheme: default
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-7
-        name: Switch to light mode
+    name: material
+    features:
+        - navigation.sections
+        - navigation.expand
+        - navigation.top
+    palette:
+        - scheme: default
+          primary: indigo
+          accent: indigo
+        - scheme: slate
+          primary: indigo
+          accent: indigo
+          toggle:
+              icon: material/brightness-4
+              name: Switch to dark mode
+        - scheme: default
+          primary: indigo
+          accent: indigo
+          toggle:
+              icon: material/brightness-7
+              name: Switch to light mode
 
 plugins:
-  - search
-  - mkdocstrings:
-      handlers:
-        python:
-          paths: [src]
+    - search
+    - mkdocstrings:
+          handlers:
+              python:
+                  paths: [src]
 
 nav:
-  - Home: index.md
-  - API Reference:
-      - mppi: api/mppi.md
-      - smppi: api/smppi.md
-      - kmppi: api/kmppi.md
-      - types: api/types.md
-  - Examples:
-      - Pendulum: examples/pendulum.md
-  - Development:
-      - Porting Plan: plan/porting_pytorch_jax.md
+    - Home: index.md
+    - API Reference:
+          - mppi: api/mppi.md
+          - smppi: api/smppi.md
+          - kmppi: api/kmppi.md
+          - types: api/types.md
+    - Examples:
+          - Pendulum: examples/pendulum.md
+    - Development:
+          - Porting Plan: plan/porting_pytorch_jax.md

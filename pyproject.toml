@@ -16,6 +16,10 @@ dev = [
     "gymnasium[classic_control]",
     "matplotlib",
 ]
+docs = [
+    "mkdocs-material",
+    "mkdocstrings[python]",
+]
 
 [build-system]
 requires = ["setuptools>=61.0"]
