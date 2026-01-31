@@ -12,19 +12,12 @@ theme:
     - navigation.top
   palette:
     - scheme: default
-      primary: indigo
-      accent: indigo
-    - scheme: slate
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-4
-        name: Switch to dark mode
-    - scheme: default
-      primary: indigo
-      accent: indigo
       toggle:
         icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
         name: Switch to light mode
 
 extra_css:
