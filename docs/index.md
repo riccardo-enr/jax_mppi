@@ -5,7 +5,7 @@
 ![JAX](https://img.shields.io/badge/backend-JAX-blue)
 ![Status](https://img.shields.io/badge/status-planning-yellow)
 
-**jax_mppi** is a functional, JIT-compilable port of the [pytorch_mppi](https://github.com/ictnlp/pytorch_mppi) library to JAX. It implements Model Predictive Path Integral (MPPI) control with a focus on performance and composability.
+**jax_mppi** is a functional, JIT-compilable port of the [pytorch_mppi](https://github.com/UM-ARM-Lab/pytorch_mppi) library to JAX. It implements Model Predictive Path Integral (MPPI) control with a focus on performance and composability.
 
 ## Design Philosophy
 
@@ -107,4 +107,4 @@ The development is structured in phases:
 
 ## Credits
 
-This project is a direct port of [pytorch_mppi](https://github.com/ictnlp/pytorch_mppi). We aim to maintain parity with the original implementation while leveraging JAX's unique features for performance and flexibility.
+This project is a direct port of [pytorch_mppi](https://github.com/UM-ARM-Lab/pytorch_mppi). We aim to maintain parity with the original implementation while leveraging JAX's unique features for performance and flexibility.
