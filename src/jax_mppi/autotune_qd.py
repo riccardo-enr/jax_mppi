@@ -19,6 +19,7 @@ Example:
     >>> diverse_params = tuner.optimizer.get_diverse_top_parameters(n=10)
 """
 
+from pathlib import Path
 from typing import Callable, List, Tuple
 
 import numpy as np

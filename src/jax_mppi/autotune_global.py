@@ -28,6 +28,7 @@ Example:
 """
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 import numpy as np
