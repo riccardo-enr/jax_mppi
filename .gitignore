@@ -8,3 +8,4 @@ dist/
 # UV
 .venv/
 uv.lock
+site/
