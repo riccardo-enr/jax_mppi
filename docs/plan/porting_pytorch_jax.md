@@ -2,6 +2,16 @@
 
 Port `pytorch_mppi` to JAX, producing a functional, JIT-compilable MPPI library.
 
+## Status (Jan 31, 2026)
+
+- Overall: Phase 1 complete (core MPPI implemented + tests added).
+- Phase 1: complete
+- Phase 2: pending
+- Phase 3: pending
+- Phase 4: pending
+- Phase 5: pending
+- Phase 6: pending
+
 ## Design Decisions
 
 ### API Style: Functional with dataclass state containers
@@ -257,6 +267,11 @@ jax_mppi/
 4. **Performance:** Benchmark `command()` latency vs pytorch_mppi (JAX should win after warmup due to XLA compilation)
 5. **Smooth variants:** Visual comparison of trajectory smoothness
 
+### Test setup options (src layout)
+
+- Option A: add a `tests/conftest.py` to insert `src` into `sys.path`.
+- Option B: run tests after `uv pip install -e .` (editable install).
+
 ## Dependencies
 
 **Core:** `jax[cuda13]`, `jaxlib`, `numpy`
@@ -269,11 +284,11 @@ jax_mppi/
 ## Actionable Task Checklist
 
 ### Core MPPI (Phase 1)
-- [ ] Mirror `pytorch_mppi` signature flags: `rollout_samples`, `sample_null_action`, `noise_abs_cost`.
-- [ ] Implement `get_rollouts` handling: accept single or batched `state`; allow dynamics that augment state (take `:nx`).
-- [ ] Add `shift_nominal_trajectory` via `jnp.roll` + `u_init` fill.
-- [ ] Implement action cost with optional `abs(noise)` branch.
-- [ ] Add `u_per_command` slicing and `u_scale` application in `command`.
+- [x] Mirror `pytorch_mppi` signature flags: `rollout_samples`, `sample_null_action`, `noise_abs_cost`.
+- [x] Implement `get_rollouts` handling: accept single or batched `state`; allow dynamics that augment state (take `:nx`).
+- [x] Add `shift_nominal_trajectory` via `jnp.roll` + `u_init` fill.
+- [x] Implement action cost with optional `abs(noise)` branch.
+- [x] Add `u_per_command` slicing and `u_scale` application in `command`.
 
 ### SMPPI (Phase 3)
 - [ ] Carry `action_sequence` in state and integrate `U` with `delta_t`.
