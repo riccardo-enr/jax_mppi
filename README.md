@@ -20,6 +20,7 @@ This library embraces JAX's functional paradigm:
 -   **Core MPPI**: Robust implementation of the standard MPPI algorithm.
 -   **Smooth MPPI (SMPPI)**: Maintains action sequences and smoothness costs for better trajectory generation.
 -   **Kernel MPPI (KMPPI)**: Uses kernel interpolation for control points, reducing the parameter space.
+-   **Autotuning**: Built-in hyperparameter optimization using CMA-ES, Ray Tune, and Quality Diversity.
 -   **JAX Integration**:
     -   `jax.vmap` for efficient batch processing.
     -   `jax.lax.scan` for fast horizon loops.
@@ -88,9 +89,13 @@ jax_mppi/
 │   ├── smppi.py             # Smooth MPPI variant
 │   ├── kmppi.py             # Kernel MPPI variant
 │   ├── types.py             # Type definitions
-│   └── autotune.py          # Autotuning utilities
+│   ├── autotune.py          # Autotuning core & CMA-ES
+│   ├── autotune_global.py   # Ray Tune integration
+│   └── autotune_qd.py       # Quality Diversity optimization
 ├── examples/
 │   ├── pendulum.py          # Pendulum environment example
+│   ├── autotune_basic.py    # Basic autotuning example
+│   ├── autotune_pendulum.py # Autotuning pendulum
 │   └── smooth_comparison.py # Comparison of MPPI variants
 └── tests/                   # Unit and integration tests
 ```
@@ -104,7 +109,7 @@ The development is structured in phases:
 3.  **Smooth MPPI**: Implementation of smoothness constraints.
 4.  **Kernel MPPI**: Kernel-based control parameterization.
 5.  **Comparisons**: Benchmarking and visual comparisons.
-6.  **Autotuning**: Parameter optimization using CMA-ES.
+6.  **Autotuning**: Parameter optimization using CMA-ES, Ray Tune, and QD.
 
 ## Credits
 
