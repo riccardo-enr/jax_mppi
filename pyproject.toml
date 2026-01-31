@@ -15,6 +15,7 @@ dev = [
     "pytest",
     "gymnasium[classic_control]",
     "matplotlib",
+    "basedpyright",
 ]
 docs = [
     "mkdocs-material",
