@@ -521,7 +521,9 @@ class TestKMPPIBounds:
 
             # Check U bounds
             # type: ignore to suppress operator '-' and '+' not supported for None
+            # pyright: ignore[reportOptionalOperand]
             assert jnp.all(state.U >= state.u_min - 1e-5)  # type: ignore
+            # pyright: ignore[reportOptionalOperand]
             assert jnp.all(state.U <= state.u_max + 1e-5)  # type: ignore
 
 

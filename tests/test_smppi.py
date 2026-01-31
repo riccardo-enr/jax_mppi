@@ -266,6 +266,7 @@ class TestSMPPISmoothness:
         # Smooth should have lower variation
         # These are JAX arrays, so they are not None.
         # basedpyright gets confused by Optional fields in dataclass.
+        # pyright: ignore[reportOptionalOperand]
         assert var_smooth < var_rough  # type: ignore
 
     def test_delta_t_affects_integration(self):
@@ -320,6 +321,7 @@ class TestSMPPISmoothness:
         change_large = jnp.max(jnp.abs(new_large.action_sequence))
 
         # These are JAX arrays, so they are not None.
+        # pyright: ignore[reportOptionalOperand]
         assert change_large > change_small  # type: ignore
 
 
@@ -358,7 +360,9 @@ class TestSMPPIBounds:
             assert jnp.all(action <= 0.5 * config.u_scale)
 
             # Check action_sequence bounds
+            # pyright: ignore[reportOptionalOperand]
             assert jnp.all(state.action_sequence >= state.action_min - 1e-5)
+            # pyright: ignore[reportOptionalOperand]
             assert jnp.all(state.action_sequence <= state.action_max + 1e-5)
 
     def test_control_bounds_are_respected(self):
@@ -389,7 +393,9 @@ class TestSMPPIBounds:
             )
 
             # Check control velocity bounds
+            # pyright: ignore[reportOptionalOperand]
             assert jnp.all(state.U >= state.u_min - 1e-5)
+            # pyright: ignore[reportOptionalOperand]
             assert jnp.all(state.U <= state.u_max + 1e-5)
 
     def test_symmetric_bounds_inference(self):
