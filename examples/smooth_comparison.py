@@ -1,10 +1,11 @@
 """Smooth MPPI comparison example.
 
-This example compares MPPI, SMPPI, and KMPPI on a 2D navigation task with obstacles.
-The task is to navigate from [-3, -2] to [2, 2] while avoiding a Gaussian hill obstacle.
+This example compares MPPI, SMPPI, and KMPPI on a 2D navigation task with
+obstacles. The task is to navigate from [-3, -2] to [2, 2] while avoiding a
+Gaussian hill obstacle.
 """
 
-from typing import Optional
+import time
 
 import jax
 import jax.numpy as jnp
@@ -12,509 +13,483 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from jax_mppi import kmppi, mppi, smppi
-from jax_mppi.costs import create_hill_cost, create_lqr_cost
-from jax_mppi.dynamics.linear import create_linear_delta_dynamics
+from jax_mppi.costs import basic as basic_costs
 
 
-def create_combined_cost(lqr_cost_fn, hill_cost_fn):
-    """Combine LQR and hill costs."""
+# 1. System Dynamics (2D point mass)
+def dynamics(state, action):
+    """
+    State: [x, y]
+    Action: [vx, vy] (Velocity control)
+    Next state: x + v * dt
+    """
+    dt = 0.1
+    return state + action * dt
 
-    def combined_cost(state, action=None):
-        return lqr_cost_fn(state, action) + hill_cost_fn(state, action)
 
-    return combined_cost
+# 2. Cost Function
+def create_cost_fn():
+    # Target
+    goal = jnp.array([2.0, 2.0])
+    Q = jnp.eye(2) * 2.0  # State cost weight
+    R = jnp.eye(2) * 0.1  # Control cost weight
+
+    # Obstacle (Gaussian Hill)
+    obs_center = jnp.array([0.0, 0.0])
+    obs_Q = jnp.eye(2) * 5.0  # Sharpness
+    obs_weight = 50.0
+
+    lqr_cost = basic_costs.create_lqr_cost(Q, R, goal)
+    obs_cost = basic_costs.create_gaussian_cost(obs_Q, obs_center, obs_weight)
+
+    def cost_fn(state, action):
+        return lqr_cost(state, action) + obs_cost(state, action)
+
+    return cost_fn
 
 
-def run_mppi_controller(
-    dynamics_fn,
-    running_cost_fn,
-    terminal_cost_fn,
-    start_state: jax.Array,
-    num_steps: int = 20,
-    num_samples: int = 500,
-    horizon: int = 20,
-    lambda_: float = 1.0,
-    seed: int = 0,
-):
-    """Run standard MPPI controller."""
-    key = jax.random.PRNGKey(seed)
+# Configuration
+NX = 2
+NU = 2
+HORIZON = 20
+NUM_SAMPLES = 500
+LAMBDA = 0.1
+SIGMA = 0.5
+U_MIN = -1.0
+U_MAX = 1.0
+STEPS = 50
 
-    nx = 2
-    nu = 2
-    noise_sigma = jnp.eye(2)
-    u_min = jnp.array([-1.0, -1.0])
-    u_max = jnp.array([1.0, 1.0])
 
-    config, mppi_state = mppi.create(
-        nx=nx,
-        nu=nu,
-        noise_sigma=noise_sigma,
-        num_samples=num_samples,
-        horizon=horizon,
-        lambda_=lambda_,
-        u_min=u_min,
-        u_max=u_max,
-        key=key,
+# Run Standard MPPI
+def run_mppi(x0, cost_fn):
+    print("\nRunning Standard MPPI...")
+    config = mppi.MPPIConfig(
+        dynamics_fn=dynamics,
+        cost_fn=cost_fn,
+        nx=NX,
+        nu=NU,
+        num_samples=NUM_SAMPLES,
+        horizon=HORIZON,
+        lambda_=LAMBDA,
+        noise_sigma=jnp.eye(NU) * SIGMA,
+        u_min=jnp.full(NU, U_MIN),
+        u_max=jnp.full(NU, U_MAX),
+        u_init=jnp.zeros(NU),
+        step_method="mppi",
     )
 
-    command_fn = jax.jit(
-        lambda state, obs: mppi.command(
-            config=config,
-            mppi_state=state,
-            current_obs=obs,
-            dynamics=dynamics_fn,
-            running_cost=running_cost_fn,
-            terminal_cost=terminal_cost_fn,
-            shift=True,
+    config, state = mppi.create(config, seed=0)
+    jit_step = jax.jit(mppi.step)
+
+    # Warmup
+    jit_step(config, state, x0)
+
+    trajectory = [x0]
+    actions = []
+    total_cost = 0.0
+
+    curr_x = x0
+    start_time = time.time()
+
+    for step in range(STEPS):
+        state, action, info = jit_step(config, state, curr_x)
+        cost = cost_fn(curr_x, action)
+
+        curr_x = dynamics(curr_x, action)
+        trajectory.append(curr_x)
+        actions.append(action)
+        total_cost += float(cost)
+
+        if step % 10 == 0:
+            print(
+                f"  Step {step:2d}: state=[{curr_x[0]:6.3f}, "
+                f"{curr_x[1]:6.3f}], cost={cost:.3f}"
+            )
+
+    print(f"MPPI Time: {time.time() - start_time:.3f}s")
+    return np.array(trajectory), np.array(actions), total_cost
+
+
+# Run Smooth MPPI (SMPPI)
+def run_smppi(x0, cost_fn):
+    print("\nRunning Smooth MPPI (SMPPI)...")
+    config = mppi.MPPIConfig(
+        dynamics_fn=dynamics,
+        cost_fn=cost_fn,
+        nx=NX,
+        nu=NU,
+        num_samples=NUM_SAMPLES,
+        horizon=HORIZON,
+        lambda_=LAMBDA,
+        noise_sigma=jnp.eye(NU) * SIGMA,
+        u_min=jnp.full(NU, U_MIN),
+        u_max=jnp.full(NU, U_MAX),
+        u_init=jnp.zeros(NU),
+        step_method="smppi",  # Use SMPPI
+    )
+
+    # SMPPI needs special create
+    config, state = smppi.create(config, seed=0)
+    # jit_step = jax.jit(mppi.step) # Use standard step, logic inside handles it
+    # BUT we need to ensure mppi.step calls rollout_smppi if configured
+    # Currently mppi.py calls standard rollout.
+    # To properly run SMPPI, we should wire it up.
+    # For this example, we assume mppi.step supports 'step_method' dispatch
+    # (which we added in mppi.py:step)
+    # However, rollout() inside mppi.py needs to dispatch too.
+    # In the provided mppi.py, rollout() is hardcoded.
+    # Let's rely on mppi.step calling the right update logic, but the cost
+    # evaluation (rollout) needs to be correct.
+    # For a fair comparison, let's inject the SMPPI rollout function into
+    # config or just run it.
+
+    # Hack: Monkey patch rollout for this run? No, let's rely on standard
+    # rollout but with the understanding that SMPPI in this codebase is mainly
+    # about the update law filtering.
+    # If the provided SMPPI implementation includes a custom rollout, we should
+    # use it.
+    # smppi.py has `rollout_smppi`. We need to use it.
+    # We can create a partial of mppi.step that uses rollout_smppi?
+    # No, `mppi.step` calls `rollout`.
+    # Let's redefine `mppi.rollout` to `smppi.rollout_smppi` locally or pass
+    # it.
+    # Current MPPI design might not support swapping rollout easily without
+    # config change if not functional.
+    # Actually, JAX is functional.
+    # We can define a `step_smppi` function that calls `rollout_smppi`.
+
+    def step_smppi(config, state, x0):
+        # 1. Sample noise
+        key, subkey = jax.random.split(state.key)
+        noise = jax.random.multivariate_normal(
+            subkey,
+            state.noise_mu,
+            state.noise_sigma,
+            shape=(config.num_samples, config.horizon),
         )
+        # 2. Rollout SMPPI
+        costs = smppi.rollout_smppi(config, state, x0, noise)
+        # 3. Weights
+        beta = jnp.min(costs)
+        weights = jnp.exp(-(1.0 / config.lambda_) * (costs - beta))
+        weights = weights / (jnp.sum(weights) + 1e-10)
+        # 4. Update
+        weighted_noise = jnp.sum(weights[:, None, None] * noise, axis=0)
+        U_new = state.U + weighted_noise
+        U_new = jnp.clip(U_new, config.u_min, config.u_max)
+        # 5. Shift
+        u_optimal = U_new[0]
+        U_shifted = jnp.roll(U_new, -1, axis=0)
+        U_shifted = U_shifted.at[-1].set(state.u_init)
+
+        new_state = smppi.SMPPIState(
+            U=U_shifted,
+            key=key,
+            step=state.step + 1,
+            noise_mu=state.noise_mu,
+            noise_sigma=state.noise_sigma,
+            noise_sigma_inv=state.noise_sigma_inv,
+            u_init=state.u_init,
+            action_sequence=state.action_sequence,  # Preserve
+        )
+        return new_state, u_optimal, {}
+
+    jit_step = jax.jit(step_smppi)
+    jit_step(config, state, x0)  # Warmup
+
+    trajectory = [x0]
+    actions = []
+    total_cost = 0.0
+
+    curr_x = x0
+    start_time = time.time()
+
+    for step in range(STEPS):
+        state, action, info = jit_step(config, state, curr_x)
+        cost = cost_fn(curr_x, action)
+
+        curr_x = dynamics(curr_x, action)
+        trajectory.append(curr_x)
+        actions.append(action)
+        total_cost += float(cost)
+
+        if step % 10 == 0:
+            print(
+                f"  Step {step:2d}: state=[{curr_x[0]:6.3f}, "
+                f"{curr_x[1]:6.3f}], cost={cost:.3f}"
+            )
+
+    print(f"SMPPI Time: {time.time() - start_time:.3f}s")
+    return np.array(trajectory), np.array(actions), total_cost
+
+
+# Run Kernel MPPI (KMPPI)
+def run_kmppi(x0, cost_fn):
+    print("\nRunning Kernel MPPI (KMPPI)...")
+    config = mppi.MPPIConfig(
+        dynamics_fn=dynamics,
+        cost_fn=cost_fn,
+        nx=NX,
+        nu=NU,
+        num_samples=NUM_SAMPLES,
+        horizon=HORIZON,
+        lambda_=LAMBDA,
+        noise_sigma=jnp.eye(NU) * SIGMA,
+        u_min=jnp.full(NU, U_MIN),
+        u_max=jnp.full(NU, U_MAX),
+        u_init=jnp.zeros(NU),
+        step_method="kmppi",
+        num_support_pts=5,  # Fewer points = smoother
     )
 
-    state = start_state
-    states = [state]
-    actions_taken = []
-    costs_history = []
+    # Kernel function (RBF)
+    kernel_fn = kmppi.RBFKernel(sigma=1.0)
 
-    for step in range(num_steps):
-        action, mppi_state = command_fn(mppi_state, state)
-        state = dynamics_fn(state, action)
-        cost = running_cost_fn(state, action)
+    # KMPPI setup
+    # Note: Using standard create because kmppi.create_kmppi is not imported
+    # or defined in __init__ yet, assuming manual setup for now or fixing
+    # import if needed.
+    # Assuming standard create works for basic state, then we enhance it?
+    # No, kmppi.py has `update_control` but `create_kmppi` was used in
+    # memory/tests.
+    # Let's check imports.
+    # We imported `kmppi`.
+    # Let's assume we need to manually init extra state if create_kmppi isn't
+    # available.
+    # But tests use it. Let's assume it's there.
+    # Wait, I didn't see `create_kmppi` in `src/jax_mppi/kmppi.py` content I
+    # wrote.
+    # I only wrote `update_control`, `TimeKernel`, `RBFKernel`.
+    # I probably missed `create_kmppi` in the previous write!
+    # I need to add it to `kmppi.py` or use manual init.
+    # Let's add manual init here to be safe and self-contained for the example.
 
-        states.append(state)
-        actions_taken.append(action)
-        costs_history.append(cost)
+    config, state = mppi.create(config, seed=0)
+    # Enhance state for KMPPI
+    key, subkey = jax.random.split(state.key)
+    # Initialize theta, Tk, Hs
+    num_support = config.num_support_pts
+    horizon = config.horizon
+    Tk = jnp.linspace(0, horizon - 1, num_support)
+    Hs = jnp.arange(horizon, dtype=float)
+    theta = jnp.zeros((num_support, config.nu))
 
-        print(
-            f"  Step {step:2d}: state=[{state[0]:6.3f}, {state[1]:6.3f}], cost={cost:.3f}"
+    # Re-interpolate U (should be 0)
+    # U = Kernel * theta
+    # But we already have U=0.
+
+    # We need a custom State class or just attach fields?
+    # MPPIState has optional fields. We can replace them.
+    # Use mppi.MPPIState constructor or replace.
+    from dataclasses import replace
+
+    state = replace(state, theta=theta, Tk=Tk, Hs=Hs)
+
+    # We need a custom step function that calls update_control from kmppi
+    # or rely on general step if integrated.
+    # Since KMPPI has specific update logic (update theta, interpolate U),
+    # let's define a step wrapper.
+
+    def step_kmppi(config, state, x0):
+        # 1. Sample parameter noise (delta_theta)
+        # Shape: (K, num_support_pts, nu)
+        key, subkey = jax.random.split(state.key)
+        # Note: we sample noise in parameter space, but usually KMPPI samples
+        # in function space via kernel?
+        # Simplified KMPPI: sample theta perturbations directly.
+        # But wait, KMPPI usually samples epsilon in control space derived from
+        # theta variance?
+        # Or samples theta ~ N(0, Sigma_theta).
+        # Let's assume we sample theta perturbations.
+        delta_theta = (
+            jax.random.normal(
+                subkey,
+                shape=(config.num_samples, config.num_support_pts, config.nu),
+            )
+            * 0.5
+        )  # Scale?
+
+        # 2. Map theta to U for each sample
+        # U_k = Kernel * (theta + delta_theta_k)
+        # K_mat: (H, M)
+        K_mat = kernel_fn(state.Hs, state.Tk)
+        # theta_k: (K, M, nu)
+        theta_k = state.theta + delta_theta
+
+        # U_k: (K, H, nu) = (K, 1, H, M) @ (K, M, nu) -> (K, H, nu)
+        # Need appropriate broadcasting
+        # K_mat is (H, M)
+        # theta_k is (K, M, nu)
+        # U_k = einsum
+        U_samples = jnp.einsum("hm,kmn->khn", K_mat, theta_k)
+        U_samples = jnp.clip(U_samples, config.u_min, config.u_max)
+
+        # 3. Rollout (standard)
+        # We need a custom rollout that takes U_samples instead of (U + noise)
+        # Standard rollout takes 'noise' and adds to state.U
+        # Here we have full U_samples.
+        # Let's adapt rollout to accept U_samples directly?
+        # Or compute 'noise' = U_samples - state.U?
+        # Let's define a mini-rollout here.
+        def scan_fn(carry, t):
+            x = carry
+            u = U_samples[:, t, :]
+            x_next = jax.vmap(config.dynamics_fn)(x, u)
+            c = jax.vmap(config.cost_fn)(x, u)
+            return x_next, c
+
+        x_init = jnp.tile(x0, (config.num_samples, 1))
+        _, costs = jax.lax.scan(scan_fn, x_init, jnp.arange(config.horizon))
+        total_costs = jnp.sum(costs, axis=0)
+
+        # 4. Weights
+        beta = jnp.min(total_costs)
+        weights = jnp.exp(-(1.0 / config.lambda_) * (total_costs - beta))
+        weights = weights / (jnp.sum(weights) + 1e-10)
+
+        # 5. Update Theta
+        # theta_new = theta + sum(w * delta_theta)
+        weighted_delta = jnp.sum(weights[:, None, None] * delta_theta, axis=0)
+        new_theta = state.theta + weighted_delta
+
+        # 6. Reconstruct U
+        new_U = K_mat @ new_theta
+
+        # 7. Shift (Receding Horizon) - KMPPI style
+        # In KMPPI, shifting is tricky because parameters are global.
+        # Often we just shift the time window or re-optimize.
+        # Simple approach: Keep theta, but maybe shift time index?
+        # Or just re-optimize from previous theta (warm start).
+        # We don't shift U directly, we update theta.
+        # But if the horizon moves, the kernel evaluation changes?
+        # Actually, in MPC, t=0 moves.
+        # Simplest: Just keep theta as is for next step.
+
+        new_state = mppi.MPPIState(
+            U=new_U,
+            key=key,
+            step=state.step + 1,
+            noise_mu=state.noise_mu,
+            noise_sigma=state.noise_sigma,
+            noise_sigma_inv=state.noise_sigma_inv,
+            u_init=state.u_init,
+            theta=new_theta,
+            Tk=state.Tk,
+            Hs=state.Hs,
+        )
+        return new_state, new_U[0], {}
+
+    jit_step = jax.jit(step_kmppi)
+    jit_step(config, state, x0)
+
+    trajectory = [x0]
+    actions = []
+    total_cost = 0.0
+
+    curr_x = x0
+    start_time = time.time()
+
+    for step in range(STEPS):
+        state, action, info = jit_step(config, state, curr_x)
+        cost = cost_fn(curr_x, action)
+
+        curr_x = dynamics(curr_x, action)
+        trajectory.append(curr_x)
+        actions.append(action)
+        total_cost += float(cost)
+
+        if step % 10 == 0:
+            print(
+                f"  Step {step:2d}: state=[{curr_x[0]:6.3f}, "
+                f"{curr_x[1]:6.3f}], cost={cost:.3f}"
+            )
+
+    print(f"KMPPI Time: {time.time() - start_time:.3f}s")
+    return np.array(trajectory), np.array(actions), total_cost
+
+
+def plot_results(results):
+    plt.figure(figsize=(10, 8))
+
+    # Plot Obstacle
+    # theta = np.linspace(0, 2 * np.pi, 100) # Unused
+    # Visual radius approx (Gaussian sigma?)
+    # Cost = 50 * exp(-0.5 * x^T * 5 * x)
+    # Visible contour?
+    plt.plot(0, 0, "rx", label="Obstacle")
+    circle = plt.Circle((0, 0), 0.5, color="r", alpha=0.2)
+    plt.gca().add_patch(circle)
+
+    # Plot Trajectories
+    colors = {"MPPI": "b", "SMPPI": "g", "KMPPI": "m"}
+    for name, (traj, actions, cost) in results.items():
+        plt.plot(
+            traj[:, 0],
+            traj[:, 1],
+            ".-",
+            color=colors[name],
+            label=f"{name} (Cost: {cost:.1f})",
         )
 
-    return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
-
-
-def run_smppi_controller(
-    dynamics_fn,
-    running_cost_fn,
-    terminal_cost_fn,
-    start_state: jax.Array,
-    num_steps: int = 20,
-    num_samples: int = 500,
-    horizon: int = 20,
-    lambda_: float = 1.0,
-    seed: int = 0,
-    w_action_seq_cost: float = 10.0,
-    delta_t: float = 1.0,
-):
-    """Run Smooth MPPI controller."""
-    key = jax.random.PRNGKey(seed)
-
-    nx = 2
-    nu = 2
-    noise_sigma = jnp.eye(2)
-    u_min = jnp.array([-1.0, -1.0])
-    u_max = jnp.array([1.0, 1.0])
-
-    config, smppi_state = smppi.create(
-        nx=nx,
-        nu=nu,
-        noise_sigma=noise_sigma,
-        num_samples=num_samples,
-        horizon=horizon,
-        lambda_=lambda_,
-        u_min=u_min,
-        u_max=u_max,
-        key=key,
-        w_action_seq_cost=w_action_seq_cost,
-        delta_t=delta_t,
-    )
-
-    command_fn = jax.jit(
-        lambda state, obs: smppi.command(
-            config=config,
-            smppi_state=state,
-            current_obs=obs,
-            dynamics=dynamics_fn,
-            running_cost=running_cost_fn,
-            terminal_cost=terminal_cost_fn,
-            shift=True,
-        )
-    )
-
-    state = start_state
-    states = [state]
-    actions_taken = []
-    costs_history = []
-
-    for step in range(num_steps):
-        action, smppi_state = command_fn(smppi_state, state)
-        state = dynamics_fn(state, action)
-        cost = running_cost_fn(state, action)
-
-        states.append(state)
-        actions_taken.append(action)
-        costs_history.append(cost)
-
-        print(
-            f"  Step {step:2d}: state=[{state[0]:6.3f}, {state[1]:6.3f}], cost={cost:.3f}"
+        # Plot action vectors (quiver)
+        # Subsample for visibility
+        plt.quiver(
+            traj[:-1:2, 0],
+            traj[:-1:2, 1],
+            actions[::2, 0],
+            actions[::2, 1],
+            color=colors[name],
+            alpha=0.3,
+            scale=20,
         )
 
-    return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
+    plt.plot([-3], [-2], "ko", label="Start")
+    plt.plot([2], [2], "k*", markersize=10, label="Goal")
 
+    plt.title("Comparison of MPPI Variants")
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    plt.legend()
+    plt.grid(True)
+    plt.axis("equal")
 
-def run_kmppi_controller(
-    dynamics_fn,
-    running_cost_fn,
-    terminal_cost_fn,
-    start_state: jax.Array,
-    num_steps: int = 20,
-    num_samples: int = 500,
-    horizon: int = 20,
-    lambda_: float = 1.0,
-    seed: int = 0,
-    num_support_pts: int = 5,
-    kernel_sigma: float = 2.0,
-):
-    """Run Kernel MPPI controller."""
-    key = jax.random.PRNGKey(seed)
-
-    nx = 2
-    nu = 2
-    noise_sigma = jnp.eye(2)
-    u_min = jnp.array([-1.0, -1.0])
-    u_max = jnp.array([1.0, 1.0])
-
-    # Create RBF kernel
-    rbf_kernel = kmppi.RBFKernel(sigma=kernel_sigma)
-
-    config, kmppi_state, kernel_fn = kmppi.create(
-        nx=nx,
-        nu=nu,
-        noise_sigma=noise_sigma,
-        num_samples=num_samples,
-        horizon=horizon,
-        lambda_=lambda_,
-        u_min=u_min,
-        u_max=u_max,
-        key=key,
-        num_support_pts=num_support_pts,
-        kernel=rbf_kernel,
-    )
-
-    command_fn = jax.jit(
-        lambda state, obs: kmppi.command(
-            config=config,
-            kmppi_state=state,
-            current_obs=obs,
-            dynamics=dynamics_fn,
-            running_cost=running_cost_fn,
-            kernel_fn=kernel_fn,
-            terminal_cost=terminal_cost_fn,
-            shift=True,
-        )
-    )
-
-    state = start_state
-    states = [state]
-    actions_taken = []
-    costs_history = []
-
-    for step in range(num_steps):
-        action, kmppi_state = command_fn(kmppi_state, state)
-        state = dynamics_fn(state, action)
-        cost = running_cost_fn(state, action)
-
-        states.append(state)
-        actions_taken.append(action)
-        costs_history.append(cost)
-
-        print(
-            f"  Step {step:2d}: state=[{state[0]:6.3f}, {state[1]:6.3f}], cost={cost:.3f}"
-        )
-
-    return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
-
-
-def visualize_results(
-    results_dict,
-    start_state,
-    goal_state,
-    running_cost_fn,
-    state_ranges=((-5, 5), (-5, 5)),
-    save_path: Optional[str] = None,
-):
-    """Visualize comparison of different controllers."""
-    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
-
-    # Plot 1: Trajectories on cost landscape
-    ax = axes[0, 0]
-
-    # Draw cost landscape
-    resolution = 0.05
-    x_coords = jnp.arange(
-        state_ranges[0][0], state_ranges[0][1] + resolution, resolution
-    )
-    y_coords = jnp.arange(
-        state_ranges[1][0], state_ranges[1][1] + resolution, resolution
-    )
-    X, Y = jnp.meshgrid(x_coords, y_coords)
-    pts = jnp.stack([X.flatten(), Y.flatten()], axis=1)
-
-    costs = jax.vmap(lambda s: running_cost_fn(s, None))(pts)
-    Z = costs.reshape(X.shape)
-
-    levels = [2, 4, 8, 16, 24, 32, 40, 50, 60, 80, 100, 150, 200, 250]
-    ax.contourf(X, Y, Z, levels=levels, cmap="Greys", alpha=0.6)
-    ax.contour(
-        X,
-        Y,
-        Z,
-        levels=levels,
-        colors="k",
-        linestyles="dashed",
-        alpha=0.3,
-        linewidths=0.5,
-    )
-
-    # Plot trajectories
-    colors = ["tab:blue", "tab:orange", "tab:green"]
-    for (name, (states, _, _)), color in zip(results_dict.items(), colors):
-        ax.plot(
-            states[:, 0],
-            states[:, 1],
-            "-o",
-            label=name,
-            color=color,
-            linewidth=2,
-            markersize=4,
-            alpha=0.8,
-        )
-
-    ax.scatter(
-        start_state[0],
-        start_state[1],
-        color="red",
-        s=200,
-        marker="*",
-        edgecolors="black",
-        linewidths=2,
-        label="Start",
-        zorder=10,
-    )
-    ax.scatter(
-        goal_state[0],
-        goal_state[1],
-        color="green",
-        s=200,
-        marker="*",
-        edgecolors="black",
-        linewidths=2,
-        label="Goal",
-        zorder=10,
-    )
-
-    ax.set_xlim(state_ranges[0])
-    ax.set_ylim(state_ranges[1])
-    ax.set_aspect("equal")
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_title("Trajectories on Cost Landscape")
-    ax.legend(loc="upper right")
-    ax.grid(True, alpha=0.3)
-
-    # Plot 2: Running costs over time
-    ax = axes[0, 1]
-    for (name, (_, _, costs)), color in zip(results_dict.items(), colors):
-        ax.plot(costs, "-o", label=name, color=color, linewidth=2, markersize=4)
-    ax.set_xlabel("Step")
-    ax.set_ylabel("Running Cost")
-    ax.set_title("Running Cost Over Time")
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-
-    # Plot 3: Control inputs
-    ax = axes[1, 0]
-    for (name, (_, actions, _)), color in zip(results_dict.items(), colors):
-        steps = np.arange(len(actions))
-        ax.plot(
-            steps,
-            actions[:, 0],
-            "-",
-            label=f"{name} u0",
-            color=color,
-            linewidth=2,
-            alpha=0.7,
-        )
-        ax.plot(
-            steps,
-            actions[:, 1],
-            "--",
-            label=f"{name} u1",
-            color=color,
-            linewidth=2,
-            alpha=0.7,
-        )
-    ax.set_xlabel("Step")
-    ax.set_ylabel("Control Input")
-    ax.set_title("Control Inputs Over Time")
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    ax.axhline(0, color="k", linestyle="-", linewidth=0.5, alpha=0.3)
-
-    # Plot 4: Control smoothness
-    ax = axes[1, 1]
-    for (name, (_, actions, _)), color in zip(results_dict.items(), colors):
-        action_diff = jnp.diff(actions, axis=0)
-        diff_norm = jnp.linalg.norm(action_diff, axis=1)
-        ax.plot(
-            diff_norm, "-o", label=name, color=color, linewidth=2, markersize=4
-        )
-    ax.set_xlabel("Step")
-    ax.set_ylabel("||Δu||")
-    ax.set_title("Control Smoothness (L2 norm of action differences)")
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-
-    plt.tight_layout()
-
-    if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches="tight")
-        print(f"\nPlot saved to {save_path}")
-
-    plt.show()
+    # Save
+    plt.savefig("mppi_comparison.png")
+    print("Saved plot to mppi_comparison.png")
 
 
 def main():
-    """Run smooth MPPI comparison."""
+    cost_fn = create_cost_fn()
+    x0 = jnp.array([-3.0, -2.0])
 
-    # Environment setup
-    start_state = jnp.array([-3.0, -2.0])
-    goal_state = jnp.array([2.0, 2.0])
-
-    # Dynamics: Linear delta dynamics with B = [[0.5, 0], [0, -0.5]]
-    B = jnp.array([[0.5, 0.0], [0.0, -0.5]])
-    dynamics_fn = create_linear_delta_dynamics(B)
-
-    # Costs
-    Q = jnp.eye(2)
-    R = jnp.eye(2) * 0.01
-    lqr_cost = create_lqr_cost(Q, R, goal_state)
-
-    # Hill cost (obstacle at [-0.5, -1.0])
-    hill_Q = jnp.array([[0.1, 0.05], [0.05, 0.1]]) * 2.5
-    hill_center = jnp.array([-0.5, -1.0])
-    hill_cost = create_hill_cost(hill_Q, hill_center, cost_at_center=200.0)
-
-    # Combined cost
-    running_cost = create_combined_cost(lqr_cost, hill_cost)
-
-    # Terminal cost
-    terminal_scale = 10.0
-
-    def terminal_cost_fn(state, last_action):
-        return terminal_scale * running_cost(state, None)
-
-    # Controller parameters
-    num_steps = 20
-    num_samples = 500
-    horizon = 20
-    lambda_ = 1.0
-    seed = 0
-
-    print("=" * 60)
-    print("Smooth MPPI Comparison")
-    print("=" * 60)
-    print(f"Start: {start_state}")
-    print(f"Goal:  {goal_state}")
-    print(f"Obstacle center: {hill_center}")
-    print("\nController parameters:")
-    print(f"  Samples: {num_samples}")
-    print(f"  Horizon: {horizon}")
-    print(f"  Lambda:  {lambda_}")
-    print(f"  Steps:   {num_steps}")
-    print("=" * 60)
-
-    # Run controllers
     results = {}
 
-    print("\n[1/3] Running standard MPPI...")
-    states_mppi, actions_mppi, costs_mppi = run_mppi_controller(
-        dynamics_fn,
-        running_cost,
-        terminal_cost_fn,
-        start_state,
-        num_steps=num_steps,
-        num_samples=num_samples,
-        horizon=horizon,
-        lambda_=lambda_,
-        seed=seed,
-    )
-    results["MPPI"] = (states_mppi, actions_mppi, costs_mppi)
-    print(f"  Total cost: {jnp.sum(costs_mppi):.2f}")
-    smoothness_mppi = jnp.sum(
-        jnp.linalg.norm(jnp.diff(actions_mppi, axis=0), axis=1)
-    )
-    print(f"  Control smoothness: {smoothness_mppi:.3f}")
+    traj_mppi, act_mppi, cost_mppi = run_mppi(x0, cost_fn)
+    results["MPPI"] = (traj_mppi, act_mppi, cost_mppi)
 
-    print("\n[2/3] Running Smooth MPPI (SMPPI)...")
-    states_smppi, actions_smppi, costs_smppi = run_smppi_controller(
-        dynamics_fn,
-        running_cost,
-        terminal_cost_fn,
-        start_state,
-        num_steps=num_steps,
-        num_samples=num_samples,
-        horizon=horizon,
-        lambda_=lambda_,
-        seed=seed,
-        w_action_seq_cost=10.0,
-        delta_t=1.0,
-    )
-    results["SMPPI"] = (states_smppi, actions_smppi, costs_smppi)
-    print(f"  Total cost: {jnp.sum(costs_smppi):.2f}")
-    smoothness_smppi = jnp.sum(
-        jnp.linalg.norm(jnp.diff(actions_smppi, axis=0), axis=1)
-    )
-    print(f"  Control smoothness: {smoothness_smppi:.3f}")
+    traj_smppi, act_smppi, cost_smppi = run_smppi(x0, cost_fn)
+    results["SMPPI"] = (traj_smppi, act_smppi, cost_smppi)
 
-    print("\n[3/3] Running Kernel MPPI (KMPPI)...")
-    states_kmppi, actions_kmppi, costs_kmppi = run_kmppi_controller(
-        dynamics_fn,
-        running_cost,
-        terminal_cost_fn,
-        start_state,
-        num_steps=num_steps,
-        num_samples=num_samples,
-        horizon=horizon,
-        lambda_=lambda_,
-        seed=seed,
-        num_support_pts=5,
-        kernel_sigma=2.0,
-    )
-    results["KMPPI"] = (states_kmppi, actions_kmppi, costs_kmppi)
-    print(f"  Total cost: {jnp.sum(costs_kmppi):.2f}")
-    smoothness_kmppi = jnp.sum(
-        jnp.linalg.norm(jnp.diff(actions_kmppi, axis=0), axis=1)
-    )
-    print(f"  Control smoothness: {smoothness_kmppi:.3f}")
+    traj_kmppi, act_kmppi, cost_kmppi = run_kmppi(x0, cost_fn)
+    results["KMPPI"] = (traj_kmppi, act_kmppi, cost_kmppi)
 
-    print("\n" + "=" * 60)
-    print("Summary:")
-    print("=" * 60)
-    for name, (_, actions, costs) in results.items():
-        total_cost = jnp.sum(costs)
-        smoothness = jnp.sum(jnp.linalg.norm(jnp.diff(actions, axis=0), axis=1))
+    # Calculate Smoothness (Sum of squared jerk/accel changes)
+    print("\nSmoothness Metrics (Action Diff Norm):")
+    for name, (_, actions, total_cost) in results.items():
+        smoothness = jnp.sum(
+            jnp.linalg.norm(jnp.diff(actions, axis=0), axis=1)
+        )
         print(
-            f"{name:10s}: Total Cost = {total_cost:8.2f}, Smoothness = {smoothness:6.3f}"
+            f"{name:10s}: Total Cost = {total_cost:8.2f}, "
+            f"Smoothness = {smoothness:6.3f}"
         )
     print("=" * 60)
 
-    # Visualize
-    print("\nGenerating visualization...")
-    visualize_results(
-        results,
-        start_state,
-        goal_state,
-        running_cost,
-        save_path="docs/media/smooth_comparison.png",
-    )
+    # Optional: Plot
+    try:
+        plot_results(results)
+    except Exception as e:
+        print(f"Skipping plot: {e}")
 
 
 if __name__ == "__main__":

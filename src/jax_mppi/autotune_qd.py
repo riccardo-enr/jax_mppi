@@ -1,7 +1,7 @@
 """Quality diversity optimization for JAX-MPPI autotuning.
 
-This module provides CMA-ME (Covariance Matrix Adaptation MAP-Elites) integration
-for finding diverse, high-performing parameter configurations.
+This module provides CMA-ME (Covariance Matrix Adaptation MAP-Elites)
+integration for finding diverse, high-performing parameter configurations.
 
 Requires optional dependency: ribs[all]
 
@@ -65,12 +65,15 @@ class CMAMEOpt(Optimizer):
             behavior_dim: Dimensionality of behavior space
         """
         try:
-            from ribs.archives import GridArchive  # type: ignore
-            from ribs.emitters import EvolutionStrategyEmitter  # type: ignore
-            from ribs.schedulers import Scheduler  # type: ignore
+            from ribs.archives import GridArchive  # type: ignore # noqa: F401
+            from ribs.emitters import (
+                EvolutionStrategyEmitter,  # type: ignore # noqa: F401
+            )
+            from ribs.schedulers import Scheduler  # type: ignore # noqa: F401
         except ImportError:
             raise ImportError(
-                "CMA-ME optimizer requires 'ribs'. Install with: pip install 'ribs[all]'"
+                "CMA-ME optimizer requires 'ribs'. "
+                "Install with: pip install 'ribs[all]'"
             )
 
         self.population = population
@@ -212,7 +215,8 @@ class CMAMEOpt(Optimizer):
             params = row["solution"]
             # Objective is negative cost, so negate to get cost
             cost = -row["objective"]
-            # Behavior is stored in columns like "behavior_0", "behavior_1", etc.
+            # Behavior is stored in columns like "behavior_0", "behavior_1",
+            # etc.
             behavior = np.array(
                 [row[f"index_{i}"] for i in range(self.behavior_dim)]
             )
