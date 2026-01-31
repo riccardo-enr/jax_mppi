@@ -1,4 +1,16 @@
-from . import kmppi, mppi, smppi
+from . import autotune, kmppi, mppi, smppi
+
+# Optional imports (if dependencies available)
+try:
+    from . import autotune_global
+except ImportError:
+    autotune_global = None
+
+try:
+    from . import autotune_qd
+except ImportError:
+    autotune_qd = None
+
 from .mppi import MPPIConfig, MPPIState, command, create, get_rollouts, reset
 
 __all__ = [
@@ -11,4 +23,7 @@ __all__ = [
     "mppi",
     "smppi",
     "kmppi",
+    "autotune",
+    "autotune_global",
+    "autotune_qd",
 ]

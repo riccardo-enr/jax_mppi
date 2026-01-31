@@ -23,6 +23,14 @@ docs = [
     "mkdocs-material",
     "mkdocstrings[python]",
 ]
+autotuning = [
+    "cma>=3.3.0",  # CMA-ES optimizer (core autotuning)
+    # Additional optimizers (install separately if needed):
+    # ray[tune]>=2.0.0
+    # hyperopt>=0.2.7
+    # bayesian-optimization>=1.4.0
+    # ribs[all]>=0.6.0
+]
 
 [tool.ruff]
 line-length = 100
