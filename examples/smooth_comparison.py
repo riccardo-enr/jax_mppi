@@ -508,7 +508,7 @@ def main():
         start_state,
         goal_state,
         running_cost,
-        save_path="smooth_comparison.png",
+        save_path="docs/media/smooth_comparison.png",
     )
 
 
