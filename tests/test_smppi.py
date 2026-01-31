@@ -174,9 +174,7 @@ class TestSMPPICommand:
         )
 
         # Action sequence should have changed from zeros
-        assert not jnp.allclose(
-            new_state.action_sequence, state.action_sequence, atol=1e-6
-        )
+        assert not jnp.allclose(new_state.action_sequence, state.action_sequence, atol=1e-6)
 
         # Relationship: action_sequence = old_action_sequence + U * delta_t
         expected_action_seq = state.action_sequence + new_state.U * config.delta_t

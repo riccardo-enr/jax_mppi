@@ -184,9 +184,7 @@ def _kernel_interpolate(
 
     # Solve: Ktktk @ weights.T = K.T for weights
     # This gives weights = K @ inv(Ktktk)
-    weights = jax.scipy.linalg.solve(
-        Ktktk, K.T, assume_a="pos"
-    ).T  # (T, num_support_pts)
+    weights = jax.scipy.linalg.solve(Ktktk, K.T, assume_a="pos").T  # (T, num_support_pts)
 
     # Interpolate: U(t) = weights @ control_points
     interpolated = weights @ control_points  # (T, nu)
@@ -281,9 +279,7 @@ def _single_rollout_costs(
 
     def step_fn(state, inputs):
         t, action = inputs
-        next_state = _call_dynamics(
-            dynamics, state, action, t, config.step_dependent_dynamics
-        )
+        next_state = _call_dynamics(dynamics, state, action, t, config.step_dependent_dynamics)
         cost_state = _state_for_cost(state, config.nx)
         step_cost = _call_running_cost(
             running_cost, cost_state, action, t, config.step_dependent_dynamics
@@ -505,27 +501,19 @@ def command(
     )
 
     # Perturb control points
-    perturbed_theta = (
-        kmppi_state.theta[None, :, :] + noise_theta
-    )  # (K, num_support_pts, nu)
-    perturbed_theta = _bound_action(
-        perturbed_theta, kmppi_state.u_min, kmppi_state.u_max
-    )
+    perturbed_theta = kmppi_state.theta[None, :, :] + noise_theta  # (K, num_support_pts, nu)
+    perturbed_theta = _bound_action(perturbed_theta, kmppi_state.u_min, kmppi_state.u_max)
 
     # Effective noise after bounding
     effective_noise_theta = perturbed_theta - kmppi_state.theta[None, :, :]
 
     # Interpolate perturbed control points to full trajectories
     def interpolate_single(theta_single):
-        U_interp, _ = _kernel_interpolate(
-            kmppi_state.Hs, kmppi_state.Tk, theta_single, kernel_fn
-        )
+        U_interp, _ = _kernel_interpolate(kmppi_state.Hs, kmppi_state.Tk, theta_single, kernel_fn)
         return U_interp
 
     perturbed_actions = jax.vmap(interpolate_single)(perturbed_theta)  # (K, T, nu)
-    perturbed_actions = _bound_action(
-        perturbed_actions, kmppi_state.u_min, kmppi_state.u_max
-    )
+    perturbed_actions = _bound_action(perturbed_actions, kmppi_state.u_min, kmppi_state.u_max)
 
     # Compute rollout costs
     rollout_costs = _compute_rollout_costs(
@@ -575,9 +563,7 @@ def command(
             kernel_fn,
         )
         # Also shift U (via interpolation)
-        shifted_U, _ = _kernel_interpolate(
-            new_state.Hs, new_state.Tk, shifted_theta, kernel_fn
-        )
+        shifted_U, _ = _kernel_interpolate(new_state.Hs, new_state.Tk, shifted_theta, kernel_fn)
         new_state = replace(new_state, U=shifted_U, theta=shifted_theta)
 
     # Extract action to return
@@ -597,9 +583,7 @@ def reset(
     theta_reset = jnp.zeros_like(kmppi_state.theta)
 
     # Interpolate to get U
-    U_reset, _ = _kernel_interpolate(
-        kmppi_state.Hs, kmppi_state.Tk, theta_reset, kernel_fn
-    )
+    U_reset, _ = _kernel_interpolate(kmppi_state.Hs, kmppi_state.Tk, theta_reset, kernel_fn)
 
     return replace(
         kmppi_state,
@@ -634,9 +618,7 @@ def get_rollouts(
 
         def step_fn(s, inputs):
             t, action = inputs
-            next_s = _call_dynamics(
-                dynamics, s, action, t, config.step_dependent_dynamics
-            )
+            next_s = _call_dynamics(dynamics, s, action, t, config.step_dependent_dynamics)
             next_s_trimmed = _state_for_cost(next_s, config.nx)
             return next_s, next_s_trimmed
 

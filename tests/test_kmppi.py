@@ -418,9 +418,7 @@ class TestKMPPIShift:
         )
 
         # Interpolate shifted theta
-        shifted_U, _ = kmppi._kernel_interpolate(
-            state.Hs, state.Tk, shifted_theta, kernel_fn
-        )
+        shifted_U, _ = kmppi._kernel_interpolate(state.Hs, state.Tk, shifted_theta, kernel_fn)
 
         # Shapes should be preserved
         assert shifted_theta.shape == state.theta.shape

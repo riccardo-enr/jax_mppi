@@ -17,11 +17,26 @@ dev = [
     "gymnasium[classic_control]",
     "matplotlib",
     "basedpyright",
+    "ruff",
 ]
 docs = [
     "mkdocs-material",
     "mkdocstrings[python]",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"src/jax_mppi/costs/basic.py" = ["F722", "F821"]
+"src/jax_mppi/dynamics/linear.py" = ["F722", "F821"]
+"src/jax_mppi/kmppi.py" = ["E402"]
+"src/jax_mppi/smppi.py" = ["E402"]
 
 [build-system]
 requires = ["setuptools>=61.0"]

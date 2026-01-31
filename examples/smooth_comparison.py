@@ -83,9 +83,7 @@ def run_mppi_controller(
         actions_taken.append(action)
         costs_history.append(cost)
 
-        print(
-            f"  Step {step:2d}: state=[{state[0]:6.3f}, {state[1]:6.3f}], cost={cost:.3f}"
-        )
+        print(f"  Step {step:2d}: state=[{state[0]:6.3f}, {state[1]:6.3f}], cost={cost:.3f}")
 
     return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
 
@@ -152,9 +150,7 @@ def run_smppi_controller(
         actions_taken.append(action)
         costs_history.append(cost)
 
-        print(
-            f"  Step {step:2d}: state=[{state[0]:6.3f}, {state[1]:6.3f}], cost={cost:.3f}"
-        )
+        print(f"  Step {step:2d}: state=[{state[0]:6.3f}, {state[1]:6.3f}], cost={cost:.3f}")
 
     return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
 
@@ -225,9 +221,7 @@ def run_kmppi_controller(
         actions_taken.append(action)
         costs_history.append(cost)
 
-        print(
-            f"  Step {step:2d}: state=[{state[0]:6.3f}, {state[1]:6.3f}], cost={cost:.3f}"
-        )
+        print(f"  Step {step:2d}: state=[{state[0]:6.3f}, {state[1]:6.3f}], cost={cost:.3f}")
 
     return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
 
@@ -248,12 +242,8 @@ def visualize_results(
 
     # Draw cost landscape
     resolution = 0.05
-    x_coords = jnp.arange(
-        state_ranges[0][0], state_ranges[0][1] + resolution, resolution
-    )
-    y_coords = jnp.arange(
-        state_ranges[1][0], state_ranges[1][1] + resolution, resolution
-    )
+    x_coords = jnp.arange(state_ranges[0][0], state_ranges[0][1] + resolution, resolution)
+    y_coords = jnp.arange(state_ranges[1][0], state_ranges[1][1] + resolution, resolution)
     X, Y = jnp.meshgrid(x_coords, y_coords)
     pts = jnp.stack([X.flatten(), Y.flatten()], axis=1)
 
@@ -261,7 +251,7 @@ def visualize_results(
     Z = costs.reshape(X.shape)
 
     levels = [2, 4, 8, 16, 24, 32, 40, 50, 60, 80, 100, 150, 200, 250]
-    contourf = ax.contourf(X, Y, Z, levels=levels, cmap="Greys", alpha=0.6)
+    ax.contourf(X, Y, Z, levels=levels, cmap="Greys", alpha=0.6)
     ax.contour(
         X,
         Y,
@@ -446,9 +436,8 @@ def main():
     )
     results["MPPI"] = (states_mppi, actions_mppi, costs_mppi)
     print(f"  Total cost: {jnp.sum(costs_mppi):.2f}")
-    print(
-        f"  Control smoothness: {jnp.sum(jnp.linalg.norm(jnp.diff(actions_mppi, axis=0), axis=1)):.3f}"
-    )
+    smoothness_mppi = jnp.sum(jnp.linalg.norm(jnp.diff(actions_mppi, axis=0), axis=1))
+    print(f"  Control smoothness: {smoothness_mppi:.3f}")
 
     print("\n[2/3] Running Smooth MPPI (SMPPI)...")
     states_smppi, actions_smppi, costs_smppi = run_smppi_controller(
@@ -466,9 +455,8 @@ def main():
     )
     results["SMPPI"] = (states_smppi, actions_smppi, costs_smppi)
     print(f"  Total cost: {jnp.sum(costs_smppi):.2f}")
-    print(
-        f"  Control smoothness: {jnp.sum(jnp.linalg.norm(jnp.diff(actions_smppi, axis=0), axis=1)):.3f}"
-    )
+    smoothness_smppi = jnp.sum(jnp.linalg.norm(jnp.diff(actions_smppi, axis=0), axis=1))
+    print(f"  Control smoothness: {smoothness_smppi:.3f}")
 
     print("\n[3/3] Running Kernel MPPI (KMPPI)...")
     states_kmppi, actions_kmppi, costs_kmppi = run_kmppi_controller(
@@ -486,9 +474,8 @@ def main():
     )
     results["KMPPI"] = (states_kmppi, actions_kmppi, costs_kmppi)
     print(f"  Total cost: {jnp.sum(costs_kmppi):.2f}")
-    print(
-        f"  Control smoothness: {jnp.sum(jnp.linalg.norm(jnp.diff(actions_kmppi, axis=0), axis=1)):.3f}"
-    )
+    smoothness_kmppi = jnp.sum(jnp.linalg.norm(jnp.diff(actions_kmppi, axis=0), axis=1))
+    print(f"  Control smoothness: {smoothness_kmppi:.3f}")
 
     print("\n" + "=" * 60)
     print("Summary:")
@@ -496,9 +483,7 @@ def main():
     for name, (_, actions, costs) in results.items():
         total_cost = jnp.sum(costs)
         smoothness = jnp.sum(jnp.linalg.norm(jnp.diff(actions, axis=0), axis=1))
-        print(
-            f"{name:10s}: Total Cost = {total_cost:8.2f}, Smoothness = {smoothness:6.3f}"
-        )
+        print(f"{name:10s}: Total Cost = {total_cost:8.2f}, Smoothness = {smoothness:6.3f}")
     print("=" * 60)
 
     # Visualize

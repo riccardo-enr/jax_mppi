@@ -1,6 +1,8 @@
 import jax
 import jax.numpy as jnp
+
 from jax_mppi import mppi
+
 
 def test_mppi_create():
     nx = 4
@@ -8,18 +10,14 @@ def test_mppi_create():
     noise_sigma = jnp.eye(nu) * 0.1
     horizon = 20
 
-    config, state = mppi.create(
-        nx=nx,
-        nu=nu,
-        noise_sigma=noise_sigma,
-        horizon=horizon
-    )
+    config, state = mppi.create(nx=nx, nu=nu, noise_sigma=noise_sigma, horizon=horizon)
 
     assert config.nx == nx
     assert config.nu == nu
     assert config.horizon == horizon
     assert state.U.shape == (horizon, nu)
     assert state.noise_sigma.shape == (nu, nu)
+
 
 def test_mppi_reset():
     nx = 4
@@ -32,7 +30,7 @@ def test_mppi_reset():
         nu=nu,
         noise_sigma=noise_sigma,
         horizon=horizon,
-        U_init=jnp.ones((horizon, nu))
+        U_init=jnp.ones((horizon, nu)),
     )
 
     assert jnp.all(state.U == 1.0)
@@ -42,6 +40,7 @@ def test_mppi_reset():
 
     # reset should set U to u_init (default zeros)
     assert jnp.all(state.U == 0.0)
+
 
 def test_mppi_command_shapes_and_bounds():
     nx = 1
@@ -53,7 +52,7 @@ def test_mppi_command_shapes_and_bounds():
         return state + action
 
     def running_cost(state, action):
-        return jnp.sum(state ** 2) + 0.01 * jnp.sum(action ** 2)
+        return jnp.sum(state**2) + 0.01 * jnp.sum(action**2)
 
     config, state = mppi.create(
         nx=nx,
@@ -78,6 +77,7 @@ def test_mppi_command_shapes_and_bounds():
     assert jnp.all(action <= 0.2 + 1e-6)
     assert jnp.all(action >= -0.2 - 1e-6)
     assert new_state.U.shape == (horizon, nu)
+
 
 def test_mppi_get_rollouts_shapes():
     nx = 2

@@ -8,9 +8,7 @@ from jaxtyping import Array, Float
 class Dynamics(Protocol):
     """Protocol for dynamics functions."""
 
-    def __call__(
-        self, state: Float[Array, "nx"], action: Float[Array, "nu"]
-    ) -> Float[Array, "nx"]:
+    def __call__(self, state: Float[Array, "nx"], action: Float[Array, "nu"]) -> Float[Array, "nx"]:
         """Compute next state given current state and action."""
         ...
 
@@ -35,9 +33,7 @@ def create_linear_delta_dynamics(B: Float[Array, "nx nu"]) -> Dynamics:
         >>> next_state = dynamics(state, action)
     """
 
-    def dynamics(
-        state: Float[Array, "nx"], action: Float[Array, "nu"]
-    ) -> Float[Array, "nx"]:
+    def dynamics(state: Float[Array, "nx"], action: Float[Array, "nu"]) -> Float[Array, "nx"]:
         # action @ B.T gives the delta to add to state
         delta = action @ B.T
         return state + delta

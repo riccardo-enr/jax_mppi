@@ -4,10 +4,11 @@ This example demonstrates using MPPI to control an inverted pendulum.
 The goal is to swing up and stabilize the pendulum in the upright position.
 """
 
+from typing import Any, cast
+
 import jax
 import jax.numpy as jnp
 
-from typing import Any, cast
 from jax_mppi import mppi
 
 
@@ -29,7 +30,7 @@ def pendulum_dynamics(state: jax.Array, action: jax.Array) -> jax.Array:
     """
     g = 10.0  # gravity
     m = 1.0  # mass
-    l = 1.0  # length
+    length = 1.0  # length
     dt = 0.05  # timestep
 
     theta, theta_dot = state[0], state[1]
@@ -38,8 +39,8 @@ def pendulum_dynamics(state: jax.Array, action: jax.Array) -> jax.Array:
     # Clip torque to reasonable bounds
     torque = jnp.clip(torque, -2.0, 2.0)
 
-    # Pendulum dynamics: theta_ddot = (torque - m*g*l*sin(theta)) / (m*l^2)
-    theta_ddot = (torque - m * g * l * jnp.sin(theta)) / (m * l * l)
+    # Pendulum dynamics: theta_ddot = (torque - m*g*length*sin(theta)) / (m*length^2)
+    theta_ddot = (torque - m * g * length * jnp.sin(theta)) / (m * length * length)
 
     # Euler integration
     theta_dot_next = theta_dot + theta_ddot * dt
@@ -203,7 +204,8 @@ def run_pendulum_mppi(
                 # Update gymnasium environment state to match our JAX state
                 # Gymnasium Pendulum-v1 state: [cos(theta), sin(theta), theta_dot]
                 theta, theta_dot = float(state[0]), float(state[1])
-                # Accessing .state on unwrapped env is dynamic, cast to Any to satisfy static analysis
+                # Accessing .state on unwrapped env is dynamic,
+                # cast to Any to satisfy static analysis
                 unwrapped_env = cast(Any, env.unwrapped)
                 unwrapped_env.state = jnp.array([theta, theta_dot])
                 env.render()
@@ -216,7 +218,8 @@ def run_pendulum_mppi(
             # Print progress
             if step % 20 == 0:
                 print(
-                    f"Step {step:3d}: theta={state[0]:6.3f}, theta_dot={state[1]:6.3f}, cost={cost:.3f}"
+                    f"Step {step:3d}: theta={state[0]:6.3f}, "
+                    f"theta_dot={state[1]:6.3f}, cost={cost:.3f}"
                 )
 
             step += 1
@@ -238,8 +241,9 @@ def run_pendulum_mppi(
 
     if visualize:
         try:
-            import matplotlib.pyplot as plt
             from pathlib import Path
+
+            import matplotlib.pyplot as plt
 
             fig, axes = plt.subplots(3, 1, figsize=(10, 8))
 
@@ -261,9 +265,7 @@ def run_pendulum_mppi(
 
             # Plot control
             time_actions = jnp.arange(len(actions_taken)) * 0.05
-            axes[2].plot(
-                time_actions, actions_taken[:, 0], label="torque", color="green"
-            )
+            axes[2].plot(time_actions, actions_taken[:, 0], label="torque", color="green")
             axes[2].axhline(0, color="k", linestyle="--", alpha=0.3)
             axes[2].set_ylabel("Torque (N·m)")
             axes[2].set_xlabel("Time (s)")
@@ -292,11 +294,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Pendulum swing-up with MPPI")
     parser.add_argument(
-        "--steps", type=int, default=None, help="Number of control steps (default: 100, or infinite with --render)"
+        "--steps",
+        type=int,
+        default=None,
+        help="Number of control steps (default: 100, or infinite with --render)",
     )
-    parser.add_argument(
-        "--samples", type=int, default=1000, help="Number of MPPI samples"
-    )
+    parser.add_argument("--samples", type=int, default=1000, help="Number of MPPI samples")
     parser.add_argument("--horizon", type=int, default=30, help="MPPI planning horizon")
     parser.add_argument(
         "--lambda", type=float, default=1.0, dest="lambda_", help="MPPI temperature"
@@ -310,10 +313,10 @@ if __name__ == "__main__":
     # Set default steps: infinite (large number) when rendering, 100 otherwise
     num_steps = args.steps
     if num_steps is None:
-        num_steps = float('inf') if args.render else 100
+        num_steps = float("inf") if args.render else 100
 
     states, actions, costs = run_pendulum_mppi(
-        num_steps=int(num_steps) if num_steps != float('inf') else 10**9,
+        num_steps=int(num_steps) if num_steps != float("inf") else 10**9,
         num_samples=args.samples,
         horizon=args.horizon,
         lambda_=args.lambda_,
