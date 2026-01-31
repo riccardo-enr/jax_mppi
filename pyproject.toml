@@ -5,8 +5,8 @@ description = "JAX implementation of Model Predictive Path Integral (MPPI) contr
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "jax",
-    "jaxlib",
+    "jax[cuda13]",
+    "jaxlib[cuda13]",
     "numpy",
 ]
 

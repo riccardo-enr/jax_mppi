@@ -4,7 +4,7 @@ Port `pytorch_mppi` to JAX, producing a functional, JIT-compilable MPPI library.
 
 ## Status (Jan 31, 2026)
 
-**Overall Progress:** Phase 4 complete (Kernel MPPI fully implemented and tested).
+**Overall Progress:** Phase 5 complete (Smooth comparison example implemented with visualization).
 
 ### Implementation Status by Phase
 
@@ -30,8 +30,11 @@ Port `pytorch_mppi` to JAX, producing a functional, JIT-compilable MPPI library.
   - 595 lines in `tests/test_kmppi.py` (23 comprehensive tests)
   - All tests passing (53/53 total tests pass)
   
-- **Phase 5: Smooth Comparison Example** 🔴 **PENDING**
-  - File: `examples/smooth_comparison.py` (not created)
+- **Phase 5: Smooth Comparison Example** ✅ **COMPLETE**
+  - 442 lines in `examples/smooth_comparison.py`
+  - Compares MPPI, SMPPI, and KMPPI on 2D navigation with obstacle avoidance
+  - Includes visualization with 4 subplots: trajectories, costs, controls, smoothness
+  - Supporting modules: `src/jax_mppi/costs/` and `src/jax_mppi/dynamics/`
   
 - **Phase 6: Autotuning** 🔴 **PENDING**
   - File: `src/jax_mppi/autotune.py` (not created)
