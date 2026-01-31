@@ -268,8 +268,14 @@ def run_pendulum_mppi(
             axes[2].grid(True, alpha=0.3)
 
             plt.tight_layout()
-            plt.savefig("pendulum_mppi.png", dpi=150)
-            print("\nPlot saved to pendulum_mppi.png")
+
+            # Save to docs/media directory
+            output_dir = Path(__file__).parent.parent / "docs" / "media"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = output_dir / "pendulum_mppi.png"
+
+            plt.savefig(output_path, dpi=150)
+            print(f"\nPlot saved to {output_path}")
             plt.show()
 
         except ImportError:
