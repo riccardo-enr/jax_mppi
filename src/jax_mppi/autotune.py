@@ -164,7 +164,7 @@ class Optimizer(abc.ABC):
             result = self.optimize_step()
             if best_result is None or result.mean_cost < best_result.mean_cost:
                 best_result = result
-        return best_result
+        return best_result  # type: ignore
 
 
 class LambdaParameter(TunableParameter):
@@ -511,7 +511,7 @@ class CMAESOpt(Optimizer):
         # Evaluate all solutions
         results = []
         for x in solutions:
-            result = self.evaluate_fn(np.array(x))
+            result = self.evaluate_fn(np.array(x))  # type: ignore
             results.append(result)
 
         # Tell: update CMA-ES with costs
