@@ -236,6 +236,7 @@ def run_pendulum_mppi(
     if visualize:
         try:
             import matplotlib.pyplot as plt
+            from pathlib import Path
 
             fig, axes = plt.subplots(3, 1, figsize=(10, 8))
 
