@@ -8,6 +8,7 @@ dependencies = [
     "jax[cuda13]",
     "jaxlib[cuda13]",
     "numpy",
+    "jaxtyping",
 ]
 
 [project.optional-dependencies]

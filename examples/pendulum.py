@@ -202,7 +202,7 @@ def run_pendulum_mppi(
                 # Update gymnasium environment state to match our JAX state
                 # Gymnasium Pendulum-v1 state: [cos(theta), sin(theta), theta_dot]
                 theta, theta_dot = float(state[0]), float(state[1])
-                env.unwrapped.state = jnp.array([theta, theta_dot])
+                env.unwrapped.state = jnp.array([theta, theta_dot])  # type: ignore
                 env.render()
 
             # Store

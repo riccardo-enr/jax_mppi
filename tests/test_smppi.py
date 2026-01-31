@@ -266,7 +266,9 @@ class TestSMPPISmoothness:
         var_smooth = jnp.sum(jnp.diff(state_smooth.action_sequence, axis=0) ** 2)
 
         # Smooth should have lower variation
-        assert var_smooth < var_rough
+        # These are JAX arrays, so they are not None.
+        # basedpyright gets confused by Optional fields in dataclass.
+        assert var_smooth < var_rough  # type: ignore
 
     def test_delta_t_affects_integration(self):
         """Test that delta_t scales the integration correctly."""
@@ -319,7 +321,8 @@ class TestSMPPISmoothness:
         change_small = jnp.max(jnp.abs(new_small.action_sequence))
         change_large = jnp.max(jnp.abs(new_large.action_sequence))
 
-        assert change_large > change_small
+        # These are JAX arrays, so they are not None.
+        assert change_large > change_small  # type: ignore
 
 
 class TestSMPPIBounds:
@@ -405,7 +408,9 @@ class TestSMPPIBounds:
         )
 
         assert state1.action_max is not None
-        assert jnp.allclose(state1.action_max, -state1.action_min)
+        assert state1.action_min is not None
+        # type: ignore to suppress operator '-' not supported for None
+        assert jnp.allclose(state1.action_max, -state1.action_min)  # type: ignore # pyright: ignore[reportOptionalOperand]
 
         # Only max specified
         config2, state2 = smppi.create(
@@ -416,7 +421,9 @@ class TestSMPPIBounds:
         )
 
         assert state2.action_min is not None
-        assert jnp.allclose(state2.action_min, -state2.action_max)
+        assert state2.action_max is not None
+        # type: ignore to suppress operator '-' not supported for None
+        assert jnp.allclose(state2.action_min, -state2.action_max)  # type: ignore # pyright: ignore[reportOptionalOperand]
 
 
 class TestSMPPIShift:
