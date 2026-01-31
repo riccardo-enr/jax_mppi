@@ -269,6 +269,8 @@ jax_mppi/
 
 ### Test setup options (src layout)
 
+IMPORTANT: You should always use the virtual environment. To run the tests and all of the other python files.
+
 - Option A: add a `tests/conftest.py` to insert `src` into `sys.path`.
 - Option B: run tests after `uv pip install -e .` (editable install).
 
