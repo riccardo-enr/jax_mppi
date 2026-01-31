@@ -65,9 +65,9 @@ class CMAMEOpt(Optimizer):
             behavior_dim: Dimensionality of behavior space
         """
         try:
-            from ribs.archives import GridArchive
-            from ribs.emitters import EvolutionStrategyEmitter
-            from ribs.schedulers import Scheduler
+            from ribs.archives import GridArchive  # type: ignore
+            from ribs.emitters import EvolutionStrategyEmitter  # type: ignore
+            from ribs.schedulers import Scheduler  # type: ignore
         except ImportError:
             raise ImportError(
                 "CMA-ME optimizer requires 'ribs'. Install with: pip install 'ribs[all]'"
@@ -96,9 +96,9 @@ class CMAMEOpt(Optimizer):
             initial_params: Initial parameter values
             evaluate_fn: Evaluation function
         """
-        from ribs.archives import GridArchive
-        from ribs.emitters import EvolutionStrategyEmitter
-        from ribs.schedulers import Scheduler
+        from ribs.archives import GridArchive  # type: ignore
+        from ribs.emitters import EvolutionStrategyEmitter  # type: ignore
+        from ribs.schedulers import Scheduler  # type: ignore
 
         self.evaluate_fn = evaluate_fn
         self.solution_dim = len(initial_params)

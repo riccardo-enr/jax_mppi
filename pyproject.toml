@@ -18,6 +18,11 @@ dev = [
     "matplotlib",
     "basedpyright",
     "ruff",
+    "cma>=3.3.0",  # CMA-ES for autotuning
+    "ray[tune]>=2.0.0",  # Ray Tune for global search
+    "hyperopt>=0.2.7",  # HyperOpt search algorithm
+    "bayesian-optimization>=1.4.0",  # BayesOpt search algorithm
+    "ribs[all]>=0.6.0",  # CMA-ME quality diversity
 ]
 docs = [
     "mkdocs-material",

@@ -245,7 +245,6 @@ class NoiseSigmaParameter(TunableParameter):
         Also updates noise_sigma_inv (inverse covariance).
         """
         # Create diagonal covariance matrix
-        nu = self.holder.config.nu
         noise_sigma = jnp.diag(jnp.array(value))
         noise_sigma_inv = jnp.diag(1.0 / jnp.array(value))
 
@@ -353,7 +352,6 @@ class HorizonParameter(TunableParameter):
 
         # Resize U trajectory
         old_U = self.holder.state.U
-        nu = self.holder.config.nu
 
         if new_horizon > old_horizon:
             # Extend with u_init
@@ -643,7 +641,7 @@ class Autotune:
         Raises:
             RuntimeError: If no results have been evaluated yet
         """
-        if self.best_result is None:
+        if not isinstance(self.best_result, EvaluationResult):
             raise RuntimeError("No results available yet")
         return self.best_result
 

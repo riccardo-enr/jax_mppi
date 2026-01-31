@@ -33,14 +33,14 @@ def pendulum_dynamics(state, action, dt=0.05):
     """
     g = 10.0  # gravity
     m = 1.0  # mass
-    l = 1.0  # length
+    length = 1.0  # length
     b = 0.1  # damping
 
     theta, theta_dot = state[0], state[1]
     u = action[0]
 
     # Dynamics: theta_ddot = (u - mgl*sin(theta) - b*theta_dot) / (ml^2)
-    theta_ddot = (u - m * g * l * jnp.sin(theta) - b * theta_dot) / (m * l**2)
+    theta_ddot = (u - m * g * length * jnp.sin(theta) - b * theta_dot) / (m * length**2)
 
     # Euler integration
     theta_new = theta + theta_dot * dt

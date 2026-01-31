@@ -208,8 +208,8 @@ class RayOptimizer(Optimizer):
             mode: Optimization mode (always "min")
         """
         try:
-            import ray
-            from ray import tune
+            import ray  # type: ignore
+            from ray import tune  # type: ignore
         except ImportError:
             raise ImportError(
                 "Ray Tune optimizer requires 'ray[tune]'. "
@@ -335,8 +335,8 @@ class AutotuneGlobal(Autotune):
         Returns:
             Best evaluation result found
         """
-        from ray import tune
-        from ray.tune.search import ConcurrencyLimiter
+        from ray import tune  # type: ignore
+        from ray.tune.search import ConcurrencyLimiter  # type: ignore
 
         # Define search space
         search_space = self.define_search_space()
@@ -376,11 +376,11 @@ class AutotuneGlobal(Autotune):
 
         # Setup search algorithm
         if self.optimizer.search_alg == "hyperopt":
-            from ray.tune.search.hyperopt import HyperOptSearch
+            from ray.tune.search.hyperopt import HyperOptSearch  # type: ignore
 
             search_alg = HyperOptSearch(metric="mean_cost", mode="min")
         elif self.optimizer.search_alg == "bayesopt":
-            from ray.tune.search.bayesopt import BayesOptSearch
+            from ray.tune.search.bayesopt import BayesOptSearch  # type: ignore
 
             search_alg = BayesOptSearch(metric="mean_cost", mode="min")
         else:
