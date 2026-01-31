@@ -105,7 +105,9 @@ def _bound_control(
 
 
 def _bound_action(
-    action: jax.Array, action_min: Optional[jax.Array], action_max: Optional[jax.Array]
+    action: jax.Array,
+    action_min: Optional[jax.Array],
+    action_max: Optional[jax.Array],
 ) -> jax.Array:
     """Bound final action (action_sequence space)."""
     if action_min is None and action_max is None:
@@ -158,13 +160,17 @@ def _sample_noise(
     if sample_null_action:
         # Reserve first sample for null action (U with no perturbation)
         key, subkey = jax.random.split(key)
-        noise = jax.random.multivariate_normal(subkey, noise_mu, noise_sigma, shape=(K - 1, T))
+        noise = jax.random.multivariate_normal(
+            subkey, noise_mu, noise_sigma, shape=(K - 1, T)
+        )
         # Prepend zeros for null action
         null_noise = jnp.zeros((1, T, noise_mu.shape[0]))
         noise = jnp.concatenate([null_noise, noise], axis=0)
     else:
         key, subkey = jax.random.split(key)
-        noise = jax.random.multivariate_normal(subkey, noise_mu, noise_sigma, shape=(K, T))
+        noise = jax.random.multivariate_normal(
+            subkey, noise_mu, noise_sigma, shape=(K, T)
+        )
 
     return noise, key
 
@@ -189,10 +195,15 @@ def _compute_perturbed_actions_and_noise(
     perturbed_control = smppi_state.U[None, :, :] + noise  # (K, T, nu)
 
     # Bound control velocity
-    perturbed_control = _bound_control(perturbed_control, smppi_state.u_min, smppi_state.u_max)
+    perturbed_control = _bound_control(
+        perturbed_control, smppi_state.u_min, smppi_state.u_max
+    )
 
     # Integrate to action space
-    perturbed_actions = smppi_state.action_sequence[None, :, :] + perturbed_control * config.delta_t
+    perturbed_actions = (
+        smppi_state.action_sequence[None, :, :]
+        + perturbed_control * config.delta_t
+    )
 
     # Bound actions
     perturbed_actions = _bound_action(
@@ -208,7 +219,9 @@ def _compute_perturbed_actions_and_noise(
     return perturbed_actions, effective_noise
 
 
-def _compute_smoothness_cost(perturbed_actions: jax.Array, config: SMPPIConfig) -> jax.Array:
+def _compute_smoothness_cost(
+    perturbed_actions: jax.Array, config: SMPPIConfig
+) -> jax.Array:
     """Compute smoothness cost from action differences.
 
     Args:
@@ -251,7 +264,9 @@ def _single_rollout_costs(
 
     def step_fn(state, inputs):
         t, action = inputs
-        next_state = _call_dynamics(dynamics, state, action, t, config.step_dependent_dynamics)
+        next_state = _call_dynamics(
+            dynamics, state, action, t, config.step_dependent_dynamics
+        )
         cost_state = _state_for_cost(state, config.nx)
         step_cost = _call_running_cost(
             running_cost, cost_state, action, t, config.step_dependent_dynamics
@@ -325,7 +340,9 @@ def _compute_noise_cost(
     else:
         # Quadratic cost: noise^T Sigma^-1 noise
         # For each sample and timestep: nu^T Sigma^-1 nu
-        costs_per_timestep = jax.vmap(jax.vmap(lambda n: n @ noise_sigma_inv @ n))(noise)
+        costs_per_timestep = jax.vmap(
+            jax.vmap(lambda n: n @ noise_sigma_inv @ n)
+        )(noise)
         return jnp.sum(costs_per_timestep, axis=1)
 
 
@@ -422,7 +439,9 @@ def create(
         action_sequence = jnp.zeros((horizon, nu))
     else:
         u_control = jnp.zeros_like(U_init)  # Start with zero velocity
-        action_sequence = U_init.copy()  # U_init is interpreted as initial actions
+        action_sequence = (
+            U_init.copy()
+        )  # U_init is interpreted as initial actions
 
     # Compute noise covariance inverse
     noise_sigma_inv = jnp.linalg.inv(noise_sigma)
@@ -552,12 +571,17 @@ def command(
     if config.u_per_command == 1:
         action = new_action_sequence[0] * config.u_scale
     else:
-        action = new_action_sequence[: config.u_per_command].reshape(-1) * config.u_scale
+        action = (
+            new_action_sequence[: config.u_per_command].reshape(-1)
+            * config.u_scale
+        )
 
     return action, new_state
 
 
-def reset(config: SMPPIConfig, smppi_state: SMPPIState, key: jax.Array) -> SMPPIState:
+def reset(
+    config: SMPPIConfig, smppi_state: SMPPIState, key: jax.Array
+) -> SMPPIState:
     """Reset SMPPI state with new random key."""
     # Reset both U and action_sequence to zeros
     return replace(
@@ -593,16 +617,22 @@ def get_rollouts(
 
         def step_fn(s, inputs):
             t, action = inputs
-            next_s = _call_dynamics(dynamics, s, action, t, config.step_dependent_dynamics)
+            next_s = _call_dynamics(
+                dynamics, s, action, t, config.step_dependent_dynamics
+            )
             next_s_trimmed = _state_for_cost(next_s, config.nx)
             return next_s, next_s_trimmed
 
         ts = jnp.arange(config.horizon)
-        _, trajectory = jax.lax.scan(step_fn, state, (ts, smppi_state.action_sequence))
+        _, trajectory = jax.lax.scan(
+            step_fn, state, (ts, smppi_state.action_sequence)
+        )
 
         # Prepend initial state
         initial_state = _state_for_cost(state, config.nx)
-        full_trajectory = jnp.concatenate([initial_state[None, :], trajectory], axis=0)
+        full_trajectory = jnp.concatenate(
+            [initial_state[None, :], trajectory], axis=0
+        )
 
         return state, full_trajectory
 
@@ -613,6 +643,8 @@ def get_rollouts(
         obs_batch = current_obs
 
     # Generate multiple rollouts
-    _, rollouts = jax.lax.scan(single_rollout, obs_batch[0], jnp.arange(num_rollouts))
+    _, rollouts = jax.lax.scan(
+        single_rollout, obs_batch[0], jnp.arange(num_rollouts)
+    )
 
     return rollouts

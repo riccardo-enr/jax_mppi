@@ -184,7 +184,9 @@ def _kernel_interpolate(
 
     # Solve: Ktktk @ weights.T = K.T for weights
     # This gives weights = K @ inv(Ktktk)
-    weights = jax.scipy.linalg.solve(Ktktk, K.T, assume_a="pos").T  # (T, num_support_pts)
+    weights = jax.scipy.linalg.solve(
+        Ktktk, K.T, assume_a="pos"
+    ).T  # (T, num_support_pts)
 
     # Interpolate: U(t) = weights @ control_points
     interpolated = weights @ control_points  # (T, nu)
@@ -279,7 +281,9 @@ def _single_rollout_costs(
 
     def step_fn(state, inputs):
         t, action = inputs
-        next_state = _call_dynamics(dynamics, state, action, t, config.step_dependent_dynamics)
+        next_state = _call_dynamics(
+            dynamics, state, action, t, config.step_dependent_dynamics
+        )
         cost_state = _state_for_cost(state, config.nx)
         step_cost = _call_running_cost(
             running_cost, cost_state, action, t, config.step_dependent_dynamics
@@ -327,7 +331,9 @@ def _compute_noise_cost(
         return jnp.sum(jnp.abs(noise), axis=(1, 2))
     else:
         # Quadratic cost in control point space
-        costs_per_point = jax.vmap(jax.vmap(lambda n: n @ noise_sigma_inv @ n))(noise)
+        costs_per_point = jax.vmap(jax.vmap(lambda n: n @ noise_sigma_inv @ n))(
+            noise
+        )
         return jnp.sum(costs_per_point, axis=1)
 
 
@@ -501,19 +507,29 @@ def command(
     )
 
     # Perturb control points
-    perturbed_theta = kmppi_state.theta[None, :, :] + noise_theta  # (K, num_support_pts, nu)
-    perturbed_theta = _bound_action(perturbed_theta, kmppi_state.u_min, kmppi_state.u_max)
+    perturbed_theta = (
+        kmppi_state.theta[None, :, :] + noise_theta
+    )  # (K, num_support_pts, nu)
+    perturbed_theta = _bound_action(
+        perturbed_theta, kmppi_state.u_min, kmppi_state.u_max
+    )
 
     # Effective noise after bounding
     effective_noise_theta = perturbed_theta - kmppi_state.theta[None, :, :]
 
     # Interpolate perturbed control points to full trajectories
     def interpolate_single(theta_single):
-        U_interp, _ = _kernel_interpolate(kmppi_state.Hs, kmppi_state.Tk, theta_single, kernel_fn)
+        U_interp, _ = _kernel_interpolate(
+            kmppi_state.Hs, kmppi_state.Tk, theta_single, kernel_fn
+        )
         return U_interp
 
-    perturbed_actions = jax.vmap(interpolate_single)(perturbed_theta)  # (K, T, nu)
-    perturbed_actions = _bound_action(perturbed_actions, kmppi_state.u_min, kmppi_state.u_max)
+    perturbed_actions = jax.vmap(interpolate_single)(
+        perturbed_theta
+    )  # (K, T, nu)
+    perturbed_actions = _bound_action(
+        perturbed_actions, kmppi_state.u_min, kmppi_state.u_max
+    )
 
     # Compute rollout costs
     rollout_costs = _compute_rollout_costs(
@@ -539,11 +555,15 @@ def command(
     weights = _compute_weights(total_costs, config.lambda_)
 
     # Update control points (optimization in control point space)
-    delta_theta = jnp.sum(weights[:, None, None] * effective_noise_theta, axis=0)
+    delta_theta = jnp.sum(
+        weights[:, None, None] * effective_noise_theta, axis=0
+    )
     new_theta = kmppi_state.theta + delta_theta
 
     # Interpolate updated control points to get full trajectory
-    new_U, _ = _kernel_interpolate(kmppi_state.Hs, kmppi_state.Tk, new_theta, kernel_fn)
+    new_U, _ = _kernel_interpolate(
+        kmppi_state.Hs, kmppi_state.Tk, new_theta, kernel_fn
+    )
 
     # Update state
     new_state = replace(
@@ -563,27 +583,36 @@ def command(
             kernel_fn,
         )
         # Also shift U (via interpolation)
-        shifted_U, _ = _kernel_interpolate(new_state.Hs, new_state.Tk, shifted_theta, kernel_fn)
+        shifted_U, _ = _kernel_interpolate(
+            new_state.Hs, new_state.Tk, shifted_theta, kernel_fn
+        )
         new_state = replace(new_state, U=shifted_U, theta=shifted_theta)
 
     # Extract action to return
     if config.u_per_command == 1:
         action = new_state.U[0] * config.u_scale
     else:
-        action = new_state.U[: config.u_per_command].reshape(-1) * config.u_scale
+        action = (
+            new_state.U[: config.u_per_command].reshape(-1) * config.u_scale
+        )
 
     return action, new_state
 
 
 def reset(
-    config: KMPPIConfig, kmppi_state: KMPPIState, kernel_fn: TimeKernel, key: jax.Array
+    config: KMPPIConfig,
+    kmppi_state: KMPPIState,
+    kernel_fn: TimeKernel,
+    key: jax.Array,
 ) -> KMPPIState:
     """Reset KMPPI state with new random key."""
     # Reset control points to zeros
     theta_reset = jnp.zeros_like(kmppi_state.theta)
 
     # Interpolate to get U
-    U_reset, _ = _kernel_interpolate(kmppi_state.Hs, kmppi_state.Tk, theta_reset, kernel_fn)
+    U_reset, _ = _kernel_interpolate(
+        kmppi_state.Hs, kmppi_state.Tk, theta_reset, kernel_fn
+    )
 
     return replace(
         kmppi_state,
@@ -618,7 +647,9 @@ def get_rollouts(
 
         def step_fn(s, inputs):
             t, action = inputs
-            next_s = _call_dynamics(dynamics, s, action, t, config.step_dependent_dynamics)
+            next_s = _call_dynamics(
+                dynamics, s, action, t, config.step_dependent_dynamics
+            )
             next_s_trimmed = _state_for_cost(next_s, config.nx)
             return next_s, next_s_trimmed
 
@@ -627,7 +658,9 @@ def get_rollouts(
 
         # Prepend initial state
         initial_state = _state_for_cost(state, config.nx)
-        full_trajectory = jnp.concatenate([initial_state[None, :], trajectory], axis=0)
+        full_trajectory = jnp.concatenate(
+            [initial_state[None, :], trajectory], axis=0
+        )
 
         return state, full_trajectory
 
@@ -638,6 +671,8 @@ def get_rollouts(
         obs_batch = current_obs
 
     # Generate multiple rollouts
-    _, rollouts = jax.lax.scan(single_rollout, obs_batch[0], jnp.arange(num_rollouts))
+    _, rollouts = jax.lax.scan(
+        single_rollout, obs_batch[0], jnp.arange(num_rollouts)
+    )
 
     return rollouts

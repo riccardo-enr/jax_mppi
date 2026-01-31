@@ -18,7 +18,9 @@ def pendulum_dynamics(state: jax.Array, action: jax.Array) -> jax.Array:
     torque = action[0]
 
     torque = jnp.clip(torque, -2.0, 2.0)
-    theta_ddot = (torque - m * g * length * jnp.sin(theta)) / (m * length * length)
+    theta_ddot = (torque - m * g * length * jnp.sin(theta)) / (
+        m * length * length
+    )
 
     theta_dot_next = theta_dot + theta_ddot * dt
     theta_next = theta + theta_dot_next * dt
@@ -39,7 +41,9 @@ def pendulum_cost(state: jax.Array, action: jax.Array) -> jax.Array:
     return angle_cost + velocity_cost + control_cost
 
 
-def pendulum_terminal_cost(state: jax.Array, last_action: jax.Array) -> jax.Array:
+def pendulum_terminal_cost(
+    state: jax.Array, last_action: jax.Array
+) -> jax.Array:
     """Terminal cost for pendulum.
 
     Args:
@@ -184,7 +188,9 @@ class TestPendulumIntegration:
         )
 
         # Should be closer to upright than hanging
-        assert jnp.abs(state[0]) < jnp.abs(jnp.pi), f"Still far from upright: theta={state[0]:.2f}"
+        assert jnp.abs(state[0]) < jnp.abs(jnp.pi), (
+            f"Still far from upright: theta={state[0]:.2f}"
+        )
 
     def test_mppi_respects_torque_bounds(self):
         """Test that MPPI respects control bounds."""
@@ -231,7 +237,9 @@ class TestPendulumIntegration:
         states = jnp.linspace(-jnp.pi, jnp.pi, 100)
         action = jnp.array([0.0])
 
-        costs = jnp.array([pendulum_cost(jnp.array([theta, 0.0]), action) for theta in states])
+        costs = jnp.array(
+            [pendulum_cost(jnp.array([theta, 0.0]), action) for theta in states]
+        )
 
         # Check no large jumps
         cost_diffs = jnp.abs(jnp.diff(costs))

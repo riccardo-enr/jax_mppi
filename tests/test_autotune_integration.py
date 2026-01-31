@@ -13,6 +13,7 @@ class TestAutotuneMPPI:
 
     def test_autotune_lambda_improves_performance(self):
         """Verify that lambda tuning can find better parameters."""
+
         # Simple 1D dynamics: x' = x + u * dt
         def dynamics(state, action):
             return state + action * 0.1
@@ -62,10 +63,13 @@ class TestAutotuneMPPI:
         cost_mid = evaluate_lambda(2.0)  # Medium
 
         # At least one should be better than the highest
-        assert min(cost_low, cost_mid) < cost_high, "Lower lambda should improve cost"
+        assert min(cost_low, cost_mid) < cost_high, (
+            "Lower lambda should improve cost"
+        )
 
     def test_autotune_runs_successfully(self):
         """Verify that Autotune can run end-to-end with MPPI."""
+
         # Simple dynamics
         def dynamics(state, action):
             return state + action * 0.1

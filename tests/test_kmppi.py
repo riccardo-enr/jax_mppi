@@ -84,7 +84,9 @@ class TestKMPPIBasics:
         nx, nu = 2, 1
         noise_sigma = jnp.eye(nu)
 
-        config, state, kernel_fn = kmppi.create(nx=nx, nu=nu, noise_sigma=noise_sigma)
+        config, state, kernel_fn = kmppi.create(
+            nx=nx, nu=nu, noise_sigma=noise_sigma
+        )
 
         assert isinstance(config, kmppi.KMPPIConfig)
         assert isinstance(state, kmppi.KMPPIState)
@@ -168,7 +170,9 @@ class TestKernelInterpolation:
         tk = jnp.linspace(0, 10, 5)  # 5 control points
         control_values = jnp.ones((5, 2))  # 5 control points, 2D actions
 
-        interpolated, K = kmppi._kernel_interpolate(t, tk, control_values, kernel_fn)
+        interpolated, K = kmppi._kernel_interpolate(
+            t, tk, control_values, kernel_fn
+        )
 
         assert interpolated.shape == (20, 2)
         assert K.shape == (20, 5)
@@ -180,7 +184,9 @@ class TestKernelInterpolation:
         tk = jnp.array([0.0, 5.0, 10.0])
         control_values = jnp.array([[1.0], [2.0], [3.0]])
 
-        interpolated, _ = kmppi._kernel_interpolate(tk, tk, control_values, kernel_fn)
+        interpolated, _ = kmppi._kernel_interpolate(
+            tk, tk, control_values, kernel_fn
+        )
 
         # Should pass through control points (within numerical precision)
         assert jnp.allclose(interpolated, control_values, atol=1e-5)
@@ -195,7 +201,9 @@ class TestKernelInterpolation:
 
         # Interpolate to fine grid
         t = jnp.linspace(0, 10, 100)
-        interpolated, _ = kmppi._kernel_interpolate(t, tk, control_values, kernel_fn)
+        interpolated, _ = kmppi._kernel_interpolate(
+            t, tk, control_values, kernel_fn
+        )
 
         # Check that trajectory is smooth (bounded second derivative)
         diffs = jnp.diff(interpolated[:, 0])
@@ -414,11 +422,17 @@ class TestKMPPIShift:
 
         # Manually shift
         shifted_theta = kmppi._shift_control_points(
-            state.theta, state.Tk, state.u_init, shift_steps=1, kernel_fn=kernel_fn
+            state.theta,
+            state.Tk,
+            state.u_init,
+            shift_steps=1,
+            kernel_fn=kernel_fn,
         )
 
         # Interpolate shifted theta
-        shifted_U, _ = kmppi._kernel_interpolate(state.Hs, state.Tk, shifted_theta, kernel_fn)
+        shifted_U, _ = kmppi._kernel_interpolate(
+            state.Hs, state.Tk, shifted_theta, kernel_fn
+        )
 
         # Shapes should be preserved
         assert shifted_theta.shape == state.theta.shape

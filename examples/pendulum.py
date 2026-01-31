@@ -40,7 +40,9 @@ def pendulum_dynamics(state: jax.Array, action: jax.Array) -> jax.Array:
     torque = jnp.clip(torque, -2.0, 2.0)
 
     # Pendulum dynamics: theta_ddot = (torque - m*g*length*sin(theta)) / (m*length^2)
-    theta_ddot = (torque - m * g * length * jnp.sin(theta)) / (m * length * length)
+    theta_ddot = (torque - m * g * length * jnp.sin(theta)) / (
+        m * length * length
+    )
 
     # Euler integration
     theta_dot_next = theta_dot + theta_ddot * dt
@@ -79,7 +81,9 @@ def pendulum_cost(state: jax.Array, action: jax.Array) -> jax.Array:
     return angle_cost + velocity_cost + control_cost
 
 
-def pendulum_terminal_cost(state: jax.Array, last_action: jax.Array) -> jax.Array:
+def pendulum_terminal_cost(
+    state: jax.Array, last_action: jax.Array
+) -> jax.Array:
     """Terminal cost for pendulum.
 
     Args:
@@ -235,7 +239,9 @@ def run_pendulum_mppi(
     if env is not None:
         env.close()
 
-    print(f"\nFinal state: theta={states[-1, 0]:.3f}, theta_dot={states[-1, 1]:.3f}")
+    print(
+        f"\nFinal state: theta={states[-1, 0]:.3f}, theta_dot={states[-1, 1]:.3f}"
+    )
     print(f"Total cost: {jnp.sum(costs_history):.2f}")
     print(f"Final 10-step avg cost: {jnp.mean(costs_history[-10:]):.3f}")
 
@@ -265,7 +271,9 @@ def run_pendulum_mppi(
 
             # Plot control
             time_actions = jnp.arange(len(actions_taken)) * 0.05
-            axes[2].plot(time_actions, actions_taken[:, 0], label="torque", color="green")
+            axes[2].plot(
+                time_actions, actions_taken[:, 0], label="torque", color="green"
+            )
             axes[2].axhline(0, color="k", linestyle="--", alpha=0.3)
             axes[2].set_ylabel("Torque (N·m)")
             axes[2].set_xlabel("Time (s)")
@@ -299,13 +307,25 @@ if __name__ == "__main__":
         default=None,
         help="Number of control steps (default: 100, or infinite with --render)",
     )
-    parser.add_argument("--samples", type=int, default=1000, help="Number of MPPI samples")
-    parser.add_argument("--horizon", type=int, default=30, help="MPPI planning horizon")
     parser.add_argument(
-        "--lambda", type=float, default=1.0, dest="lambda_", help="MPPI temperature"
+        "--samples", type=int, default=1000, help="Number of MPPI samples"
     )
-    parser.add_argument("--visualize", action="store_true", help="Plot results with matplotlib")
-    parser.add_argument("--render", action="store_true", help="Render with gymnasium (animated)")
+    parser.add_argument(
+        "--horizon", type=int, default=30, help="MPPI planning horizon"
+    )
+    parser.add_argument(
+        "--lambda",
+        type=float,
+        default=1.0,
+        dest="lambda_",
+        help="MPPI temperature",
+    )
+    parser.add_argument(
+        "--visualize", action="store_true", help="Plot results with matplotlib"
+    )
+    parser.add_argument(
+        "--render", action="store_true", help="Render with gymnasium (animated)"
+    )
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
 
     args = parser.parse_args()

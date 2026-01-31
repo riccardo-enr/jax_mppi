@@ -96,7 +96,9 @@ def main():
     # 8. Save convergence plot to docs/media
     print("\nSaving convergence plot...")
     initial_cost = costs[0]
-    autotune.save_convergence_plot(costs, initial_cost, "docs/media/autotune_basic_convergence.png")
+    autotune.save_convergence_plot(
+        costs, initial_cost, "docs/media/autotune_basic_convergence.png"
+    )
 
 
 if __name__ == "__main__":

@@ -5,7 +5,9 @@ from typing import Callable, Optional
 import jax.numpy as jnp
 from jaxtyping import Array, Float
 
-CostFn = Callable[[Float[Array, "nx"], Optional[Float[Array, "nu"]]], Float[Array, ""]]
+CostFn = Callable[
+    [Float[Array, "nx"], Optional[Float[Array, "nu"]]], Float[Array, ""]
+]
 
 
 def create_lqr_cost(

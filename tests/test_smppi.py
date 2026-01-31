@@ -90,7 +90,9 @@ class TestSMPPIBasics:
 
         assert isinstance(reconstructed, smppi.SMPPIState)
         assert jnp.allclose(reconstructed.U, state.U)
-        assert jnp.allclose(reconstructed.action_sequence, state.action_sequence)
+        assert jnp.allclose(
+            reconstructed.action_sequence, state.action_sequence
+        )
 
 
 class TestSMPPICommand:
@@ -174,11 +176,17 @@ class TestSMPPICommand:
         )
 
         # Action sequence should have changed from zeros
-        assert not jnp.allclose(new_state.action_sequence, state.action_sequence, atol=1e-6)
+        assert not jnp.allclose(
+            new_state.action_sequence, state.action_sequence, atol=1e-6
+        )
 
         # Relationship: action_sequence = old_action_sequence + U * delta_t
-        expected_action_seq = state.action_sequence + new_state.U * config.delta_t
-        assert jnp.allclose(new_state.action_sequence, expected_action_seq, atol=1e-5)
+        expected_action_seq = (
+            state.action_sequence + new_state.U * config.delta_t
+        )
+        assert jnp.allclose(
+            new_state.action_sequence, expected_action_seq, atol=1e-5
+        )
 
     def test_command_is_jit_compatible(self):
         """Test that command can be JIT compiled."""
@@ -261,7 +269,9 @@ class TestSMPPISmoothness:
 
         # Compute action variation (sum of squared differences)
         var_rough = jnp.sum(jnp.diff(state_rough.action_sequence, axis=0) ** 2)
-        var_smooth = jnp.sum(jnp.diff(state_smooth.action_sequence, axis=0) ** 2)
+        var_smooth = jnp.sum(
+            jnp.diff(state_smooth.action_sequence, axis=0) ** 2
+        )
 
         # Smooth should have lower variation
         # These are JAX arrays, so they are not None.

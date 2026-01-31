@@ -62,7 +62,9 @@ class TestParameterFlattening:
 
     def test_lambda_parameter_validation(self):
         """LambdaParameter enforces minimum value."""
-        config, state = mppi.create(nx=2, nu=1, horizon=10, noise_sigma=jnp.eye(1) * 0.5)
+        config, state = mppi.create(
+            nx=2, nu=1, horizon=10, noise_sigma=jnp.eye(1) * 0.5
+        )
         holder = autotune.ConfigStateHolder(config, state)
         param = autotune.LambdaParameter(holder, min_value=0.5)
 
@@ -95,7 +97,9 @@ class TestParameterFlattening:
 
     def test_noise_sigma_parameter_application(self):
         """NoiseSigmaParameter updates state.noise_sigma."""
-        config, state = mppi.create(nx=2, nu=2, horizon=10, noise_sigma=jnp.eye(2) * 0.5)
+        config, state = mppi.create(
+            nx=2, nu=2, horizon=10, noise_sigma=jnp.eye(2) * 0.5
+        )
         holder = autotune.ConfigStateHolder(config, state)
         param = autotune.NoiseSigmaParameter(holder)
 
@@ -128,7 +132,9 @@ class TestParameterFlattening:
 
     def test_mu_parameter_application(self):
         """MuParameter updates state.noise_mu."""
-        config, state = mppi.create(nx=2, nu=2, horizon=10, noise_sigma=jnp.eye(2) * 0.5)
+        config, state = mppi.create(
+            nx=2, nu=2, horizon=10, noise_sigma=jnp.eye(2) * 0.5
+        )
         holder = autotune.ConfigStateHolder(config, state)
         param = autotune.MuParameter(holder)
 
@@ -139,7 +145,9 @@ class TestParameterFlattening:
 
     def test_horizon_parameter_extraction(self):
         """HorizonParameter extracts horizon from config."""
-        config, state = mppi.create(nx=2, nu=1, horizon=15, noise_sigma=jnp.eye(1) * 0.5)
+        config, state = mppi.create(
+            nx=2, nu=1, horizon=15, noise_sigma=jnp.eye(1) * 0.5
+        )
         holder = autotune.ConfigStateHolder(config, state)
         param = autotune.HorizonParameter(holder)
 
@@ -149,7 +157,9 @@ class TestParameterFlattening:
 
     def test_horizon_parameter_validation(self):
         """HorizonParameter clips and rounds horizon."""
-        config, state = mppi.create(nx=2, nu=1, horizon=10, noise_sigma=jnp.eye(1) * 0.5)
+        config, state = mppi.create(
+            nx=2, nu=1, horizon=10, noise_sigma=jnp.eye(1) * 0.5
+        )
         holder = autotune.ConfigStateHolder(config, state)
         param = autotune.HorizonParameter(holder, min_value=5, max_value=20)
 
@@ -162,7 +172,9 @@ class TestParameterFlattening:
 
     def test_horizon_parameter_application(self):
         """HorizonParameter updates config.horizon and resizes U."""
-        config, state = mppi.create(nx=2, nu=2, horizon=10, noise_sigma=jnp.eye(2) * 0.5)
+        config, state = mppi.create(
+            nx=2, nu=2, horizon=10, noise_sigma=jnp.eye(2) * 0.5
+        )
         holder = autotune.ConfigStateHolder(config, state)
         param = autotune.HorizonParameter(holder)
 
@@ -238,7 +250,9 @@ class TestAutotuneCore:
 
     def test_autotune_with_single_param(self):
         """Autotune works with a single parameter."""
-        config, state = mppi.create(nx=2, nu=1, horizon=10, noise_sigma=jnp.eye(1) * 0.5)
+        config, state = mppi.create(
+            nx=2, nu=1, horizon=10, noise_sigma=jnp.eye(1) * 0.5
+        )
         holder = autotune.ConfigStateHolder(config, state)
 
         def dummy_evaluate():
@@ -296,7 +310,9 @@ class TestAutotuneCore:
             def optimize_step(self):
                 raise NotImplementedError()
 
-        config, state = mppi.create(nx=2, nu=1, horizon=10, noise_sigma=jnp.eye(1) * 0.5)
+        config, state = mppi.create(
+            nx=2, nu=1, horizon=10, noise_sigma=jnp.eye(1) * 0.5
+        )
         holder = autotune.ConfigStateHolder(config, state)
 
         def dummy_evaluate():

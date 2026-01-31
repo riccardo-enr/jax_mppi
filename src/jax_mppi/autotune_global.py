@@ -350,7 +350,9 @@ class AutotuneGlobal(Autotune):
             for param in self.params_to_tune:
                 if param.dim() == 1:
                     # Single-valued parameter
-                    param_values[param.name()] = np.array([config[param.name()]])
+                    param_values[param.name()] = np.array(
+                        [config[param.name()]]
+                    )
                 else:
                     # Multi-valued parameter
                     values = []
@@ -407,12 +409,19 @@ class AutotuneGlobal(Autotune):
             if param.dim() == 1:
                 value = np.array([best_config[param.name()]])
             else:
-                value = np.array([best_config[f"{param.name()}_{i}"] for i in range(param.dim())])
+                value = np.array(
+                    [
+                        best_config[f"{param.name()}_{i}"]
+                        for i in range(param.dim())
+                    ]
+                )
             validated = param.ensure_valid_value(value)
             param.apply_parameter_value(validated)
 
         final_result = self.evaluate_fn()
-        self.best_result = final_result._replace(params=best_config, iteration=iterations)
+        self.best_result = final_result._replace(
+            params=best_config, iteration=iterations
+        )
 
         return self.best_result
 
@@ -454,8 +463,19 @@ def save_search_progress_plot(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     plt.figure(figsize=kwargs.get("figsize", (10, 6)))
-    plt.plot(iteration_costs, marker="o", linewidth=2, markersize=6, label="Best Cost")
-    plt.fill_between(range(len(iteration_costs)), iteration_costs, alpha=0.3, label="Running Best")
+    plt.plot(
+        iteration_costs,
+        marker="o",
+        linewidth=2,
+        markersize=6,
+        label="Best Cost",
+    )
+    plt.fill_between(
+        range(len(iteration_costs)),
+        iteration_costs,
+        alpha=0.3,
+        label="Running Best",
+    )
     plt.xlabel("Iteration", fontsize=12)
     plt.ylabel("Cost", fontsize=12)
     plt.title(title, fontsize=14)

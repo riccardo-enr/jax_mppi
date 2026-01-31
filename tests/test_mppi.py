@@ -10,7 +10,9 @@ def test_mppi_create():
     noise_sigma = jnp.eye(nu) * 0.1
     horizon = 20
 
-    config, state = mppi.create(nx=nx, nu=nu, noise_sigma=noise_sigma, horizon=horizon)
+    config, state = mppi.create(
+        nx=nx, nu=nu, noise_sigma=noise_sigma, horizon=horizon
+    )
 
     assert config.nx == nx
     assert config.nu == nu

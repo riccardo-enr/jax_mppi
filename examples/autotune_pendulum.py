@@ -40,7 +40,9 @@ def pendulum_dynamics(state, action, dt=0.05):
     u = action[0]
 
     # Dynamics: theta_ddot = (u - mgl*sin(theta) - b*theta_dot) / (ml^2)
-    theta_ddot = (u - m * g * length * jnp.sin(theta) - b * theta_dot) / (m * length**2)
+    theta_ddot = (u - m * g * length * jnp.sin(theta) - b * theta_dot) / (
+        m * length**2
+    )
 
     # Euler integration
     theta_new = theta + theta_dot * dt
@@ -90,7 +92,9 @@ def terminal_cost(state, action):
     return pendulum_cost(state, action) * 10.0
 
 
-def evaluate_mppi_performance(config, state, num_episodes=5, episode_length=100):
+def evaluate_mppi_performance(
+    config, state, num_episodes=5, episode_length=100
+):
     """Evaluate MPPI performance over multiple episodes.
 
     Args:
@@ -136,7 +140,9 @@ def evaluate_mppi_performance(config, state, num_episodes=5, episode_length=100)
 def main():
     """Run autotuning example."""
     parser = argparse.ArgumentParser(description="Autotune MPPI for pendulum.")
-    parser.add_argument("--population", type=int, default=8, help="CMA-ES population size")
+    parser.add_argument(
+        "--population", type=int, default=8, help="CMA-ES population size"
+    )
     args = parser.parse_args()
 
     print("=" * 60)
@@ -144,7 +150,9 @@ def main():
     print("=" * 60)
 
     # Create initial MPPI configuration with suboptimal parameters
-    print("\n1. Creating MPPI controller with initial (suboptimal) parameters...")
+    print(
+        "\n1. Creating MPPI controller with initial (suboptimal) parameters..."
+    )
     config, state = mppi.create(
         nx=2,  # state dim: [theta, theta_dot]
         nu=1,  # action dim: [torque]
@@ -233,8 +241,12 @@ def main():
 
     # Convergence plot
     axes[0].plot(costs, marker="o", linewidth=2, markersize=6, label="Current")
-    axes[0].axhline(y=initial_cost, color="r", linestyle="--", linewidth=2, label="Initial")
-    axes[0].axhline(y=best.mean_cost, color="g", linestyle="--", linewidth=2, label="Best")
+    axes[0].axhline(
+        y=initial_cost, color="r", linestyle="--", linewidth=2, label="Initial"
+    )
+    axes[0].axhline(
+        y=best.mean_cost, color="g", linestyle="--", linewidth=2, label="Best"
+    )
     axes[0].set_xlabel("Iteration", fontsize=12)
     axes[0].set_ylabel("Cost", fontsize=12)
     axes[0].set_title("Autotuning Convergence", fontsize=13)

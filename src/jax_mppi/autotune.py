@@ -355,7 +355,9 @@ class HorizonParameter(TunableParameter):
 
         if new_horizon > old_horizon:
             # Extend with u_init
-            extension = jnp.tile(self.holder.state.u_init, (new_horizon - old_horizon, 1))
+            extension = jnp.tile(
+                self.holder.state.u_init, (new_horizon - old_horizon, 1)
+            )
             new_U = jnp.concatenate([old_U, extension], axis=0)
         else:
             # Truncate
@@ -369,11 +371,15 @@ class HorizonParameter(TunableParameter):
             # SMPPI: also resize action_sequence
             old_seq = self.holder.state.action_sequence
             if new_horizon > old_horizon:
-                extension = jnp.tile(self.holder.state.u_init, (new_horizon - old_horizon, 1))
+                extension = jnp.tile(
+                    self.holder.state.u_init, (new_horizon - old_horizon, 1)
+                )
                 new_seq = jnp.concatenate([old_seq, extension], axis=0)
             else:
                 new_seq = old_seq[:new_horizon]
-            self.holder.state = replace(self.holder.state, action_sequence=new_seq)
+            self.holder.state = replace(
+                self.holder.state, action_sequence=new_seq
+            )
 
         if hasattr(self.holder.state, "theta"):
             # KMPPI: rebuild time grids and reinterpolate
@@ -584,7 +590,10 @@ class Autotune:
             self.iteration_count += 1
 
             # Update best result
-            if self.best_result is None or result.mean_cost < self.best_result.mean_cost:
+            if (
+                self.best_result is None
+                or result.mean_cost < self.best_result.mean_cost
+            ):
                 self.best_result = result
 
             return result
@@ -595,7 +604,9 @@ class Autotune:
         """Flatten all parameters to 1D array."""
         return flatten_params(self.params_to_tune)
 
-    def unflatten_params(self, x: np.ndarray, apply: bool = True) -> dict[str, np.ndarray]:
+    def unflatten_params(
+        self, x: np.ndarray, apply: bool = True
+    ) -> dict[str, np.ndarray]:
         """Unflatten parameter vector and optionally apply."""
         return unflatten_params(x, self.params_to_tune, apply=apply)
 
@@ -673,9 +684,13 @@ def save_convergence_plot(
 
     plt.figure(figsize=kwargs.get("figsize", (10, 6)))
     plt.plot(costs, marker="o", linewidth=2, markersize=6, label="Current")
-    plt.axhline(y=initial_cost, color="r", linestyle="--", linewidth=2, label="Initial")
+    plt.axhline(
+        y=initial_cost, color="r", linestyle="--", linewidth=2, label="Initial"
+    )
     if costs:
-        plt.axhline(y=min(costs), color="g", linestyle="--", linewidth=2, label="Best")
+        plt.axhline(
+            y=min(costs), color="g", linestyle="--", linewidth=2, label="Best"
+        )
     plt.xlabel("Iteration", fontsize=12)
     plt.ylabel("Cost", fontsize=12)
     plt.title(title, fontsize=14)

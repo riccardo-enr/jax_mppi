@@ -182,7 +182,9 @@ class CMAMEOpt(Optimizer):
         best_idx = np.argmax(objectives)
         return results[best_idx]
 
-    def get_diverse_top_parameters(self, n: int = 10) -> List[Tuple[np.ndarray, float, np.ndarray]]:
+    def get_diverse_top_parameters(
+        self, n: int = 10
+    ) -> List[Tuple[np.ndarray, float, np.ndarray]]:
         """Get diverse set of top-performing parameters from archive.
 
         Args:
@@ -211,7 +213,9 @@ class CMAMEOpt(Optimizer):
             # Objective is negative cost, so negate to get cost
             cost = -row["objective"]
             # Behavior is stored in columns like "behavior_0", "behavior_1", etc.
-            behavior = np.array([row[f"index_{i}"] for i in range(self.behavior_dim)])
+            behavior = np.array(
+                [row[f"index_{i}"] for i in range(self.behavior_dim)]
+            )
             results.append((params, cost, behavior))
 
         return results
@@ -260,7 +264,14 @@ def save_qd_heatmap(
     fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 6)))
 
     # Plot convergence
-    ax.plot(costs, marker="o", linewidth=2, markersize=6, label="Best Cost", color="blue")
+    ax.plot(
+        costs,
+        marker="o",
+        linewidth=2,
+        markersize=6,
+        label="Best Cost",
+        color="blue",
+    )
     ax.fill_between(range(len(costs)), costs, alpha=0.2, color="blue")
     ax.set_xlabel("Iteration", fontsize=12)
     ax.set_ylabel("Cost", fontsize=12)
