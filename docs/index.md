@@ -84,6 +84,8 @@ for _ in range(100):
 ```
 jax_mppi/
 ├── src/jax_mppi/
+│   ├── costs/               # Cost function utilities
+│   ├── dynamics/            # Dynamics model utilities
 │   ├── mppi.py              # Core MPPI implementation
 │   ├── smppi.py             # Smooth MPPI variant
 │   ├── kmppi.py             # Kernel MPPI variant
