@@ -38,6 +38,16 @@ ignore = []
 "src/jax_mppi/kmppi.py" = ["E402"]
 "src/jax_mppi/smppi.py" = ["E402"]
 
+[tool.basedpyright]
+typeCheckingMode = "basic"
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+reportAny = false
+reportPrivateLocalImportUsage = false
+reportPrivateUsage = false
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"

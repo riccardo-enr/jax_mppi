@@ -154,7 +154,7 @@ def run_pendulum_mppi(
 
             env = gym.make("Pendulum-v1", render_mode="human")
             # Reset to get initial observation
-            env.reset(seed=seed)
+            _ = env.reset(seed=seed)
         except ImportError:
             print("Gymnasium not available for rendering")
             render = False

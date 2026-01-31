@@ -1,5 +1,7 @@
 """Unit tests for Smooth MPPI (SMPPI) implementation."""
 
+import sys
+
 import jax
 import jax.numpy as jnp
 import pytest
@@ -591,4 +593,4 @@ class TestSMPPIIntegration:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    sys.exit(pytest.main([__file__, "-v"]))
