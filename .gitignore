@@ -4,4 +4,7 @@ __pycache__/
 .pytest_cache/
 build/
 dist/
+
+# UV
 .venv/
+uv.lock
