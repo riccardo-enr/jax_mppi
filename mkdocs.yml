@@ -1,7 +1,7 @@
 site_name: jax_mppi
 site_description: JAX implementation of Model Predictive Path Integral (MPPI) control
-site_url: https://github.com/yourusername/jax_mppi
-repo_url: https://github.com/yourusername/jax_mppi
+site_url: https://github.com/riccardo-enr/jax_mppi
+repo_url: https://github.com/riccardo-enr/jax_mppi
 repo_name: jax_mppi
 
 theme:
