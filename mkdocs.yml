@@ -27,6 +27,14 @@ theme:
 extra_css:
     - stylesheets/extra.css
 
+extra_javascript:
+    - javascripts/mathjax.js
+    - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+markdown_extensions:
+    - pymdownx.arithmatex:
+          generic: true
+
 plugins:
     - search
     - mkdocstrings:
@@ -36,6 +44,7 @@ plugins:
 
 nav:
     - Home: index.md
+    - Theory: theory.md
     - Autotuning Guide: autotuning.md
     - API Reference:
           - mppi: api/mppi.md
