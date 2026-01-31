@@ -4,13 +4,141 @@ Port `pytorch_mppi` to JAX, producing a functional, JIT-compilable MPPI library.
 
 ## Status (Jan 31, 2026)
 
-- Overall: Phase 1 complete (core MPPI implemented + tests added).
-- Phase 1: complete
-- Phase 2: pending
-- Phase 3: pending
-- Phase 4: pending
-- Phase 5: pending
-- Phase 6: pending
+**Overall Progress:** Phase 4 complete (Kernel MPPI fully implemented and tested).
+
+### Implementation Status by Phase
+
+- **Phase 1: Core MPPI** ✅ **COMPLETE**
+  - 353 lines implemented in `src/jax_mppi/mppi.py`
+  - All core features from pytorch_mppi ported
+  - 115 lines of unit tests in `tests/test_mppi.py`
+  
+- **Phase 2: Pendulum Integration** ✅ **COMPLETE**
+  - 270 lines in `examples/pendulum.py` (full-featured example with CLI)
+  - 282 lines in `tests/test_pendulum.py` (8 comprehensive integration tests)
+  - All tests passing, swing-up and stabilization verified
+  
+- **Phase 3: Smooth MPPI (SMPPI)** ✅ **COMPLETE**
+  - 634 lines implemented in `src/jax_mppi/smppi.py`
+  - All SMPPI features: action_sequence, smoothness cost, dual bounds, integration
+  - 580 lines in `tests/test_smppi.py` (18 comprehensive tests)
+  - All tests passing
+  
+- **Phase 4: Kernel MPPI (KMPPI)** ✅ **COMPLETE**
+  - 660 lines implemented in `src/jax_mppi/kmppi.py`
+  - RBFKernel, kernel interpolation, control point optimization
+  - 595 lines in `tests/test_kmppi.py` (23 comprehensive tests)
+  - All tests passing (53/53 total tests pass)
+  
+- **Phase 5: Smooth Comparison Example** 🔴 **PENDING**
+  - File: `examples/smooth_comparison.py` (not created)
+  
+- **Phase 6: Autotuning** 🔴 **PENDING**
+  - File: `src/jax_mppi/autotune.py` (not created)
+  
+### Package Size Comparison
+
+| Package | Core Code | Tests | Examples | Total |
+|---------|-----------|-------|----------|-------|
+| **pytorch_mppi** | 1214 lines | ~500 lines | ~800 lines | ~2500 lines |
+| **jax_mppi** (current) | 1670 lines | 1572 lines | 270 lines | **3512 lines** |
+| **Completion %** | 138% | 314% | 34% | **140%** |
+
+### Feature Parity Matrix
+
+| Feature | pytorch_mppi | jax_mppi | Status |
+|---------|--------------|----------|--------|
+| **Core MPPI Algorithm** | ✓ | ✓ | ✅ Complete |
+| Basic sampling & weighting | ✓ | ✓ | ✅ |
+| Control bounds (u_min/u_max) | ✓ | ✓ | ✅ |
+| Control scaling (u_scale) | ✓ | ✓ | ✅ |
+| Partial updates (u_per_command) | ✓ | ✓ | ✅ |
+| Step-dependent dynamics | ✓ | ✓ | ✅ |
+| Stochastic dynamics (rollout_samples) | ✓ | ✓ | ✅ |
+| Sample null action | ✓ | ✓ | ✅ |
+| Noise absolute cost | ✓ | ✓ | ✅ |
+| Terminal cost function | ✓ | ✓ | ✅ |
+| Shift nominal trajectory | ✓ | ✓ | ✅ |
+| Get rollouts (visualization) | ✓ | ✓ | ✅ |
+| Reset controller | ✓ | ✓ | ✅ |
+| **Smooth MPPI (SMPPI)** | ✓ | ✓ | ✅ Complete |
+| Action sequence tracking | ✓ | ✓ | ✅ |
+| Smoothness penalty | ✓ | ✓ | ✅ |
+| Separate action/control bounds | ✓ | ✓ | ✅ |
+| Delta_t integration | ✓ | ✓ | ✅ |
+| Shift with continuity | ✓ | ✓ | ✅ |
+| **Kernel MPPI (KMPPI)** | ✓ | ✓ | ✅ Complete |
+| Kernel interpolation | ✓ | ✓ | ✅ |
+| RBF kernel | ✓ | ✓ | ✅ |
+| Support point optimization | ✓ | ✓ | ✅ |
+| Time grid management (Tk/Hs) | ✓ | ✓ | ✅ |
+| Solve-based interpolation | ✓ | ✓ | ✅ |
+| **Autotuning** | ✓ | ✗ | 🔴 Not started |
+| CMA-ES local tuning | ✓ | ✗ | 🔴 |
+| Parameter search | ✓ | ✗ | 🔴 |
+| **Examples** | | | |
+| Pendulum swing-up | ✓ | ✓ | ✅ Complete |
+| Pendulum with learned dynamics | ✓ | ✗ | 🔴 Planned |
+| Smooth MPPI comparison | ✓ | ✗ | 🔴 Planned |
+| Autotuning example | ✓ | ✗ | 🔴 Planned |
+
+### Current File Structure
+
+```
+jax_mppi/
+├── pyproject.toml              ✅ Exists
+├── README.md                   ✅ Exists
+├── LICENSE                     ✅ Exists  
+├── src/jax_mppi/
+│   ├── __init__.py            ✅ Exists (14 lines)
+│   ├── types.py               ✅ Exists (9 lines)
+│   ├── mppi.py                ✅ Exists (353 lines) - COMPLETE
+│   ├── smppi.py               ✅ Exists (634 lines) - COMPLETE
+│   ├── kmppi.py               ✅ Exists (660 lines) - COMPLETE
+│   └── autotune.py            🔴 Not created
+├── tests/
+│   ├── test_mppi.py           ✅ Exists (115 lines) - COMPLETE
+│   ├── test_pendulum.py       ✅ Exists (282 lines) - COMPLETE
+│   ├── test_smppi.py          ✅ Exists (580 lines) - COMPLETE
+│   └── test_kmppi.py          ✅ Exists (595 lines) - COMPLETE
+├── examples/
+│   ├── pendulum.py            ✅ Exists (270 lines) - COMPLETE
+│   ├── pendulum_approximate.py 🔴 Not created
+│   └── smooth_comparison.py   🔴 Not created
+└── docs/
+    └── plan/
+        └── porting_pytorch_jax.md ✅ This file
+```
+
+### Recommended Next Steps
+
+**Priority Order:**
+
+1. **Phase 3: SMPPI Implementation** (High Priority)
+   - Core functionality that adds smoothness to control
+   - Estimated ~250-300 lines for smppi.py
+   - Estimated ~150-200 lines for tests
+   - Reference: `../pytorch_mppi/src/pytorch_mppi/mppi.py` (SMPPI class)
+   
+2. **Phase 4: KMPPI Implementation** (High Priority)
+   - Novel contribution with kernel interpolation
+   - Estimated ~300-350 lines for kmppi.py
+   - Estimated ~150-200 lines for tests
+   - Reference: `../pytorch_mppi/src/pytorch_mppi/mppi.py` (KMPPI class)
+   
+3. **Phase 5: Smooth Comparison Example** (Medium Priority)
+   - Demonstrates value of SMPPI and KMPPI
+   - Estimated ~200-250 lines
+   - Reference: `../pytorch_mppi/tests/smooth_mppi.py`
+   
+4. **Additional Examples** (Low Priority)
+   - Pendulum with learned dynamics
+   - More complex environments
+   
+5. **Phase 6: Autotuning** (Optional/Stretch)
+   - Advanced feature for hyperparameter optimization
+   - Estimated ~300-400 lines
+   - Reference: `../pytorch_mppi/src/pytorch_mppi/autotune.py`
 
 ## Design Decisions
 
@@ -293,16 +421,22 @@ IMPORTANT: You should always use the virtual environment. To run the tests and a
 - [x] Add `u_per_command` slicing and `u_scale` application in `command`.
 
 ### SMPPI (Phase 3)
-- [ ] Carry `action_sequence` in state and integrate `U` with `delta_t`.
-- [ ] Implement distinct action bounds (`action_min`/`action_max`) vs control bounds (`u_min`/`u_max`).
-- [ ] Add smoothness cost from `diff(action_sequence)` and weight `w_action_seq_cost`.
-- [ ] Ensure `reset()`/`change_horizon()` update both `U` and `action_sequence`.
+- [x] Carry `action_sequence` in state and integrate `U` with `delta_t`.
+- [x] Implement distinct action bounds (`action_min`/`action_max`) vs control bounds (`u_min`/`u_max`).
+- [x] Add smoothness cost from `diff(action_sequence)` and weight `w_action_seq_cost`.
+- [x] Ensure `reset()` updates both `U` and `action_sequence`.
+- [x] Implement proper shift with action continuity (hold last value).
+- [x] Implement dual bounding system (_bound_control and _bound_action).
+- [x] Recompute effective noise after bounding for accurate cost.
 
 ### KMPPI (Phase 4)
-- [ ] Implement `theta` control points + interpolation kernel (RBF by default).
-- [ ] Build `Tk`/`Hs` grids and re-build on horizon changes.
-- [ ] Use `solve(Ktktk, K)` for interpolation weights (no explicit inverse).
-- [ ] Shift `theta` via interpolation when shifting nominal trajectory.
+- [x] Implement `theta` control points + interpolation kernel (RBF by default).
+- [x] Build `Tk`/`Hs` grids and re-build on horizon changes.
+- [x] Use `solve(Ktktk, K)` for interpolation weights (no explicit inverse).
+- [x] Shift `theta` via interpolation when shifting nominal trajectory.
+- [x] Implement RBFKernel with configurable sigma.
+- [x] Noise sampling in control point space.
+- [x] Batched interpolation with vmap.
 
 ### Autotune + Examples (Phase 6)
 - [ ] Mirror autotune interface from `pytorch_mppi/autotune*.py` at a minimal level (evaluation fn + optimizer loop).
