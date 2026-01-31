@@ -143,6 +143,7 @@ def _bound_action(
     if u_min is None and u_max is None:
         return action
     if u_min is None:
+        assert u_max is not None
         return jnp.minimum(action, u_max)
     if u_max is None:
         return jnp.maximum(action, u_min)
@@ -426,7 +427,7 @@ def create(
     Hs = jnp.linspace(0, horizon - 1, horizon)  # Full trajectory times
 
     # Interpolate theta to get full trajectory U
-    U, _ = _kernel_interpolate(Hs, Tk, theta, kernel)
+    u_control, _ = _kernel_interpolate(Hs, Tk, theta, kernel)
 
     # Compute noise covariance inverse
     noise_sigma_inv = jnp.linalg.inv(noise_sigma)
@@ -451,7 +452,7 @@ def create(
 
     # Create state
     state = KMPPIState(
-        U=U,
+        U=u_control,
         u_init=u_init,
         noise_mu=noise_mu,
         noise_sigma=noise_sigma,

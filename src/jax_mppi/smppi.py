@@ -97,6 +97,7 @@ def _bound_control(
     if u_min is None and u_max is None:
         return control
     if u_min is None:
+        assert u_max is not None
         return jnp.minimum(control, u_max)
     if u_max is None:
         return jnp.maximum(control, u_min)
@@ -110,6 +111,7 @@ def _bound_action(
     if action_min is None and action_max is None:
         return action
     if action_min is None:
+        assert action_max is not None
         return jnp.minimum(action, action_max)
     if action_max is None:
         return jnp.maximum(action, action_min)

@@ -49,6 +49,7 @@ def _bound_action(action: jax.Array, u_min: Optional[jax.Array], u_max: Optional
     if u_min is None and u_max is None:
         return action
     if u_min is None:
+        assert u_max is not None
         return jnp.minimum(action, u_max)
     if u_max is None:
         return jnp.maximum(action, u_min)
