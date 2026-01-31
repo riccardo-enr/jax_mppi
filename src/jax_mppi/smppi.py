@@ -132,8 +132,8 @@ def _shift_nominal(smppi_state: SMPPIState, shift_steps: int) -> SMPPIState:
     Shifts both U (velocity) and action_sequence, maintaining continuity.
     """
     # Shift control velocity: roll left, fill end with u_init
-    U_shifted = jnp.roll(smppi_state.U, -shift_steps, axis=0)
-    U_shifted = U_shifted.at[-shift_steps:].set(smppi_state.u_init)
+    u_shifted = jnp.roll(smppi_state.U, -shift_steps, axis=0)
+    u_shifted = u_shifted.at[-shift_steps:].set(smppi_state.u_init)
 
     # Shift action sequence: roll left, hold at last value (not reset!)
     action_shifted = jnp.roll(smppi_state.action_sequence, -shift_steps, axis=0)
@@ -141,7 +141,7 @@ def _shift_nominal(smppi_state: SMPPIState, shift_steps: int) -> SMPPIState:
     last_action = smppi_state.action_sequence[-shift_steps - 1]
     action_shifted = action_shifted.at[-shift_steps:].set(last_action)
 
-    return replace(smppi_state, U=U_shifted, action_sequence=action_shifted)
+    return replace(smppi_state, U=u_shifted, action_sequence=action_shifted)
 
 
 def _sample_noise(
@@ -430,10 +430,10 @@ def create(
 
     # Initialize control velocity trajectory (U starts at zeros for SMPPI)
     if U_init is None:
-        U = jnp.zeros((horizon, nu))
+        u_control = jnp.zeros((horizon, nu))
         action_sequence = jnp.zeros((horizon, nu))
     else:
-        U = jnp.zeros_like(U_init)  # Start with zero velocity
+        u_control = jnp.zeros_like(U_init)  # Start with zero velocity
         action_sequence = U_init.copy()  # U_init is interpreted as initial actions
 
     # Compute noise covariance inverse
@@ -460,7 +460,7 @@ def create(
 
     # Create state
     state = SMPPIState(
-        U=U,
+        U=u_control,
         u_init=u_init,
         noise_mu=noise_mu,
         noise_sigma=noise_sigma,

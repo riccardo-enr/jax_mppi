@@ -70,10 +70,10 @@ def _shift_nominal(mppi_state: MPPIState, shift_steps: int) -> MPPIState:
         return mppi_state
     horizon = mppi_state.U.shape[0]
     shift_steps = int(min(shift_steps, horizon))
-    U = jnp.roll(mppi_state.U, -shift_steps, axis=0)
+    u_control = jnp.roll(mppi_state.U, -shift_steps, axis=0)
     fill = jnp.tile(mppi_state.u_init, (shift_steps, 1))
-    U = U.at[-shift_steps:].set(fill)
-    return replace(mppi_state, U=U)
+    u_control = u_control.at[-shift_steps:].set(fill)
+    return replace(mppi_state, U=u_control)
 
 def _sample_noise(
     key: jax.Array,

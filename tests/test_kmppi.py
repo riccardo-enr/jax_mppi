@@ -123,6 +123,8 @@ class TestKMPPIBasics:
             kernel=custom_kernel,
         )
 
+        # kernel_fn is typed as TimeKernel (Protocol), so basedpyright doesn't know about sigma
+        assert isinstance(kernel_fn, kmppi.RBFKernel)
         assert kernel_fn.sigma == 2.0
 
     def test_default_num_support_pts(self):
@@ -293,7 +295,8 @@ class TestKMPPICommand:
             new_state.Hs, new_state.Tk, new_state.theta, kernel_fn
         )
 
-        assert jnp.allclose(new_state.U, expected_U, atol=1e-5)
+        # These are JAX arrays, so they are not None.
+        assert jnp.allclose(new_state.U, expected_U, atol=1e-5)  # type: ignore
 
     def test_command_is_jit_compatible(self):
         """Test that command can be JIT compiled."""
@@ -519,8 +522,9 @@ class TestKMPPIBounds:
             assert jnp.all(action <= 0.5 * config.u_scale)
 
             # Check U bounds
-            assert jnp.all(state.U >= state.u_min - 1e-5)
-            assert jnp.all(state.U <= state.u_max + 1e-5)
+            # type: ignore to suppress operator '-' and '+' not supported for None
+            assert jnp.all(state.U >= state.u_min - 1e-5)  # type: ignore
+            assert jnp.all(state.U <= state.u_max + 1e-5)  # type: ignore
 
 
 class TestKMPPIIntegration:

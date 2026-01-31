@@ -7,6 +7,7 @@ The goal is to swing up and stabilize the pendulum in the upright position.
 import jax
 import jax.numpy as jnp
 
+from typing import Any, cast
 from jax_mppi import mppi
 
 
@@ -202,7 +203,9 @@ def run_pendulum_mppi(
                 # Update gymnasium environment state to match our JAX state
                 # Gymnasium Pendulum-v1 state: [cos(theta), sin(theta), theta_dot]
                 theta, theta_dot = float(state[0]), float(state[1])
-                env.unwrapped.state = jnp.array([theta, theta_dot])  # type: ignore
+                # Accessing .state on unwrapped env is dynamic, cast to Any to satisfy static analysis
+                unwrapped_env = cast(Any, env.unwrapped)
+                unwrapped_env.state = jnp.array([theta, theta_dot])
                 env.render()
 
             # Store
