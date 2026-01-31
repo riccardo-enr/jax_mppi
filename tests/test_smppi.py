@@ -360,10 +360,12 @@ class TestSMPPIBounds:
             assert jnp.all(action <= 0.5 * config.u_scale)
 
             # Check action_sequence bounds
-            # pyright: ignore[reportOptionalOperand]
-            assert jnp.all(state.action_sequence >= state.action_min - 1e-5)
-            # pyright: ignore[reportOptionalOperand]
-            assert jnp.all(state.action_sequence <= state.action_max + 1e-5)
+            action_min = state.action_min
+            action_max = state.action_max
+            assert action_min is not None
+            assert action_max is not None
+            assert jnp.all(state.action_sequence >= action_min - 1e-5)
+            assert jnp.all(state.action_sequence <= action_max + 1e-5)
 
     def test_control_bounds_are_respected(self):
         """Test that control velocities respect u_min/u_max."""
@@ -393,10 +395,12 @@ class TestSMPPIBounds:
             )
 
             # Check control velocity bounds
-            # pyright: ignore[reportOptionalOperand]
-            assert jnp.all(state.U >= state.u_min - 1e-5)
-            # pyright: ignore[reportOptionalOperand]
-            assert jnp.all(state.U <= state.u_max + 1e-5)
+            u_min = state.u_min
+            u_max = state.u_max
+            assert u_min is not None
+            assert u_max is not None
+            assert jnp.all(state.U >= u_min - 1e-5)
+            assert jnp.all(state.U <= u_max + 1e-5)
 
     def test_symmetric_bounds_inference(self):
         """Test that symmetric bounds are inferred correctly."""
@@ -411,10 +415,11 @@ class TestSMPPIBounds:
             action_min=jnp.array([-1.0]),
         )
 
-        assert state1.action_max is not None
-        assert state1.action_min is not None
-        # type: ignore to suppress operator '-' not supported for None
-        assert jnp.allclose(state1.action_max, -state1.action_min)  # type: ignore # pyright: ignore[reportOptionalOperand]
+        action_max1 = state1.action_max
+        action_min1 = state1.action_min
+        assert action_max1 is not None
+        assert action_min1 is not None
+        assert jnp.allclose(action_max1, -action_min1)
 
         # Only max specified
         config2, state2 = smppi.create(
@@ -424,10 +429,11 @@ class TestSMPPIBounds:
             action_max=jnp.array([2.0]),
         )
 
-        assert state2.action_min is not None
-        assert state2.action_max is not None
-        # type: ignore to suppress operator '-' not supported for None
-        assert jnp.allclose(state2.action_min, -state2.action_max)  # type: ignore # pyright: ignore[reportOptionalOperand]
+        action_min2 = state2.action_min
+        action_max2 = state2.action_max
+        assert action_min2 is not None
+        assert action_max2 is not None
+        assert jnp.allclose(action_min2, -action_max2)
 
 
 class TestSMPPIShift:
