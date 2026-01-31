@@ -4,7 +4,7 @@ Port `pytorch_mppi` to JAX, producing a functional, JIT-compilable MPPI library.
 
 ## Status (Jan 31, 2026)
 
-**Overall Progress:** Phase 5 complete (Smooth comparison example implemented with visualization).
+**Overall Progress:** Phase 6 complete (Autotuning system fully implemented with CMA-ES, Ray Tune, and CMA-ME support).
 
 ### Implementation Status by Phase
 
@@ -36,16 +36,25 @@ Port `pytorch_mppi` to JAX, producing a functional, JIT-compilable MPPI library.
   - Includes visualization with 4 subplots: trajectories, costs, controls, smoothness
   - Supporting modules: `src/jax_mppi/costs/` and `src/jax_mppi/dynamics/`
   
-- **Phase 6: Autotuning** 🔴 **PENDING**
-  - File: `src/jax_mppi/autotune.py` (not created)
+- **Phase 6: Autotuning** ✅ **COMPLETE**
+  - 656 lines in `src/jax_mppi/autotune.py` - Core CMA-ES autotuning
+  - 375 lines in `src/jax_mppi/autotune_global.py` - Ray Tune global search
+  - 218 lines in `src/jax_mppi/autotune_qd.py` - CMA-ME quality diversity
+  - 305 lines in `tests/test_autotune.py` (21 unit tests)
+  - 247 lines in `tests/test_autotune_integration.py` (4 integration tests)
+  - 321 lines in `examples/autotune_pendulum.py` - Full demonstration
+  - 90 lines in `examples/autotune_basic.py` - Minimal example
+  - All 25 tests passing
   
 ### Package Size Comparison
 
 | Package | Core Code | Tests | Examples | Total |
 |---------|-----------|-------|----------|-------|
 | **pytorch_mppi** | 1214 lines | ~500 lines | ~800 lines | ~2500 lines |
-| **jax_mppi** (current) | 1670 lines | 1572 lines | 270 lines | **3512 lines** |
-| **Completion %** | 138% | 314% | 34% | **140%** |
+| **jax_mppi** (current) | 2919 lines | 2124 lines | 681 lines | **5724 lines** |
+| **Completion %** | 240% | 425% | 85% | **229%** |
+
+Core code now includes: mppi.py (353), smppi.py (634), kmppi.py (660), autotune.py (656), autotune_global.py (375), autotune_qd.py (218), plus supporting modules.
 
 ### Feature Parity Matrix
 
@@ -76,14 +85,17 @@ Port `pytorch_mppi` to JAX, producing a functional, JIT-compilable MPPI library.
 | Support point optimization | ✓ | ✓ | ✅ |
 | Time grid management (Tk/Hs) | ✓ | ✓ | ✅ |
 | Solve-based interpolation | ✓ | ✓ | ✅ |
-| **Autotuning** | ✓ | ✗ | 🔴 Not started |
-| CMA-ES local tuning | ✓ | ✗ | 🔴 |
-| Parameter search | ✓ | ✗ | 🔴 |
+| **Autotuning** | ✓ | ✓ | ✅ Complete |
+| CMA-ES local tuning | ✓ | ✓ | ✅ |
+| Ray Tune global search | ✓ | ✓ | ✅ |
+| CMA-ME quality diversity | ✓ | ✓ | ✅ |
+| Parameter types (lambda, sigma, mu, horizon) | ✓ | ✓ | ✅ |
+| All MPPI variants support | ✓ | ✓ | ✅ |
 | **Examples** | | | |
 | Pendulum swing-up | ✓ | ✓ | ✅ Complete |
-| Pendulum with learned dynamics | ✓ | ✗ | 🔴 Planned |
-| Smooth MPPI comparison | ✓ | ✗ | 🔴 Planned |
-| Autotuning example | ✓ | ✗ | 🔴 Planned |
+| Smooth MPPI comparison | ✓ | ✓ | ✅ Complete |
+| Autotuning example | ✓ | ✓ | ✅ Complete |
+| Pendulum with learned dynamics | ✓ | ✗ | 🔴 Not planned |
 
 ### Current File Structure
 
@@ -93,21 +105,28 @@ jax_mppi/
 ├── README.md                   ✅ Exists
 ├── LICENSE                     ✅ Exists  
 ├── src/jax_mppi/
-│   ├── __init__.py            ✅ Exists (14 lines)
+│   ├── __init__.py            ✅ Exists (updated for autotune)
 │   ├── types.py               ✅ Exists (9 lines)
 │   ├── mppi.py                ✅ Exists (353 lines) - COMPLETE
 │   ├── smppi.py               ✅ Exists (634 lines) - COMPLETE
 │   ├── kmppi.py               ✅ Exists (660 lines) - COMPLETE
-│   └── autotune.py            🔴 Not created
+│   ├── autotune.py            ✅ Exists (656 lines) - COMPLETE
+│   ├── autotune_global.py     ✅ Exists (375 lines) - COMPLETE
+│   ├── autotune_qd.py         ✅ Exists (218 lines) - COMPLETE
+│   ├── costs/                 ✅ Exists (supporting modules)
+│   └── dynamics/              ✅ Exists (supporting modules)
 ├── tests/
 │   ├── test_mppi.py           ✅ Exists (115 lines) - COMPLETE
 │   ├── test_pendulum.py       ✅ Exists (282 lines) - COMPLETE
 │   ├── test_smppi.py          ✅ Exists (580 lines) - COMPLETE
+│   ├── test_autotune.py       ✅ Exists (305 lines, 21 tests) - COMPLETE
+│   └── test_autotune_integration.py ✅ Exists (247 lines, 4 tests) - COMPLETE
 │   └── test_kmppi.py          ✅ Exists (595 lines) - COMPLETE
 ├── examples/
 │   ├── pendulum.py            ✅ Exists (270 lines) - COMPLETE
-│   ├── pendulum_approximate.py 🔴 Not created
-│   └── smooth_comparison.py   🔴 Not created
+│   ├── smooth_comparison.py   ✅ Exists (442 lines) - COMPLETE
+│   ├── autotune_pendulum.py   ✅ Exists (321 lines) - COMPLETE
+│   └── autotune_basic.py      ✅ Exists (90 lines) - COMPLETE
 └── docs/
     └── plan/
         └── porting_pytorch_jax.md ✅ This file
