@@ -77,14 +77,26 @@ def main():
         optimizer=autotune.CMAESOpt(population=6, sigma=0.3),
     )
 
-    # 6. Run optimization
+    # 6. Run optimization and track costs
     print("Starting autotuning...")
-    best = tuner.optimize_all(iterations=10)
+    costs = []
+    for i in range(10):
+        result = tuner.optimize_step()
+        costs.append(result.mean_cost)
+        if (i + 1) % 3 == 0:
+            print(f"  Iteration {i + 1}: cost = {result.mean_cost:.3f}")
+
+    best = tuner.get_best_result()
 
     # 7. Print results
     print(f"\nBest cost: {best.mean_cost:.3f}")
     print(f"Best lambda: {best.params['lambda'][0]:.3f}")
     print(f"Best noise_sigma: {best.params['noise_sigma'][0]:.3f}")
+
+    # 8. Save convergence plot to docs/media
+    print("\nSaving convergence plot...")
+    initial_cost = costs[0]
+    autotune.save_convergence_plot(costs, initial_cost, "docs/media/autotune_basic_convergence.png")
 
 
 if __name__ == "__main__":

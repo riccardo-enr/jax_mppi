@@ -69,8 +69,7 @@ class CMAMEOpt(Optimizer):
             from ribs.schedulers import Scheduler
         except ImportError:
             raise ImportError(
-                "CMA-ME optimizer requires 'ribs'. "
-                "Install with: pip install 'ribs[all]'"
+                "CMA-ME optimizer requires 'ribs'. Install with: pip install 'ribs[all]'"
             )
 
         self.population = population
@@ -182,9 +181,7 @@ class CMAMEOpt(Optimizer):
         best_idx = np.argmax(objectives)
         return results[best_idx]
 
-    def get_diverse_top_parameters(
-        self, n: int = 10
-    ) -> List[Tuple[np.ndarray, float, np.ndarray]]:
+    def get_diverse_top_parameters(self, n: int = 10) -> List[Tuple[np.ndarray, float, np.ndarray]]:
         """Get diverse set of top-performing parameters from archive.
 
         Args:
@@ -213,9 +210,7 @@ class CMAMEOpt(Optimizer):
             # Objective is negative cost, so negate to get cost
             cost = -row["objective"]
             # Behavior is stored in columns like "behavior_0", "behavior_1", etc.
-            behavior = np.array(
-                [row[f"index_{i}"] for i in range(self.behavior_dim)]
-            )
+            behavior = np.array([row[f"index_{i}"] for i in range(self.behavior_dim)])
             results.append((params, cost, behavior))
 
         return results
@@ -236,3 +231,44 @@ class CMAMEOpt(Optimizer):
             "qd_score": stats.qd_score,
             "best_objective": stats.obj_max,
         }
+
+
+def save_qd_heatmap(
+    costs: list[float],
+    output_path: str | Path = "docs/media/autotune_qd_heatmap.png",
+    title: str = "Quality Diversity Archive Heatmap",
+    **kwargs,
+) -> None:
+    """Save quality diversity optimization progress to docs/media.
+
+    Args:
+        costs: List of best costs at each iteration
+        output_path: Path to save the plot
+        title: Plot title
+        **kwargs: Additional arguments passed to plt.savefig
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print("Warning: matplotlib not available, skipping visualization")
+        return
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 6)))
+
+    # Plot convergence
+    ax.plot(costs, marker="o", linewidth=2, markersize=6, label="Best Cost", color="blue")
+    ax.fill_between(range(len(costs)), costs, alpha=0.2, color="blue")
+    ax.set_xlabel("Iteration", fontsize=12)
+    ax.set_ylabel("Cost", fontsize=12)
+    ax.set_title(title, fontsize=14)
+    ax.legend(fontsize=11)
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+
+    dpi = kwargs.get("dpi", 150)
+    plt.savefig(output_path, dpi=dpi)
+    plt.close()
+    print(f"Saved QD progress plot to: {output_path}")

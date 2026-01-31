@@ -406,9 +406,7 @@ class AutotuneGlobal(Autotune):
             if param.dim() == 1:
                 value = np.array([best_config[param.name()]])
             else:
-                value = np.array(
-                    [best_config[f"{param.name()}_{i}"] for i in range(param.dim())]
-                )
+                value = np.array([best_config[f"{param.name()}_{i}"] for i in range(param.dim())])
             validated = param.ensure_valid_value(value)
             param.apply_parameter_value(validated)
 
@@ -429,3 +427,42 @@ class AutotuneGlobal(Autotune):
         if self.best_result is None:
             raise RuntimeError("No results available yet")
         return self.best_result
+
+
+def save_search_progress_plot(
+    iteration_costs: list[float],
+    output_path: str | Path = "docs/media/autotune_global_progress.png",
+    title: str = "Global Hyperparameter Search Progress",
+    **kwargs,
+) -> None:
+    """Save global search progress plot to docs/media.
+
+    Args:
+        iteration_costs: List of best costs at each iteration
+        output_path: Path to save the plot
+        title: Plot title
+        **kwargs: Additional arguments passed to plt.savefig
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print("Warning: matplotlib not available, skipping visualization")
+        return
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    plt.figure(figsize=kwargs.get("figsize", (10, 6)))
+    plt.plot(iteration_costs, marker="o", linewidth=2, markersize=6, label="Best Cost")
+    plt.fill_between(range(len(iteration_costs)), iteration_costs, alpha=0.3, label="Running Best")
+    plt.xlabel("Iteration", fontsize=12)
+    plt.ylabel("Cost", fontsize=12)
+    plt.title(title, fontsize=14)
+    plt.legend(fontsize=11)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    dpi = kwargs.get("dpi", 150)
+    plt.savefig(output_path, dpi=dpi)
+    plt.close()
+    print(f"Saved search progress plot to: {output_path}")

@@ -645,3 +645,46 @@ class Autotune:
         if self.best_result is None:
             raise RuntimeError("No results available yet")
         return self.best_result
+
+
+def save_convergence_plot(
+    costs: list[float],
+    initial_cost: float,
+    output_path: str | Path = "docs/media/autotune_convergence.png",
+    title: str = "Autotuning Convergence",
+    **kwargs,
+) -> None:
+    """Save convergence plot to docs/media.
+
+    Args:
+        costs: List of costs at each iteration
+        initial_cost: Initial cost before optimization
+        output_path: Path to save the plot (default: docs/media/autotune_convergence.png)
+        title: Plot title
+        **kwargs: Additional arguments passed to plt.savefig (dpi, figsize, etc.)
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print("Warning: matplotlib not available, skipping visualization")
+        return
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    plt.figure(figsize=kwargs.get("figsize", (10, 6)))
+    plt.plot(costs, marker="o", linewidth=2, markersize=6, label="Current")
+    plt.axhline(y=initial_cost, color="r", linestyle="--", linewidth=2, label="Initial")
+    if costs:
+        plt.axhline(y=min(costs), color="g", linestyle="--", linewidth=2, label="Best")
+    plt.xlabel("Iteration", fontsize=12)
+    plt.ylabel("Cost", fontsize=12)
+    plt.title(title, fontsize=14)
+    plt.legend(fontsize=11)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    dpi = kwargs.get("dpi", 150)
+    plt.savefig(output_path, dpi=dpi)
+    plt.close()
+    print(f"Saved convergence plot to: {output_path}")

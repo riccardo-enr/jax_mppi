@@ -227,20 +227,20 @@ def main():
     improvement = (initial_cost - best.mean_cost) / initial_cost * 100
     print(f"   Improvement:    {improvement:.1f}%")
 
-    # Plot convergence
-    print("\n7. Generating convergence plot...")
-    plt.figure(figsize=(10, 5))
+    # Plot convergence and rollout
+    print("\n7. Generating convergence and rollout plots...")
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
-    plt.subplot(1, 2, 1)
-    plt.plot(costs, marker="o", linewidth=2, markersize=4)
-    plt.axhline(y=initial_cost, color="r", linestyle="--", label="Initial")
-    plt.xlabel("Iteration")
-    plt.ylabel("Cost")
-    plt.title("Autotuning Convergence")
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+    # Convergence plot
+    axes[0].plot(costs, marker="o", linewidth=2, markersize=6, label="Current")
+    axes[0].axhline(y=initial_cost, color="r", linestyle="--", linewidth=2, label="Initial")
+    axes[0].axhline(y=best.mean_cost, color="g", linestyle="--", linewidth=2, label="Best")
+    axes[0].set_xlabel("Iteration", fontsize=12)
+    axes[0].set_ylabel("Cost", fontsize=12)
+    axes[0].set_title("Autotuning Convergence", fontsize=13)
+    axes[0].legend(fontsize=11)
+    axes[0].grid(True, alpha=0.3)
 
-    plt.subplot(1, 2, 2)
     # Simulate rollout with optimized parameters
     obs = jnp.array([jnp.pi * 0.9, 0.0])  # Start near upright
     trajectory = [obs]
@@ -259,18 +259,20 @@ def main():
         trajectory.append(obs)
 
     trajectory = jnp.array(trajectory)
-    plt.plot(trajectory[:, 0], label="theta (angle)")
-    plt.plot(trajectory[:, 1], label="theta_dot (velocity)")
-    plt.axhline(y=0, color="k", linestyle=":", alpha=0.5)
-    plt.xlabel("Step")
-    plt.ylabel("State")
-    plt.title("Example Rollout (Optimized)")
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+    axes[1].plot(trajectory[:, 0], linewidth=2, label="θ (angle)")
+    axes[1].plot(trajectory[:, 1], linewidth=2, label="θ̇ (velocity)")
+    axes[1].axhline(y=0, color="k", linestyle=":", alpha=0.5)
+    axes[1].set_xlabel("Step", fontsize=12)
+    axes[1].set_ylabel("State", fontsize=12)
+    axes[1].set_title("Example Rollout (Optimized)", fontsize=13)
+    axes[1].legend(fontsize=11)
+    axes[1].grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig("autotune_pendulum_results.png", dpi=150)
-    print("   Saved plot to: autotune_pendulum_results.png")
+    output_path = "docs/media/autotune_pendulum_results.png"
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+    print(f"   Saved plot to: {output_path}")
 
     print("\n" + "=" * 60)
     print("Autotuning complete!")
