@@ -1,58 +1,76 @@
+from dataclasses import dataclass, replace
+from typing import Optional, Tuple
+
 import jax
 import jax.numpy as jnp
 from jax.tree_util import register_pytree_node_class
-from dataclasses import dataclass, replace
-from typing import Optional, Tuple
+
 from .types import DynamicsFn, RunningCostFn, TerminalCostFn
+
 
 @dataclass(frozen=True)
 class MPPIConfig:
     # Static config (not traced through JAX)
-    num_samples: int       # K
-    horizon: int           # T
+    num_samples: int  # K
+    horizon: int  # T
     nx: int
     nu: int
     lambda_: float
     u_scale: float
     u_per_command: int
     step_dependent_dynamics: bool
-    rollout_samples: int   # M
+    rollout_samples: int  # M
     rollout_var_cost: float
     rollout_var_discount: float
     sample_null_action: bool
     noise_abs_cost: bool
 
+
 @register_pytree_node_class
 @dataclass
 class MPPIState:
     # Dynamic state (carried through JAX transforms)
-    U: jax.Array           # (T, nu) nominal trajectory
-    u_init: jax.Array      # (nu,) default action for shift
-    noise_mu: jax.Array    # (nu,)
-    noise_sigma: jax.Array # (nu, nu)
+    U: jax.Array  # (T, nu) nominal trajectory
+    u_init: jax.Array  # (nu,) default action for shift
+    noise_mu: jax.Array  # (nu,)
+    noise_sigma: jax.Array  # (nu, nu)
     noise_sigma_inv: jax.Array
     u_min: Optional[jax.Array]
     u_max: Optional[jax.Array]
-    key: jax.Array         # PRNG key
+    key: jax.Array  # PRNG key
 
     def tree_flatten(self):
         return (
-            (self.U, self.u_init, self.noise_mu, self.noise_sigma, self.noise_sigma_inv, self.u_min, self.u_max, self.key),
-            None
+            (
+                self.U,
+                self.u_init,
+                self.noise_mu,
+                self.noise_sigma,
+                self.noise_sigma_inv,
+                self.u_min,
+                self.u_max,
+                self.key,
+            ),
+            None,
         )
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):
         return cls(*children)
 
-def _bound_action(action: jax.Array, u_min: Optional[jax.Array], u_max: Optional[jax.Array]) -> jax.Array:
+
+def _bound_action(
+    action: jax.Array, u_min: Optional[jax.Array], u_max: Optional[jax.Array]
+) -> jax.Array:
     if u_min is None and u_max is None:
         return action
     if u_min is None:
+        assert u_max is not None
         return jnp.minimum(action, u_max)
     if u_max is None:
         return jnp.maximum(action, u_min)
     return jnp.clip(action, u_min, u_max)
+
 
 def _scaled_bounds(
     u_min: Optional[jax.Array],
@@ -65,15 +83,17 @@ def _scaled_bounds(
     u_max_scaled = None if u_max is None else (u_max / u_scale)
     return u_min_scaled, u_max_scaled
 
+
 def _shift_nominal(mppi_state: MPPIState, shift_steps: int) -> MPPIState:
     if shift_steps <= 0:
         return mppi_state
     horizon = mppi_state.U.shape[0]
     shift_steps = int(min(shift_steps, horizon))
-    U = jnp.roll(mppi_state.U, -shift_steps, axis=0)
+    u_control = jnp.roll(mppi_state.U, -shift_steps, axis=0)
     fill = jnp.tile(mppi_state.u_init, (shift_steps, 1))
-    U = U.at[-shift_steps:].set(fill)
-    return replace(mppi_state, U=U)
+    u_control = u_control.at[-shift_steps:].set(fill)
+    return replace(mppi_state, U=u_control)
+
 
 def _sample_noise(
     key: jax.Array,
@@ -94,10 +114,12 @@ def _sample_noise(
         noise = noise.at[0].set(jnp.zeros((horizon, noise_mu.shape[0])))
     return noise, key
 
+
 def _state_for_cost(state: jax.Array, nx: int) -> jax.Array:
     if state.shape[-1] <= nx:
         return state
     return state[..., :nx]
+
 
 def _call_dynamics(
     dynamics: DynamicsFn,
@@ -110,6 +132,7 @@ def _call_dynamics(
         return dynamics(state, action, t)
     return dynamics(state, action)
 
+
 def _call_running_cost(
     running_cost: RunningCostFn,
     state: jax.Array,
@@ -120,6 +143,7 @@ def _call_running_cost(
     if step_dependent:
         return running_cost(state, action, t)
     return running_cost(state, action)
+
 
 def _single_rollout_costs(
     config: MPPIConfig,
@@ -133,7 +157,9 @@ def _single_rollout_costs(
         t, action = inputs
         next_state = _call_dynamics(dynamics, state, action, t, config.step_dependent_dynamics)
         cost_state = _state_for_cost(state, config.nx)
-        step_cost = _call_running_cost(running_cost, cost_state, action, t, config.step_dependent_dynamics)
+        step_cost = _call_running_cost(
+            running_cost, cost_state, action, t, config.step_dependent_dynamics
+        )
         return next_state, step_cost
 
     ts = jnp.arange(config.horizon)
@@ -145,6 +171,7 @@ def _single_rollout_costs(
         terminal = terminal_cost(terminal_state, actions[-1])
     return step_costs, terminal
 
+
 def _compute_rollout_costs(
     config: MPPIConfig,
     current_obs: jax.Array,
@@ -154,7 +181,9 @@ def _compute_rollout_costs(
     terminal_cost: Optional[TerminalCostFn],
 ) -> jax.Array:
     per_step_costs, terminal_costs = jax.vmap(
-        lambda a: _single_rollout_costs(config, current_obs, a, dynamics, running_cost, terminal_cost)
+        lambda a: _single_rollout_costs(
+            config, current_obs, a, dynamics, running_cost, terminal_cost
+        )
     )(actions)
 
     mean_step_costs = per_step_costs
@@ -169,6 +198,7 @@ def _compute_rollout_costs(
     var_penalty = config.rollout_var_cost * jnp.sum(var_step_costs * var_discount, axis=1)
     return jnp.sum(mean_step_costs, axis=1) + terminal_costs + var_penalty
 
+
 def _compute_noise_cost(
     noise: jax.Array,
     noise_sigma_inv: jax.Array,
@@ -181,10 +211,12 @@ def _compute_noise_cost(
         quad = jnp.einsum("ktd,df,ktf->kt", noise, noise_sigma_inv, noise)
     return 0.5 * jnp.sum(quad, axis=1)
 
+
 def _compute_weights(costs: jax.Array, lambda_: float) -> jax.Array:
     min_cost = jnp.min(costs)
     scaled = -(costs - min_cost) / lambda_
     return jax.nn.softmax(scaled)
+
 
 def create(
     nx: int,
@@ -252,10 +284,11 @@ def create(
         noise_sigma_inv=noise_sigma_inv,
         u_min=None if u_min is None else jnp.array(u_min),
         u_max=None if u_max is None else jnp.array(u_max),
-        key=key
+        key=key,
     )
 
     return config, mppi_state
+
 
 def command(
     config: MPPIConfig,
@@ -298,8 +331,10 @@ def command(
     u_min_scaled, u_max_scaled = _scaled_bounds(mppi_state.u_min, mppi_state.u_max, config.u_scale)
     U_new = _bound_action(U_new, u_min_scaled, u_max_scaled)
 
-    action_seq = U_new[:config.u_per_command]
-    scaled_action_seq = _bound_action(action_seq * config.u_scale, mppi_state.u_min, mppi_state.u_max)
+    action_seq = U_new[: config.u_per_command]
+    scaled_action_seq = _bound_action(
+        action_seq * config.u_scale, mppi_state.u_min, mppi_state.u_max
+    )
     action = scaled_action_seq[0] if config.u_per_command == 1 else scaled_action_seq
 
     new_state = replace(mppi_state, U=U_new, key=key)
@@ -308,14 +343,18 @@ def command(
 
     return action, new_state
 
+
 def reset(config: MPPIConfig, mppi_state: MPPIState, key: jax.Array) -> MPPIState:
     """Reset nominal trajectory."""
     U_new = jnp.tile(mppi_state.u_init, (config.horizon, 1))
     return replace(mppi_state, U=U_new, key=key)
 
+
 def get_rollouts(
-    config: MPPIConfig, mppi_state: MPPIState,
-    current_obs: jax.Array, dynamics: DynamicsFn,
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    current_obs: jax.Array,
+    dynamics: DynamicsFn,
     num_rollouts: int = 1,
 ) -> jax.Array:
     """Forward-simulate trajectories for visualization."""
@@ -346,8 +385,8 @@ def get_rollouts(
     if current_obs.ndim == 1:
         rollouts = jax.vmap(lambda a: rollout_single(a, current_obs))(scaled_actions)
     else:
-        rollouts = jax.vmap(
-            lambda obs: jax.vmap(lambda a: rollout_single(a, obs))(scaled_actions)
-        )(current_obs)
+        rollouts = jax.vmap(lambda obs: jax.vmap(lambda a: rollout_single(a, obs))(scaled_actions))(
+            current_obs
+        )
 
     return rollouts

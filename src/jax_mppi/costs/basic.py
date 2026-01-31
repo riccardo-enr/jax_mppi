@@ -44,7 +44,7 @@ def create_lqr_cost(
             # Add action cost: action^T R action
             c = c + action @ R @ action
 
-        return c
+        return c  # type: ignore
 
     return cost_fn
 
@@ -86,6 +86,6 @@ def create_hill_cost(
         d = dx @ Q @ dx
         # Gaussian: exp(-d)
         c = cost_at_center * jnp.exp(-d)
-        return c
+        return c  # type: ignore
 
     return cost_fn

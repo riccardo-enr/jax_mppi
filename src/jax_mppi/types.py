@@ -1,4 +1,5 @@
 from typing import Callable
+
 import jax
 
 # Dynamics: (state, action) -> next_state  or  (state, action, t) -> next_state

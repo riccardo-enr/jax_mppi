@@ -174,9 +174,7 @@ class TestSMPPICommand:
         )
 
         # Action sequence should have changed from zeros
-        assert not jnp.allclose(
-            new_state.action_sequence, state.action_sequence, atol=1e-6
-        )
+        assert not jnp.allclose(new_state.action_sequence, state.action_sequence, atol=1e-6)
 
         # Relationship: action_sequence = old_action_sequence + U * delta_t
         expected_action_seq = state.action_sequence + new_state.U * config.delta_t
@@ -266,7 +264,10 @@ class TestSMPPISmoothness:
         var_smooth = jnp.sum(jnp.diff(state_smooth.action_sequence, axis=0) ** 2)
 
         # Smooth should have lower variation
-        assert var_smooth < var_rough
+        # These are JAX arrays, so they are not None.
+        # basedpyright gets confused by Optional fields in dataclass.
+        # pyright: ignore[reportOptionalOperand]
+        assert var_smooth < var_rough  # type: ignore
 
     def test_delta_t_affects_integration(self):
         """Test that delta_t scales the integration correctly."""
@@ -319,7 +320,9 @@ class TestSMPPISmoothness:
         change_small = jnp.max(jnp.abs(new_small.action_sequence))
         change_large = jnp.max(jnp.abs(new_large.action_sequence))
 
-        assert change_large > change_small
+        # These are JAX arrays, so they are not None.
+        # pyright: ignore[reportOptionalOperand]
+        assert change_large > change_small  # type: ignore
 
 
 class TestSMPPIBounds:
@@ -357,7 +360,9 @@ class TestSMPPIBounds:
             assert jnp.all(action <= 0.5 * config.u_scale)
 
             # Check action_sequence bounds
+            # pyright: ignore[reportOptionalOperand]
             assert jnp.all(state.action_sequence >= state.action_min - 1e-5)
+            # pyright: ignore[reportOptionalOperand]
             assert jnp.all(state.action_sequence <= state.action_max + 1e-5)
 
     def test_control_bounds_are_respected(self):
@@ -388,7 +393,9 @@ class TestSMPPIBounds:
             )
 
             # Check control velocity bounds
+            # pyright: ignore[reportOptionalOperand]
             assert jnp.all(state.U >= state.u_min - 1e-5)
+            # pyright: ignore[reportOptionalOperand]
             assert jnp.all(state.U <= state.u_max + 1e-5)
 
     def test_symmetric_bounds_inference(self):
@@ -405,7 +412,9 @@ class TestSMPPIBounds:
         )
 
         assert state1.action_max is not None
-        assert jnp.allclose(state1.action_max, -state1.action_min)
+        assert state1.action_min is not None
+        # type: ignore to suppress operator '-' not supported for None
+        assert jnp.allclose(state1.action_max, -state1.action_min)  # type: ignore # pyright: ignore[reportOptionalOperand]
 
         # Only max specified
         config2, state2 = smppi.create(
@@ -416,7 +425,9 @@ class TestSMPPIBounds:
         )
 
         assert state2.action_min is not None
-        assert jnp.allclose(state2.action_min, -state2.action_max)
+        assert state2.action_max is not None
+        # type: ignore to suppress operator '-' not supported for None
+        assert jnp.allclose(state2.action_min, -state2.action_max)  # type: ignore # pyright: ignore[reportOptionalOperand]
 
 
 class TestSMPPIShift:
