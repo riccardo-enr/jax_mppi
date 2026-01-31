@@ -97,42 +97,96 @@ The framework supports tuning the following parameters out-of-the-box:
 
 You can also define custom parameters by subclassing `TunableParameter`.
 
-## Theoretical Background
+## Mathematical Formulation
+
+This section details the mathematical foundations of the autotuning algorithms available in `jax_mppi`.
+
+### Hyperparameter Optimization Problem
+
+The goal of autotuning is to find the optimal set of hyperparameters $\theta$ (e.g., temperature $\lambda$, noise covariance $\Sigma$, horizon $H$) that minimizes the expected cost of the control task. We formulate this as an optimization problem:
+
+\[
+\theta^* = \arg\min_{\theta \in \Theta} \mathcal{J}(\theta)
+\]
+
+where $\Theta$ is the admissible hyperparameter space, and the objective function $\mathcal{J}(\theta)$ is the expected cumulative cost of the closed-loop system under the MPPI controller parameterized by $\theta$:
+
+\[
+\mathcal{J}(\theta) = \mathbb{E}_{\tau \sim \pi_{\text{MPPI}}(\theta)} \left[ \sum_{t=0}^{T_{task}} c(\mathbf{x}_t, \mathbf{u}_t) \right]
+\]
+
+Here, $\tau = \{(\mathbf{x}_0, \mathbf{u}_0), \dots \}$ represents a trajectory rollout, and $c(\mathbf{x}, \mathbf{u})$ is the task cost function. Since $\mathcal{J}(\theta)$ is typically non-convex and noisy (due to the stochastic nature of MPPI and the environment), we employ derivative-free optimization methods.
 
 ### CMA-ES (Covariance Matrix Adaptation Evolution Strategy)
 
-CMA-ES is a derivative-free optimization algorithm that adapts a multivariate normal distribution to sample candidate solutions. It is particularly effective for non-convex optimization problems with continuous parameters.
+CMA-ES is a state-of-the-art evolutionary algorithm for continuous optimization. It models the population of candidate solutions using a multivariate normal distribution $\mathcal{N}(\mathbf{m}, \sigma^2 \mathbf{C})$.
 
-The algorithm maintains a mean vector $\mathbf{m}$ and a covariance matrix $\mathbf{C}$. In each generation $g$:
+The algorithm proceeds in generations $g$. At each generation:
 
-1.  **Sampling**: Generate $\lambda$ offspring:
+1.  **Sampling**: We sample $\lambda_{pop}$ candidate parameters $\theta_i$ (offspring):
     \[
-    \mathbf{x}_i \sim \mathcal{N}(\mathbf{m}^{(g)}, \sigma^{(g)2} \mathbf{C}^{(g)})
+    \theta_i \sim \mathbf{m}^{(g)} + \sigma^{(g)} \mathcal{N}(\mathbf{0}, \mathbf{C}^{(g)}) \quad \text{for } i = 1, \dots, \lambda_{pop}
     \]
-2.  **Selection**: Evaluate the offspring and select the best $\mu$ candidates.
-3.  **Update**: Update $\mathbf{m}^{(g+1)}$ as a weighted mean of the selected candidates. Update $\mathbf{C}^{(g+1)}$ and step size $\sigma^{(g+1)}$ to increase the likelihood of successful steps.
 
-This allows CMA-ES to learn the local landscape of the objective function (e.g., MPPI performance) and scale the search distribution accordingly.
+2.  **Evaluation**: Each candidate $\theta_i$ is evaluated by running an MPPI simulation to estimate $\mathcal{J}(\theta_i)$.
 
-### Quality Diversity (QD) and MAP-Elites
+3.  **Selection and Recombination**: The candidates are sorted by their cost $\mathcal{J}(\theta_i)$. The top $\mu$ candidates (parents) are selected to update the mean:
+    \[
+    \mathbf{m}^{(g+1)} = \sum_{i=1}^{\mu} w_i \theta_{i:\lambda_{pop}}
+    \]
+    where $w_i$ are positive weights summing to 1, and $\theta_{i:\lambda_{pop}}$ denotes the $i$-th best candidate.
 
-Quality Diversity algorithms aim to find a set of solutions that are both high-performing and diverse. The `jax_mppi` autotuning framework uses the MAP-Elites (Multi-dimensional Archive of Phenotypic Elites) algorithm.
+4.  **Covariance Adaptation**: The covariance matrix $\mathbf{C}^{(g)}$ is updated to increase the likelihood of successful steps. This involves two paths:
+    *   **Rank-1 Update**: Uses the evolution path $\mathbf{p}_c$ to exploit correlations between consecutive steps.
+    *   **Rank-$\mu$ Update**: Uses the variance of the successful steps.
+    \[
+    \mathbf{C}^{(g+1)} = (1 - c_1 - c_\mu) \mathbf{C}^{(g)} + c_1 \mathbf{p}_c \mathbf{p}_c^T + c_\mu \sum_{i=1}^{\mu} w_i (\theta_{i:\lambda_{pop}} - \mathbf{m}^{(g)})(\theta_{i:\lambda_{pop}} - \mathbf{m}^{(g)})^T / \sigma^{(g)2}
+    \]
 
-MAP-Elites maintains an archive of high-performing solutions, discretized by a user-defined feature space (Behavioral Descriptors).
+5.  **Step Size Control**: The global step size $\sigma^{(g)}$ is updated using the conjugate evolution path $\mathbf{p}_\sigma$ to control the overall scale of the distribution.
 
-1.  **Mapping**: Each candidate solution $\mathbf{x}$ is mapped to a feature descriptor $\mathbf{b}(\mathbf{x})$.
-2.  **Archive**: The feature space is divided into cells (bins). Each cell stores the best solution found so far with that descriptor.
-3.  **Selection and Variation**: Solutions are selected from the archive and perturbed to generate new candidates.
-4.  **Replacement**: A new candidate replaces the occupant of its corresponding cell if it has a higher fitness.
+### Quality Diversity with CMA-ME
 
-This approach is useful for finding MPPI parameters that work well across different regimes (e.g., aggressive vs. conservative behavior) or environment conditions.
+Quality Diversity (QD) algorithms optimize for a set of high-performing solutions that are diverse with respect to a user-defined measure. `jax_mppi` uses **CMA-ME (Covariance Matrix Adaptation MAP-Elites)**, which combines the search power of CMA-ES with the archive maintenance of MAP-Elites.
 
-### Global Optimization (Ray Tune)
+#### Problem Formulation
+We seek to find a collection of parameters $P = \{\theta_1, \dots, \theta_N\}$ that maximize the quality function $f(\theta) = -\mathcal{J}(\theta)$ while covering the behavior space $\mathcal{B}$.
 
-`autotune_global` leverages Ray Tune to perform global search over hyperparameters. This allows for defining complex search spaces (e.g., log-uniform distributions) and using advanced schedulers like ASHA or Population Based Training (PBT).
+Let $\mathbf{b}(\theta): \Theta \to \mathcal{B}$ be a function mapping parameters to a behavior descriptor (e.g., control smoothness, risk sensitivity).
 
-The objective is to find:
+#### MAP-Elites Archive
+The behavior space $\mathcal{B}$ is discretized into a grid of cells (the archive $\mathcal{A}$). Each cell $\mathcal{A}_{\mathbf{z}}$ stores the best solution found so far that maps to that cell index $\mathbf{z}$:
+
 \[
-\theta^* = \arg\min_{\theta \in \Theta} \mathbb{E}[J(\text{MPPI}(\theta))]
+\mathcal{A}_{\mathbf{z}} = \arg\max_{\theta: \text{index}(\mathbf{b}(\theta)) = \mathbf{z}} f(\theta)
 \]
-where $\Theta$ is the hyperparameter search space and $J$ is the cumulative cost of the control task.
+
+#### CMA-ME Algorithm
+CMA-ME maintains a set of **emitters**, which are instances of CMA-ES optimizing for improvement in the archive.
+
+1.  **Emission**: An emitter samples a candidate $\theta$ from its distribution $\mathcal{N}(\mathbf{m}, \sigma^2 \mathbf{C})$.
+2.  **Evaluation**: Calculate quality $f(\theta)$ and behavior $\mathbf{b}(\theta)$.
+3.  **Archive Update**:
+    *   Determine the cell index $\mathbf{z} = \text{index}(\mathbf{b}(\theta))$.
+    *   If cell $\mathcal{A}_{\mathbf{z}}$ is empty or $f(\theta) > f(\mathcal{A}_{\mathbf{z}})$, replace the occupant with $\theta$.
+    *   Calculate the "improvement" value $\Delta$ (e.g., $f(\theta) - f(\mathcal{A}_{\mathbf{z}}^{old})$).
+4.  **Emitter Update**: The CMA-ES emitter updates its mean and covariance based on the improvement $\Delta$, guiding the search toward regions of the behavior space where quality can be improved or new cells can be discovered.
+
+### Global Optimization with Ray Tune
+
+For global search over large, potentially non-convex spaces with complex constraints, we utilize Ray Tune. The problem is formulated as:
+
+\[
+\min_{\theta \in \Theta_{global}} \mathcal{J}(\theta)
+\]
+
+where $\Theta_{global}$ can be defined by complex distributions (e.g., Log-Uniform, Categorical).
+
+Ray Tune orchestrates the search using algorithms like:
+*   **Bayesian Optimization**: Uses a Gaussian Process surrogate model $P(f \mid \mathcal{D})$ to approximate the objective and an acquisition function $a(\theta)$ (e.g., Expected Improvement) to select the next sample:
+    \[
+    \theta_{next} = \arg\max_{\theta} a(\theta)
+    \]
+*   **HyperOpt (TPE)**: Models $p(\theta \mid y)$ using Tree-structured Parzen Estimators to sample promising candidates.
+
+These methods are particularly useful for "warm-starting" the local search (CMA-ES) or finding the best family of parameters (e.g., finding the right order of magnitude for $\lambda$).
