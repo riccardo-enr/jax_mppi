@@ -265,9 +265,7 @@ class TestSMPPISmoothness:
 
         # Smooth should have lower variation
         # These are JAX arrays, so they are not None.
-        # basedpyright gets confused by Optional fields in dataclass.
-        # pyright: ignore[reportOptionalOperand]
-        assert var_smooth < var_rough  # type: ignore
+        assert var_smooth < var_rough
 
     def test_delta_t_affects_integration(self):
         """Test that delta_t scales the integration correctly."""
@@ -321,8 +319,7 @@ class TestSMPPISmoothness:
         change_large = jnp.max(jnp.abs(new_large.action_sequence))
 
         # These are JAX arrays, so they are not None.
-        # pyright: ignore[reportOptionalOperand]
-        assert change_large > change_small  # type: ignore
+        assert change_large > change_small
 
 
 class TestSMPPIBounds:
