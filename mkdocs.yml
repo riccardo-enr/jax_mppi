@@ -11,21 +11,18 @@ theme:
         - navigation.expand
         - navigation.top
     palette:
-        - scheme: default
-          primary: indigo
-          accent: indigo
         - scheme: slate
-          primary: indigo
-          accent: indigo
-          toggle:
-              icon: material/brightness-4
-              name: Switch to dark mode
-        - scheme: default
           primary: indigo
           accent: indigo
           toggle:
               icon: material/brightness-7
               name: Switch to light mode
+        - scheme: default
+          primary: indigo
+          accent: indigo
+          toggle:
+              icon: material/brightness-4
+              name: Switch to dark mode
 
 extra_css:
     - stylesheets/extra.css
