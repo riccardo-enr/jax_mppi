@@ -99,6 +99,7 @@ def run_pendulum_mppi(
     horizon: int = 30,
     lambda_: float = 1.0,
     visualize: bool = False,
+    render: bool = False,
     seed: int = 0,
 ):
     """Run MPPI on pendulum swing-up task.
@@ -108,7 +109,8 @@ def run_pendulum_mppi(
         num_samples: Number of MPPI samples (K)
         horizon: MPPI planning horizon (T)
         lambda_: Temperature parameter for MPPI
-        visualize: Whether to visualize (requires matplotlib and gymnasium)
+        visualize: Whether to plot results (requires matplotlib)
+        render: Whether to render with gymnasium (requires gymnasium)
         seed: Random seed
 
     Returns:
@@ -142,6 +144,19 @@ def run_pendulum_mppi(
         key=key,
     )
 
+    # Initialize gymnasium environment for rendering if requested
+    env = None
+    if render:
+        try:
+            import gymnasium as gym
+
+            env = gym.make("Pendulum-v1", render_mode="human")
+            # Reset to get initial observation
+            env.reset(seed=seed)
+        except ImportError:
+            print("Gymnasium not available for rendering")
+            render = False
+
     # Initial state: hanging down with small perturbation
     state = jnp.array([jnp.pi + 0.1, 0.0])
 
@@ -166,32 +181,53 @@ def run_pendulum_mppi(
     print("Running MPPI on pendulum swing-up task...")
     print(f"  Samples: {num_samples}, Horizon: {horizon}, Lambda: {lambda_}")
     print(f"  Initial state: theta={state[0]:.2f}, theta_dot={state[1]:.2f}")
+    if render:
+        print("  Press Ctrl+C to stop...")
 
     # Control loop
-    for step in range(num_steps):
-        # Compute optimal action
-        action, mppi_state = command_fn(mppi_state, state)
+    step = 0
+    try:
+        while step < num_steps:
+            # Compute optimal action
+            action, mppi_state = command_fn(mppi_state, state)
 
-        # Apply action to environment
-        state = pendulum_dynamics(state, action)
+            # Apply action to environment
+            state = pendulum_dynamics(state, action)
 
-        # Compute cost
-        cost = pendulum_cost(state, action)
+            # Compute cost
+            cost = pendulum_cost(state, action)
 
-        # Store
-        states.append(state)
-        actions_taken.append(action)
-        costs_history.append(cost)
+            # Render if gymnasium environment is available
+            if env is not None:
+                # Update gymnasium environment state to match our JAX state
+                # Gymnasium Pendulum-v1 state: [cos(theta), sin(theta), theta_dot]
+                theta, theta_dot = float(state[0]), float(state[1])
+                env.unwrapped.state = jnp.array([theta, theta_dot])
+                env.render()
 
-        # Print progress
-        if step % 20 == 0:
-            print(
-                f"Step {step:3d}: theta={state[0]:6.3f}, theta_dot={state[1]:6.3f}, cost={cost:.3f}"
-            )
+            # Store
+            states.append(state)
+            actions_taken.append(action)
+            costs_history.append(cost)
+
+            # Print progress
+            if step % 20 == 0:
+                print(
+                    f"Step {step:3d}: theta={state[0]:6.3f}, theta_dot={state[1]:6.3f}, cost={cost:.3f}"
+                )
+
+            step += 1
+
+    except KeyboardInterrupt:
+        print(f"\n\nInterrupted at step {step}")
 
     states = jnp.stack(states)
     actions_taken = jnp.stack(actions_taken)
     costs_history = jnp.array(costs_history)
+
+    # Close gymnasium environment if used
+    if env is not None:
+        env.close()
 
     print(f"\nFinal state: theta={states[-1, 0]:.3f}, theta_dot={states[-1, 1]:.3f}")
     print(f"Total cost: {jnp.sum(costs_history):.2f}")
@@ -246,7 +282,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Pendulum swing-up with MPPI")
     parser.add_argument(
-        "--steps", type=int, default=100, help="Number of control steps"
+        "--steps", type=int, default=None, help="Number of control steps (default: 100, or infinite with --render)"
     )
     parser.add_argument(
         "--samples", type=int, default=1000, help="Number of MPPI samples"
@@ -255,16 +291,23 @@ if __name__ == "__main__":
     parser.add_argument(
         "--lambda", type=float, default=1.0, dest="lambda_", help="MPPI temperature"
     )
-    parser.add_argument("--visualize", action="store_true", help="Visualize results")
+    parser.add_argument("--visualize", action="store_true", help="Plot results with matplotlib")
+    parser.add_argument("--render", action="store_true", help="Render with gymnasium (animated)")
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
 
     args = parser.parse_args()
 
+    # Set default steps: infinite (large number) when rendering, 100 otherwise
+    num_steps = args.steps
+    if num_steps is None:
+        num_steps = float('inf') if args.render else 100
+
     states, actions, costs = run_pendulum_mppi(
-        num_steps=args.steps,
+        num_steps=int(num_steps) if num_steps != float('inf') else 10**9,
         num_samples=args.samples,
         horizon=args.horizon,
         lambda_=args.lambda_,
         visualize=args.visualize,
+        render=args.render,
         seed=args.seed,
     )
