@@ -36,10 +36,14 @@ plugins:
 
 nav:
     - Home: index.md
+    - Autotuning Guide: autotuning.md
     - API Reference:
           - mppi: api/mppi.md
           - smppi: api/smppi.md
           - kmppi: api/kmppi.md
+          - autotune: api/autotune.md
+          - autotune_global: api/autotune_global.md
+          - autotune_qd: api/autotune_qd.md
           - types: api/types.md
     - Examples:
           - Pendulum: examples/pendulum.md
