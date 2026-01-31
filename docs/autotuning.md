@@ -96,3 +96,43 @@ The framework supports tuning the following parameters out-of-the-box:
 -   `HorizonParameter`: Planning horizon length (resizes internal buffers automatically).
 
 You can also define custom parameters by subclassing `TunableParameter`.
+
+## Theoretical Background
+
+### CMA-ES (Covariance Matrix Adaptation Evolution Strategy)
+
+CMA-ES is a derivative-free optimization algorithm that adapts a multivariate normal distribution to sample candidate solutions. It is particularly effective for non-convex optimization problems with continuous parameters.
+
+The algorithm maintains a mean vector $\mathbf{m}$ and a covariance matrix $\mathbf{C}$. In each generation $g$:
+
+1.  **Sampling**: Generate $\lambda$ offspring:
+    \[
+    \mathbf{x}_i \sim \mathcal{N}(\mathbf{m}^{(g)}, \sigma^{(g)2} \mathbf{C}^{(g)})
+    \]
+2.  **Selection**: Evaluate the offspring and select the best $\mu$ candidates.
+3.  **Update**: Update $\mathbf{m}^{(g+1)}$ as a weighted mean of the selected candidates. Update $\mathbf{C}^{(g+1)}$ and step size $\sigma^{(g+1)}$ to increase the likelihood of successful steps.
+
+This allows CMA-ES to learn the local landscape of the objective function (e.g., MPPI performance) and scale the search distribution accordingly.
+
+### Quality Diversity (QD) and MAP-Elites
+
+Quality Diversity algorithms aim to find a set of solutions that are both high-performing and diverse. The `jax_mppi` autotuning framework uses the MAP-Elites (Multi-dimensional Archive of Phenotypic Elites) algorithm.
+
+MAP-Elites maintains an archive of high-performing solutions, discretized by a user-defined feature space (Behavioral Descriptors).
+
+1.  **Mapping**: Each candidate solution $\mathbf{x}$ is mapped to a feature descriptor $\mathbf{b}(\mathbf{x})$.
+2.  **Archive**: The feature space is divided into cells (bins). Each cell stores the best solution found so far with that descriptor.
+3.  **Selection and Variation**: Solutions are selected from the archive and perturbed to generate new candidates.
+4.  **Replacement**: A new candidate replaces the occupant of its corresponding cell if it has a higher fitness.
+
+This approach is useful for finding MPPI parameters that work well across different regimes (e.g., aggressive vs. conservative behavior) or environment conditions.
+
+### Global Optimization (Ray Tune)
+
+`autotune_global` leverages Ray Tune to perform global search over hyperparameters. This allows for defining complex search spaces (e.g., log-uniform distributions) and using advanced schedulers like ASHA or Population Based Training (PBT).
+
+The objective is to find:
+\[
+\theta^* = \arg\min_{\theta \in \Theta} \mathbb{E}[J(\text{MPPI}(\theta))]
+\]
+where $\Theta$ is the hyperparameter search space and $J$ is the cumulative cost of the control task.
