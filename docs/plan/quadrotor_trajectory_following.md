@@ -76,7 +76,7 @@ A quadrotor trajectory following example will:
 
 ### State Representation
 
-**13D State with Quaternion Representation**
+#### 13D State with Quaternion Representation
 
 ```python
 state = [
@@ -87,7 +87,8 @@ state = [
 ]
 ```
 
-**Rationale**:
+#### Rationale
+
 - Quaternions avoid gimbal lock singularities present in Euler angle representations
 - More numerically stable for aggressive maneuvers
 - Standard representation in modern quadrotor control literature
@@ -95,7 +96,7 @@ state = [
 
 ### Control Input Representation
 
-**4D Control: Body Thrust + Body Rates**
+#### 4D Control: Body Thrust + Body Rates
 
 ```python
 action = [
@@ -106,7 +107,8 @@ action = [
 ]
 ```
 
-**Rationale**:
+#### Rationale
+
 - Direct control of thrust and angular velocities
 - Easier to enforce control bounds than motor-level commands
 - More intuitive for trajectory tracking
@@ -179,7 +181,8 @@ def quadrotor_dynamics(
     return next_state
 ```
 
-**Key Implementation Notes**:
+#### Key Implementation Notes
+
 - Quaternion normalization after integration is critical
 - RK4 integration recommended for better accuracy
 - First-order model for angular velocity (can be extended to full Euler dynamics)
@@ -187,7 +190,7 @@ def quadrotor_dynamics(
 
 ### Cost Function Design
 
-**Running Cost**:
+#### Running Cost
 
 ```python
 def trajectory_running_cost(
@@ -226,7 +229,7 @@ def trajectory_running_cost(
     return cost_pos + cost_vel + cost_control
 ```
 
-**Terminal Cost**:
+#### Terminal Cost
 
 ```python
 def trajectory_terminal_cost(
@@ -432,7 +435,7 @@ jax_mppi/
 ## Risk Mitigation
 
 | Risk | Impact | Mitigation |
-|------|--------|------------|
+| --- | --- | --- |
 | Dynamics too complex for real-time control | High | Profile performance early, optimize JIT compilation |
 | Quaternion norm drift during integration | Medium | Normalize after each integration step |
 | Poor tracking performance | Medium | Implement autotuning example, provide tuning guidelines |
@@ -451,7 +454,7 @@ jax_mppi/
 - [2] Williams, G., et al. "Model predictive path integral control using covariance variable importance sampling." arXiv:1509.01149, 2015.
 - [3] Beard, R. W., & McLain, T. W. "Small Unmanned Aircraft: Theory and Practice." Princeton University Press, 2012.
 - [4] Mellinger, D., & Kumar, V. "Minimum snap trajectory generation and control for quadrotors." ICRA 2011.
-- [5] pytorch_mppi original implementation: https://github.com/UM-ARM-Lab/pytorch_mppi
+- [5] [pytorch_mppi original implementation](https://github.com/UM-ARM-Lab/pytorch_mppi)
 
 ## Notes
 
