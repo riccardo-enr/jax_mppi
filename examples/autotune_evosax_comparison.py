@@ -49,11 +49,7 @@ def create_pendulum_system():
 
 def setup_mppi(lambda_val: float = 1.0, sigma: float = 0.5):
     """Setup MPPI controller with given hyperparameters."""
-    dynamics, cost = create_pendulum_system()
-
     config, state = jmppi.mppi.create(
-        dynamics=dynamics,
-        cost=cost,
         nx=2,
         nu=1,
         horizon=20,
@@ -82,6 +78,9 @@ def create_evaluation_function(
     # Initial state: pendulum hanging down
     x0 = jnp.array([jnp.pi, 0.0])
 
+    # Get dynamics and cost functions
+    dynamics, cost = create_pendulum_system()
+
     def evaluate_fn():
         """Evaluate MPPI controller with current parameters."""
         # Run MPPI for a few steps
@@ -89,12 +88,14 @@ def create_evaluation_function(
         total_cost = 0.0
 
         for _ in range(10):  # 10 steps of control
-            u, state_new = jmppi.mppi.command(holder.config, holder.state, x)
+            u, state_new = jmppi.mppi.command(
+                holder.config, holder.state, x, dynamics, cost
+            )
             holder.state = state_new
 
             # Simulate one step
-            x_new = x + 0.1 * holder.config.dynamics(x, u)
-            step_cost = holder.config.cost(x, u)
+            x_new = x + 0.1 * dynamics(x, u)
+            step_cost = cost(x, u)
 
             total_cost += step_cost
             x = x_new
