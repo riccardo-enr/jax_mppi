@@ -24,46 +24,118 @@ A quadrotor trajectory following example will:
 - Provide a realistic robotics benchmark
 - Enable comparison between MPPI variants for trajectory smoothness
 
+## Theoretical Background
+
+The quadrotor is modeled as a rigid body with 6 degrees of freedom. The state space is 13-dimensional, representing position, velocity, orientation (quaternion), and angular velocity.
+
+### State and Control
+
+The state vector $\mathbf{x} \in \mathbb{R}^{13}$ is defined as:
+
+$$
+\mathbf{x} = [\mathbf{p}^T, \mathbf{v}^T, \mathbf{q}^T, \boldsymbol{\omega}^T]^T
+$$
+
+where:
+
+- $\mathbf{p} = [p_x, p_y, p_z]^T$ is the position in the world frame.
+- $\mathbf{v} = [v_x, v_y, v_z]^T$ is the linear velocity in the world frame.
+- $\mathbf{q} = [q_w, q_x, q_y, q_z]^T$ is the unit quaternion representing orientation (body to world).
+- $\boldsymbol{\omega} = [\omega_x, \omega_y, \omega_z]^T$ is the angular velocity in the body frame.
+
+The control input $\mathbf{u} \in \mathbb{R}^{4}$ consists of the total thrust and body angular rates:
+
+$$
+\mathbf{u} = [T, \omega_{x,cmd}, \omega_{y,cmd}, \omega_{z,cmd}]^T
+$$
+
+### Dynamics
+
+The system dynamics are governed by the following equations:
+
+1. **Translational Kinematics**:
+   $$
+   \dot{\mathbf{p}} = \mathbf{v}
+   $$
+
+2. **Translational Dynamics**:
+   $$
+   \dot{\mathbf{v}} = \mathbf{g} + \frac{1}{m} R(\mathbf{q}) \begin{bmatrix} 0 \\ 0 \\ T \end{bmatrix}
+   $$
+   where $\mathbf{g} = [0, 0, -g]^T$ is the gravity vector, $m$ is the mass, and $R(\mathbf{q})$ is the rotation matrix derived from quaternion $\mathbf{q}$.
+
+3. **Rotational Kinematics**:
+   The time derivative of the quaternion is given by:
+   $$
+   \dot{\mathbf{q}} = \frac{1}{2} \mathbf{q} \otimes \begin{bmatrix} 0 \\ \boldsymbol{\omega} \end{bmatrix}
+   $$
+   where $\otimes$ denotes quaternion multiplication. In matrix form involving the skew-symmetric matrix:
+   $$
+   \dot{\mathbf{q}} = \frac{1}{2} \Omega(\boldsymbol{\omega}) \mathbf{q}
+   $$
+   *Note: The implementation must ensure $\|\mathbf{q}\| = 1$, typically by normalization after integration.*
+
+4. **Rotational Dynamics** (First-order actuator model):
+   $$
+   \dot{\boldsymbol{\omega}} = \frac{1}{\tau_\omega} (\boldsymbol{\omega}_{cmd} - \boldsymbol{\omega})
+   $$
+   where $\tau_\omega$ is the time constant for the angular velocity tracking.
+
+### Cost Function
+
+The MPPI controller optimizes a cost function $J$ over a horizon $H$. The instantaneous cost $C(\mathbf{x}_t, \mathbf{u}_t)$ is defined as:
+
+$$
+C(\mathbf{x}_t, \mathbf{u}_t) = \|\mathbf{p}_t - \mathbf{p}_{ref,t}\|_{Q_{pos}}^2 + \|\mathbf{v}_t - \mathbf{v}_{ref,t}\|_{Q_{vel}}^2 + \|\mathbf{u}_t\|_{R}^2
+$$
+
+where $\|\mathbf{z}\|_W^2 = \mathbf{z}^T W \mathbf{z}$.
+
 ## Requirements
 
 ### Functional Requirements
 
 #### Quadrotor Dynamics Model
-   - 6-DOF rigid body dynamics
-   - State representation: position (3D), velocity (3D), orientation (quaternion), angular velocity (3D) = 13D
-   - Control inputs: body thrust + body rates (roll, pitch, yaw rates)
-   - Physical parameters: mass, inertia matrix, arm length
-   - Full nonlinear dynamics with quaternion-based attitude representation
+
+- 6-DOF rigid body dynamics
+- State representation: position (3D), velocity (3D), orientation (quaternion), angular velocity (3D) = 13D
+- Control inputs: body thrust + body rates (roll, pitch, yaw rates)
+- Physical parameters: mass, inertia matrix, arm length
+- Full nonlinear dynamics with quaternion-based attitude representation
 
 #### Trajectory Generation
-   - Multiple reference trajectory types:
-     - Circular/helical trajectories
-     - Lemniscate (figure-8) trajectories
-     - Minimum snap polynomial trajectories
-     - Waypoint-based trajectories
-   - Time-parameterized trajectories with position, velocity, acceleration references
+
+- Multiple reference trajectory types:
+  - Circular/helical trajectories
+  - Lemniscate (figure-8) trajectories
+  - Minimum snap polynomial trajectories
+  - Waypoint-based trajectories
+- Time-parameterized trajectories with position, velocity, acceleration references
 
 #### Cost Functions
-   - Position tracking error (weighted L2 norm)
-   - Velocity tracking error
-   - Attitude tracking error (quaternion distance: 1 - |q^T q_ref|)
-   - Control effort penalty (R matrix on actions)
-   - Trajectory smoothness penalty (action rate limiting)
-   - Terminal cost for goal convergence
+
+- Position tracking error (weighted L2 norm)
+- Velocity tracking error
+- Attitude tracking error (quaternion distance: 1 - |q^T q_ref|)
+- Control effort penalty (R matrix on actions)
+- Trajectory smoothness penalty (action rate limiting)
+- Terminal cost for goal convergence
 
 #### Examples to Implement
-   - **Example 1**: Basic hover control (stabilization around setpoint)
-   - **Example 2**: Circular trajectory following
-   - **Example 3**: Figure-8 trajectory with MPPI/SMPPI/KMPPI comparison
-   - **Example 4**: Minimum snap trajectory following
-   - **Example 5**: Obstacle avoidance during trajectory following (stretch goal)
+
+- **Example 1**: Basic hover control (stabilization around setpoint)
+- **Example 2**: Circular trajectory following
+- **Example 3**: Figure-8 trajectory with MPPI/SMPPI/KMPPI comparison
+- **Example 4**: Minimum snap trajectory following
+- **Example 5**: Obstacle avoidance during trajectory following (stretch goal)
 
 #### Visualization
-   - 3D trajectory plots (reference vs actual)
-   - Tracking error over time
-   - Control inputs over time
-   - Energy consumption
-   - Optional: animated 3D quadrotor visualization
+
+- 3D trajectory plots (reference vs actual)
+- Tracking error over time
+- Control inputs over time
+- Energy consumption
+- Optional: animated 3D quadrotor visualization
 
 ### Non-Functional Requirements
 
