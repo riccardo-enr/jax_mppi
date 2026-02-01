@@ -114,3 +114,8 @@ The development is structured in phases:
 ## Credits
 
 This project is a direct port of [pytorch_mppi](https://github.com/UM-ARM-Lab/pytorch_mppi). We aim to maintain parity with the original implementation while leveraging JAX's unique features for performance and flexibility.
+
+## Completed Plans
+
+- [Porting Plan](plan/completed/porting_pytorch_jax.md)
+- [Evosax Integration Plan](plan/completed/evosax_integration.md)
