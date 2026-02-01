@@ -38,20 +38,39 @@ files.forEach((filePath) => {
     const lines = content.split("\n");
     let modified = false;
 
-    for (let i = lines.length - 1; i >= 1; i--) {
+    for (let i = lines.length - 1; i >= 0; i--) {
         const line = lines[i];
-        const prevLine = lines[i - 1];
+        const trimmedLine = line.trim();
 
-        // Check if line starts with $$ or \[
-        if (
-            (line.trim().startsWith("$$") || line.trim().startsWith("\\[")) &&
-            prevLine.trim() !== ""
-        ) {
-            // Insert blank line before
+        // Check for opening $$ or \[ at the start of line
+        const isOpeningMath =
+            (trimmedLine.startsWith("$$") && !trimmedLine.startsWith("$$$")) ||
+            trimmedLine.startsWith("\\[");
+
+        // Check for closing $$ at the end of line
+        const isClosingMath =
+            trimmedLine.endsWith("$$") && trimmedLine !== "$$";
+
+        // Blank line before opening math
+        if (isOpeningMath && i > 0 && lines[i - 1].trim() !== "") {
             lines.splice(i, 0, "");
             modified = true;
             console.log(
-                `✓ Fixed: ${path.relative(process.cwd(), filePath)}:${i + 1}`,
+                `✓ Fixed: ${path.relative(process.cwd(), filePath)}:${i + 1} (blank before)`,
+            );
+            fixedCount++;
+        }
+
+        // Blank line after closing math
+        if (
+            isClosingMath &&
+            i < lines.length - 1 &&
+            lines[i + 1].trim() !== ""
+        ) {
+            lines.splice(i + 1, 0, "");
+            modified = true;
+            console.log(
+                `✓ Fixed: ${path.relative(process.cwd(), filePath)}:${i + 1} (blank after)`,
             );
             fixedCount++;
         }
