@@ -1,51 +1,52 @@
 [project]
 name = "jax-mppi"
-version = "0.1.1"
+version = "0.2.0"
 description = "JAX implementation of Model Predictive Path Integral (MPPI) control"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {file = "LICENSE"}
-authors = [{name = "Riccardo Enrico"}]
-keywords = ["jax", "mppi", "model-predictive-control", "robotics", "optimal-control", "trajectory-optimization"]
+license = { text = "MIT" }
+authors = [{ name = "Riccardo Enrico" }]
+keywords = [
+  "jax", "mppi", "model-predictive-control", "robotics",
+  "optimal-control", "trajectory-optimization",
+]
 classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Science/Research",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Robotics",
 ]
 dependencies = [
-    "jax[cuda13]",
-    "numpy",
-    "jaxtyping",
+  "jax[cuda13]",
+  "numpy",
+  "jaxtyping",
+  "chex"
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "gymnasium[classic_control]",
-    "matplotlib",
-    "basedpyright",
-    "ruff",
-    "cma>=3.3.0",  # CMA-ES for autotuning
-    "ray[tune]>=2.0.0",  # Ray Tune for global search
-    "hyperopt>=0.2.7",  # HyperOpt search algorithm
-    "bayesian-optimization>=1.4.0",  # BayesOpt search algorithm
-    "ribs[all]>=0.6.0",  # CMA-ME quality diversity
+  "pytest",
+  "gymnasium[classic_control]",
+  "matplotlib",
+  "basedpyright",
+  "ruff>=0.14.14",
 ]
 docs = [
-    "mkdocs-material",
-    "mkdocstrings[python]",
+  "mkdocs-material",
+  "mkdocstrings[python]",
 ]
 autotuning = [
-    "cma>=3.3.0",  # CMA-ES optimizer (core autotuning)
-    # Additional optimizers (install separately if needed):
-    # ray[tune]>=2.0.0
-    # hyperopt>=0.2.7
-    # bayesian-optimization>=1.4.0
-    # ribs[all]>=0.6.0
+  "cma>=3.3.0",
+  "evosax>=0.1.0",
+]
+autotuning-extra = [
+  "ray[tune]>=2.0.0",
+  "hyperopt>=0.2.7",
+  "bayesian-optimization>=1.4.0",
+  "ribs[all]>=0.6.0",
 ]
 
 [project.urls]
@@ -60,7 +61,6 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
-ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "src/jax_mppi/costs/basic.py" = ["F722", "F821"]
@@ -72,9 +72,8 @@ ignore = []
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
-# Setup for Python module
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

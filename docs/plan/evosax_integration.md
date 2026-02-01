@@ -2,7 +2,7 @@
 
 **Goal:** Add evosax as a JAX-native optimization backend for the autotuning framework in jax-mppi.
 
-**Status:** Planning
+**Status:** In Progress
 
 ---
 
@@ -84,11 +84,11 @@ class Optimizer(abc.ABC):
 
 ---
 
-### Step 2: Create evosax optimizer module
+### Step 2: Create evosax optimizer module ✅ DONE
 
-**New File:** `src/jax_mppi/autotune_evosax.py` (~300-400 lines)
+**New File:** `src/jax_mppi/autotune_evosax.py` (~387 lines)
 
-**Contents:**
+**Contents (Implemented):**
 
 #### 2.1 EvoSaxOptimizer base class
 
@@ -196,7 +196,7 @@ class SepCMAESOpt(EvoSaxOptimizer):
 
 ---
 
-### Step 3: Update main autotune module
+### Step 3: Update main autotune module ✅ DONE
 
 **File:** `src/jax_mppi/autotune.py`
 
@@ -217,7 +217,7 @@ class SepCMAESOpt(EvoSaxOptimizer):
 
 ---
 
-### Step 4: Update package exports
+### Step 4: Update package exports ✅ DONE
 
 **File:** `src/jax_mppi/__init__.py`
 
@@ -234,9 +234,9 @@ except ImportError:
 
 ---
 
-### Step 5: Create tests
+### Step 5: Create tests ✅ DONE
 
-**New File:** `tests/test_autotune_evosax.py` (~200-300 lines)
+**New File:** `tests/test_autotune_evosax.py` (~408 lines)
 
 **Test coverage:**
 
@@ -298,9 +298,9 @@ def test_evosax_cmaes_simple():
 
 ---
 
-### Step 6: Create example
+### Step 6: Create example ✅ DONE
 
-**New File:** `examples/autotune_evosax_comparison.py` (~200-250 lines)
+**New File:** `examples/autotune_evosax_comparison.py` (~307 lines)
 
 **Purpose:** Compare evosax vs. cma library performance
 
@@ -322,9 +322,9 @@ def test_evosax_cmaes_simple():
 
 ---
 
-### Step 7: Documentation
+### Step 7: Documentation ✅ DONE
 
-#### 7.1 Update README.md
+#### 7.1 Update README.md ✅ DONE
 
 Add evosax to the autotuning section:
 
