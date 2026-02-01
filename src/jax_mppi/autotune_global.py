@@ -1,7 +1,6 @@
 """Global search extensions for JAX-MPPI autotuning.
 
-This module provides Ray Tune integration for distributed global hyperparameter
-search.
+This module provides Ray Tune integration for distributed global hyperparameter search.
 Requires optional dependencies: ray[tune], hyperopt, bayesian-optimization
 
 Example:
@@ -50,16 +49,14 @@ from .autotune import (
 class GlobalTunableParameter(TunableParameter):
     """Parameter with Ray Tune search space definition.
 
-    Extends TunableParameter with search space information for global
-    optimization.
+    Extends TunableParameter with search space information for global optimization.
     """
 
     def __init__(self, search_space: Any):
         """Initialize with Ray Tune search space.
 
         Args:
-            search_space: Ray Tune search space (e.g., tune.loguniform(0.1,
-                10))
+            search_space: Ray Tune search space (e.g., tune.loguniform(0.1, 10))
         """
         self.search_space = search_space
 
@@ -189,8 +186,8 @@ class GlobalHorizonParameter(HorizonParameter, GlobalTunableParameter):
 class RayOptimizer(Optimizer):
     """Ray Tune optimizer for distributed global search.
 
-    Uses Ray Tune's hyperparameter optimization algorithms (HyperOpt, BayesOpt,
-    etc.) for distributed search over large parameter spaces.
+    Uses Ray Tune's hyperparameter optimization algorithms (HyperOpt, BayesOpt, etc.)
+    for distributed search over large parameter spaces.
 
     Note: Only supports optimize_all(), not step-wise optimization.
     """
@@ -216,8 +213,7 @@ class RayOptimizer(Optimizer):
         except ImportError:
             raise ImportError(
                 "Ray Tune optimizer requires 'ray[tune]'. "
-                "Install with: pip install 'ray[tune]' hyperopt "
-                "bayesian-optimization"
+                "Install with: pip install 'ray[tune]' hyperopt bayesian-optimization"
             )
 
         self.search_alg = search_alg
@@ -245,8 +241,7 @@ class RayOptimizer(Optimizer):
     def optimize_step(self) -> EvaluationResult:
         """Not supported for Ray Tune (requires full run)."""
         raise NotImplementedError(
-            "RayOptimizer only supports optimize_all(), not step-wise "
-            "optimization"
+            "RayOptimizer only supports optimize_all(), not step-wise optimization"
         )
 
     def optimize_all(self, iterations: int) -> EvaluationResult:
@@ -260,6 +255,9 @@ class RayOptimizer(Optimizer):
         """
         if self.evaluate_fn is None:
             raise RuntimeError("Must call setup_optimization() first")
+
+        # Use iterations if provided, otherwise use num_samples
+        num_trials = iterations if iterations > 0 else self.num_samples
 
         # This will be set by AutotuneGlobal
         raise NotImplementedError(
@@ -276,10 +274,8 @@ class AutotuneGlobal(Autotune):
     Example:
         >>> from ray import tune
         >>> params = [
-        ...     GlobalLambdaParameter(
-        ...         holder, search_space=tune.loguniform(0.1, 10)),
-        ...     GlobalNoiseSigmaParameter(
-        ...         holder, search_space=tune.uniform(0.1, 2.0)),
+        ...     GlobalLambdaParameter(holder, search_space=tune.loguniform(0.1, 10)),
+        ...     GlobalNoiseSigmaParameter(holder, search_space=tune.uniform(0.1, 2.0)),
         ... ]
         >>> tuner = AutotuneGlobal(
         ...     params_to_tune=params,

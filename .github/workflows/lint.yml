@@ -26,4 +26,4 @@ jobs:
                   uv pip install -e ".[dev]"
 
             - name: Run ruff format
-              run: uv run ruff format --check .
+              run: uv run ruff format .

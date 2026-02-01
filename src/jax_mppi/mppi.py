@@ -1,351 +1,416 @@
-# ruff: noqa: F722, F821
-"""Core MPPI implementation in JAX.
-
-This module provides the main MPPI algorithm logic, including:
-- State definition (MPPIState)
-- Configuration (MPPIConfig)
-- Initialization
-- Rollout generation
-- Control update
-"""
-
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Optional, Tuple
 
 import jax
 import jax.numpy as jnp
 from jax.tree_util import register_pytree_node_class
-from jaxtyping import Array, Float
 
-from .types import CostFn, DynamicsFn
+from .types import DynamicsFn, RunningCostFn, TerminalCostFn
 
 
 @dataclass(frozen=True)
 class MPPIConfig:
-    """Configuration for MPPI controller.
-
-    Attributes:
-        dynamics_fn: Function to step dynamics forward (x, u) -> x_next
-        cost_fn: Function to compute step cost (x, u) -> cost
-        num_samples: Number of trajectories to sample per step
-        horizon: Planning horizon length
-        lambda_: Temperature parameter (inverse sensitivity)
-        noise_sigma: Exploration noise covariance (vector or matrix)
-        u_min: Minimum control value (for clipping)
-        u_max: Maximum control value (for clipping)
-        u_init: Initial guess for control (default: 0)
-        step_method: 'mppi', 'smppi', or 'kmppi' (internal flag)
-        num_support_pts: For KMPPI, number of support points
-        discount: Discount factor for cost (gamma)
-        rollout_samples: Number of rollouts per sample for stochastic
-            dynamics (default: 1)
-    """
-
-    dynamics_fn: DynamicsFn
-    cost_fn: CostFn
-    num_samples: int
-    horizon: int
-    lambda_: float
-    noise_sigma: Float[Array, "nu nu"]
-    u_min: Float[Array, "nu"]
-    u_max: Float[Array, "nu"]
-    u_init: Float[Array, "nu"]
+    # Static config (not traced through JAX)
+    num_samples: int  # K
+    horizon: int  # T
     nx: int
     nu: int
-    step_method: str = "mppi"
-    num_support_pts: int = 0  # For KMPPI
-    discount: float = 1.0
-    rollout_samples: int = 1  # For stochastic dynamics
+    lambda_: float
+    u_scale: float
+    u_per_command: int
+    step_dependent_dynamics: bool
+    rollout_samples: int  # M
+    rollout_var_cost: float
+    rollout_var_discount: float
+    sample_null_action: bool
+    noise_abs_cost: bool
 
 
 @register_pytree_node_class
+@dataclass
 class MPPIState:
-    """State of the MPPI controller.
-
-    Contains the current control distribution parameters and other
-    internal state variables.
-
-    Attributes:
-        U: Current mean control trajectory (horizon, nu)
-        key: JAX PRNG key
-        step: Current time step
-        # Optional fields for variants:
-        action_sequence: For SMPPI (horizon, nu)
-        theta: For KMPPI (num_support_pts, nu)
-        Tk: For KMPPI (num_support_pts,)
-        Hs: For KMPPI (horizon,)
-        noise_mu: Mean of noise distribution (nu,)
-        noise_sigma: Covariance of noise (nu, nu)
-        noise_sigma_inv: Inverse covariance (nu, nu)
-    """
-
-    def __init__(
-        self,
-        U: Float[Array, "H nu"],
-        key: Array,
-        step: int,
-        noise_mu: Optional[Float[Array, "nu"]] = None,
-        noise_sigma: Optional[Float[Array, "nu nu"]] = None,
-        noise_sigma_inv: Optional[Float[Array, "nu nu"]] = None,
-        u_init: Optional[Float[Array, "nu"]] = None,
-        # Variant specific
-        action_sequence: Optional[Float[Array, "H nu"]] = None,
-        theta: Optional[Float[Array, "K nu"]] = None,
-        Tk: Optional[Float[Array, "K"]] = None,
-        Hs: Optional[Float[Array, "H"]] = None,
-    ):
-        self.U = U
-        self.key = key
-        self.step = step
-        self.noise_mu = noise_mu
-        self.noise_sigma = noise_sigma
-        self.noise_sigma_inv = noise_sigma_inv
-        self.u_init = u_init
-        self.action_sequence = action_sequence
-        self.theta = theta
-        self.Tk = Tk
-        self.Hs = Hs
+    # Dynamic state (carried through JAX transforms)
+    U: jax.Array  # (T, nu) nominal trajectory
+    u_init: jax.Array  # (nu,) default action for shift
+    noise_mu: jax.Array  # (nu,)
+    noise_sigma: jax.Array  # (nu, nu)
+    noise_sigma_inv: jax.Array
+    u_min: Optional[jax.Array]
+    u_max: Optional[jax.Array]
+    key: jax.Array  # PRNG key
 
     def tree_flatten(self):
-        children = (
-            self.U,
-            self.key,
-            self.noise_mu,
-            self.noise_sigma,
-            self.noise_sigma_inv,
-            self.u_init,
-            self.action_sequence,
-            self.theta,
-            self.Tk,
-            self.Hs,
+        return (
+            (
+                self.U,
+                self.u_init,
+                self.noise_mu,
+                self.noise_sigma,
+                self.noise_sigma_inv,
+                self.u_min,
+                self.u_max,
+                self.key,
+            ),
+            None,
         )
-        aux_data = (self.step,)
-        return children, aux_data
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):
-        return cls(
-            U=children[0],
-            key=children[1],
-            step=aux_data[0],
-            noise_mu=children[2],
-            noise_sigma=children[3],
-            noise_sigma_inv=children[4],
-            u_init=children[5],
-            action_sequence=children[6],
-            theta=children[7],
-            Tk=children[8],
-            Hs=children[9],
+        return cls(*children)
+
+
+def _bound_action(
+    action: jax.Array, u_min: Optional[jax.Array], u_max: Optional[jax.Array]
+) -> jax.Array:
+    if u_min is None and u_max is None:
+        return action
+    if u_min is None:
+        assert u_max is not None
+        return jnp.minimum(action, u_max)
+    if u_max is None:
+        return jnp.maximum(action, u_min)
+    return jnp.clip(action, u_min, u_max)
+
+
+def _scaled_bounds(
+    u_min: Optional[jax.Array],
+    u_max: Optional[jax.Array],
+    u_scale: float,
+) -> Tuple[Optional[jax.Array], Optional[jax.Array]]:
+    if u_scale == 1.0 or u_scale == 0.0:
+        return u_min, u_max
+    u_min_scaled = None if u_min is None else (u_min / u_scale)
+    u_max_scaled = None if u_max is None else (u_max / u_scale)
+    return u_min_scaled, u_max_scaled
+
+
+def _shift_nominal(mppi_state: MPPIState, shift_steps: int) -> MPPIState:
+    if shift_steps <= 0:
+        return mppi_state
+    horizon = mppi_state.U.shape[0]
+    shift_steps = int(min(shift_steps, horizon))
+    u_control = jnp.roll(mppi_state.U, -shift_steps, axis=0)
+    fill = jnp.tile(mppi_state.u_init, (shift_steps, 1))
+    u_control = u_control.at[-shift_steps:].set(fill)
+    return replace(mppi_state, U=u_control)
+
+
+def _sample_noise(
+    key: jax.Array,
+    num_samples: int,
+    horizon: int,
+    noise_mu: jax.Array,
+    noise_sigma: jax.Array,
+    sample_null_action: bool,
+) -> Tuple[jax.Array, jax.Array]:
+    key, subkey = jax.random.split(key)
+    noise = jax.random.multivariate_normal(
+        subkey,
+        mean=noise_mu,
+        cov=noise_sigma,
+        shape=(num_samples, horizon),
+    )
+    if sample_null_action:
+        noise = noise.at[0].set(jnp.zeros((horizon, noise_mu.shape[0])))
+    return noise, key
+
+
+def _state_for_cost(state: jax.Array, nx: int) -> jax.Array:
+    if state.shape[-1] <= nx:
+        return state
+    return state[..., :nx]
+
+
+def _call_dynamics(
+    dynamics: DynamicsFn,
+    state: jax.Array,
+    action: jax.Array,
+    t: int,
+    step_dependent: bool,
+) -> jax.Array:
+    if step_dependent:
+        return dynamics(state, action, t)
+    return dynamics(state, action)
+
+
+def _call_running_cost(
+    running_cost: RunningCostFn,
+    state: jax.Array,
+    action: jax.Array,
+    t: int,
+    step_dependent: bool,
+) -> jax.Array:
+    if step_dependent:
+        return running_cost(state, action, t)
+    return running_cost(state, action)
+
+
+def _single_rollout_costs(
+    config: MPPIConfig,
+    current_obs: jax.Array,
+    actions: jax.Array,
+    dynamics: DynamicsFn,
+    running_cost: RunningCostFn,
+    terminal_cost: Optional[TerminalCostFn],
+) -> Tuple[jax.Array, jax.Array]:
+    def step_fn(state, inputs):
+        t, action = inputs
+        next_state = _call_dynamics(
+            dynamics, state, action, t, config.step_dependent_dynamics
         )
+        cost_state = _state_for_cost(state, config.nx)
+        step_cost = _call_running_cost(
+            running_cost, cost_state, action, t, config.step_dependent_dynamics
+        )
+        return next_state, step_cost
+
+    ts = jnp.arange(config.horizon)
+    final_state, step_costs = jax.lax.scan(step_fn, current_obs, (ts, actions))
+    if terminal_cost is None:
+        terminal = jnp.array(0.0)
+    else:
+        terminal_state = _state_for_cost(final_state, config.nx)
+        terminal = terminal_cost(terminal_state, actions[-1])
+    return step_costs, terminal
+
+
+def _compute_rollout_costs(
+    config: MPPIConfig,
+    current_obs: jax.Array,
+    actions: jax.Array,
+    dynamics: DynamicsFn,
+    running_cost: RunningCostFn,
+    terminal_cost: Optional[TerminalCostFn],
+) -> jax.Array:
+    per_step_costs, terminal_costs = jax.vmap(
+        lambda a: _single_rollout_costs(
+            config, current_obs, a, dynamics, running_cost, terminal_cost
+        )
+    )(actions)
+
+    mean_step_costs = per_step_costs
+    var_step_costs = jnp.zeros_like(per_step_costs)
+
+    if config.rollout_samples > 1:
+        # Placeholder: allow variance penalty without explicit stochastic rollouts.
+        mean_step_costs = per_step_costs
+        var_step_costs = jnp.zeros_like(per_step_costs)
+
+    var_discount = config.rollout_var_discount ** jnp.arange(config.horizon)
+    var_penalty = config.rollout_var_cost * jnp.sum(
+        var_step_costs * var_discount, axis=1
+    )
+    return jnp.sum(mean_step_costs, axis=1) + terminal_costs + var_penalty
+
+
+def _compute_noise_cost(
+    noise: jax.Array,
+    noise_sigma_inv: jax.Array,
+    noise_abs_cost: bool,
+) -> jax.Array:
+    if noise_abs_cost:
+        abs_noise = jnp.abs(noise)
+        quad = jnp.einsum(
+            "ktd,df,ktf->kt", abs_noise, jnp.abs(noise_sigma_inv), abs_noise
+        )
+    else:
+        quad = jnp.einsum("ktd,df,ktf->kt", noise, noise_sigma_inv, noise)
+    return 0.5 * jnp.sum(quad, axis=1)
+
+
+def _compute_weights(costs: jax.Array, lambda_: float) -> jax.Array:
+    min_cost = jnp.min(costs)
+    scaled = -(costs - min_cost) / lambda_
+    return jax.nn.softmax(scaled)
 
 
 def create(
-    config: MPPIConfig,
-    seed: int = 0,
+    nx: int,
+    nu: int,
+    noise_sigma: jax.Array,
+    num_samples: int = 100,
+    horizon: int = 15,
+    lambda_: float = 1.0,
+    noise_mu: Optional[jax.Array] = None,
+    u_min: Optional[jax.Array] = None,
+    u_max: Optional[jax.Array] = None,
+    u_init: Optional[jax.Array] = None,
+    U_init: Optional[jax.Array] = None,
+    u_scale: float = 1.0,
+    u_per_command: int = 1,
+    step_dependent_dynamics: bool = False,
+    rollout_samples: int = 1,
+    rollout_var_cost: float = 0.0,
+    rollout_var_discount: float = 0.95,
+    sample_null_action: bool = False,
+    noise_abs_cost: bool = False,
+    key: Optional[jax.Array] = None,
 ) -> Tuple[MPPIConfig, MPPIState]:
-    """Initialize MPPI controller state.
+    """Factory: create config + initial state."""
+    if key is None:
+        key = jax.random.PRNGKey(0)
 
-    Args:
-        config: MPPI configuration
-        seed: Random seed
+    config = MPPIConfig(
+        num_samples=num_samples,
+        horizon=horizon,
+        nx=nx,
+        nu=nu,
+        lambda_=lambda_,
+        u_scale=u_scale,
+        u_per_command=u_per_command,
+        step_dependent_dynamics=step_dependent_dynamics,
+        rollout_samples=rollout_samples,
+        rollout_var_cost=rollout_var_cost,
+        rollout_var_discount=rollout_var_discount,
+        sample_null_action=sample_null_action,
+        noise_abs_cost=noise_abs_cost,
+    )
 
-    Returns:
-        Initial config and state
-    """
-    key = jax.random.PRNGKey(seed)
+    # Initialize state variables
+    if noise_mu is None:
+        noise_mu = jnp.zeros(nu)
 
-    # Precompute noise matrices
-    noise_sigma = config.noise_sigma
+    # Ensure noise_sigma is 2D
+    if noise_sigma.ndim == 1:
+        noise_sigma = jnp.diag(noise_sigma)
+
     noise_sigma_inv = jnp.linalg.inv(noise_sigma)
-    noise_mu = jnp.zeros(config.nu)
 
-    # Initialize control trajectory with u_init
-    U = jnp.tile(config.u_init, (config.horizon, 1))
+    if u_init is None:
+        u_init = jnp.zeros(nu)
 
-    state = MPPIState(
-        U=U,
-        key=key,
-        step=0,
+    if U_init is None:
+        U_init = jnp.tile(u_init, (horizon, 1))
+
+    mppi_state = MPPIState(
+        U=U_init,
+        u_init=u_init,
         noise_mu=noise_mu,
         noise_sigma=noise_sigma,
         noise_sigma_inv=noise_sigma_inv,
-        u_init=config.u_init,
-    )
-
-    return config, state
-
-
-def rollout(
-    config: MPPIConfig,
-    state: MPPIState,
-    x0: Float[Array, "nx"],
-    noise: Float[Array, "K H nu"],
-) -> Float[Array, "K"]:
-    """Perform trajectory rollouts and compute costs.
-
-    Args:
-        config: MPPI config
-        state: MPPI state
-        x0: Initial state
-        noise: Sampled noise perturbations (K, H, nu)
-
-    Returns:
-        Trajectory costs (K,)
-    """
-    # Perturb controls: U_k = U + noise_k
-    # Note: noise is already scaled by sigma in sampling step if needed,
-    # but here we assume 'noise' is epsilon ~ N(0, Sigma) or similar.
-    # Actually, standard MPPI samples epsilon ~ N(0, Sigma) and adds it.
-    # Let's assume 'noise' passed in is epsilon.
-
-    # U shape: (H, nu)
-    # noise shape: (K, H, nu)
-    # U_perturbed: (K, H, nu)
-    U_perturbed = state.U + noise
-
-    # Clip controls
-    U_perturbed = jnp.clip(
-        U_perturbed,
-        config.u_min,
-        config.u_max,
-    )
-
-    def scan_fn(carry, t):
-        x = carry
-        u = U_perturbed[:, t, :]  # (K, nu)
-
-        # Step dynamics (vmap over samples)
-        # We need to vmap dynamics_fn and cost_fn over the K samples
-        # x is (K, nx)
-        x_next = jax.vmap(config.dynamics_fn)(x, u)
-        c = jax.vmap(config.cost_fn)(x, u)
-
-        return x_next, c
-
-    # Initial state repeated for all samples
-    x_init = jnp.tile(x0, (config.num_samples, 1))
-
-    # Run rollout
-    _, costs = jax.lax.scan(scan_fn, x_init, jnp.arange(config.horizon))
-
-    # Sum costs over horizon (with optional discount)
-    if config.discount < 1.0:
-        discounts = config.discount ** jnp.arange(config.horizon)
-        total_costs = jnp.sum(costs * discounts[:, None], axis=0)
-    else:
-        total_costs = jnp.sum(costs, axis=0)
-
-    # Add terminal cost if defined? (Not in minimal config yet)
-
-    # Add control cost: lambda * u^T Sigma^-1 noise
-    # This is part of the MPPI derivation (importance sampling weight)
-    # The term is usually: gamma * u_nominal^T Sigma^-1 epsilon
-    # But often simplified or included in the cost function.
-    # In standard MPPI:
-    # S(tau) = cost(tau) + sum(0.5 * u^T Sigma^-1 u) ?
-    # Let's stick to the cost_fn provided by user plus the control cost term
-    # required for the update law if not implicit.
-    # The weight w = exp(-1/lambda * (S - rho))
-    # where S includes the task cost + control cost.
-
-    # Control effort cost for MPPI update:
-    # The cost function usually includes a term for control effort.
-    # If not, we might need to add it here.
-    # Standard MPPI usually formulates minimizing:
-    # J = phi(x_T) + sum(q(x) + 0.5 * u^T R u)
-    # And the update uses the total cost.
-
-    # For now, return the computed path costs.
-    # User-provided cost_fn is assumed to cover everything.
-
-    return total_costs
-
-
-def step(
-    config: MPPIConfig,
-    state: MPPIState,
-    x0: Float[Array, "nx"],
-) -> Tuple[MPPIState, Float[Array, "nu"], dict]:
-    """Execute one MPPI optimization step.
-
-    Args:
-        config: MPPI configuration
-        state: Current MPPI state
-        x0: Current system state
-
-    Returns:
-        Updated state, optimal control u0, and info dict
-    """
-    # 1. Sample noise
-    # epsilon ~ N(0, Sigma)
-    # Shape: (K, H, nu)
-    key, subkey = jax.random.split(state.key)
-    noise = jax.random.multivariate_normal(
-        subkey,
-        state.noise_mu,  # type: ignore
-        state.noise_sigma,  # type: ignore
-        shape=(config.num_samples, config.horizon),
-    )
-
-    # 2. Rollout and evaluate costs
-    # costs: (K,)
-    costs = rollout(config, state, x0, noise)
-
-    # 3. Compute weights
-    # w ~ exp(-1/lambda * (S - min(S)))
-    beta = jnp.min(costs)
-    weights = jnp.exp(-(1.0 / config.lambda_) * (costs - beta))
-    weights = weights / (jnp.sum(weights) + 1e-10)  # Normalize
-
-    # 4. Update control trajectory
-    # U_new = U + sum(w * epsilon)
-    # noise: (K, H, nu)
-    # weights: (K,)
-    # delta: (H, nu)
-    weighted_noise = jnp.sum(weights[:, None, None] * noise, axis=0)
-
-    # Apply smoothing or other update logic depending on method
-    if config.step_method == "kmppi":
-        # KMPPI update logic handled externally or here
-        # For now, standard MPPI update
-        U_new = state.U + weighted_noise
-    elif config.step_method == "smppi":
-        # SMPPI update
-        U_new = state.U + weighted_noise
-    else:
-        # Standard MPPI
-        U_new = state.U + weighted_noise
-
-    # Clip controls
-    U_new = jnp.clip(U_new, config.u_min, config.u_max)
-
-    # 5. Shift trajectory (receding horizon)
-    # u0 = U_new[0]
-    # U_shifted = [U_new[1:], u_init]
-    u_optimal = U_new[0]
-    U_shifted = jnp.roll(U_new, -1, axis=0)
-    U_shifted = U_shifted.at[-1].set(state.u_init)  # type: ignore
-
-    # Update state
-    new_state = MPPIState(
-        U=U_shifted,
+        u_min=None if u_min is None else jnp.array(u_min),
+        u_max=None if u_max is None else jnp.array(u_max),
         key=key,
-        step=state.step + 1,
-        noise_mu=state.noise_mu,
-        noise_sigma=state.noise_sigma,
-        noise_sigma_inv=state.noise_sigma_inv,
-        u_init=state.u_init,
-        # Preserve other fields
-        action_sequence=state.action_sequence,
-        theta=state.theta,
-        Tk=state.Tk,
-        Hs=state.Hs,
     )
 
-    info = {
-        "costs": costs,
-        "weights": weights,
-        "best_cost": beta,
-    }
+    return config, mppi_state
 
-    return new_state, u_optimal, info
+
+def command(
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    current_obs: jax.Array,
+    dynamics: DynamicsFn,
+    running_cost: RunningCostFn,
+    terminal_cost: Optional[TerminalCostFn] = None,
+    shift: bool = True,
+) -> Tuple[jax.Array, MPPIState]:
+    """Compute optimal action and return updated state."""
+    noise, key = _sample_noise(
+        mppi_state.key,
+        config.num_samples,
+        config.horizon,
+        mppi_state.noise_mu,
+        mppi_state.noise_sigma,
+        config.sample_null_action,
+    )
+
+    perturbed_actions = mppi_state.U[None, :, :] + noise
+    scaled_actions = perturbed_actions * config.u_scale
+    scaled_actions = _bound_action(
+        scaled_actions, mppi_state.u_min, mppi_state.u_max
+    )
+
+    rollout_costs = _compute_rollout_costs(
+        config,
+        current_obs,
+        scaled_actions,
+        dynamics,
+        running_cost,
+        terminal_cost,
+    )
+    noise_costs = _compute_noise_cost(
+        noise, mppi_state.noise_sigma_inv, config.noise_abs_cost
+    )
+    total_costs = rollout_costs + noise_costs
+
+    weights = _compute_weights(total_costs, config.lambda_)
+    delta_U = jnp.tensordot(weights, noise, axes=1)
+    U_new = mppi_state.U + delta_U
+
+    u_min_scaled, u_max_scaled = _scaled_bounds(
+        mppi_state.u_min, mppi_state.u_max, config.u_scale
+    )
+    U_new = _bound_action(U_new, u_min_scaled, u_max_scaled)
+
+    action_seq = U_new[: config.u_per_command]
+    scaled_action_seq = _bound_action(
+        action_seq * config.u_scale, mppi_state.u_min, mppi_state.u_max
+    )
+    action = (
+        scaled_action_seq[0] if config.u_per_command == 1 else scaled_action_seq
+    )
+
+    new_state = replace(mppi_state, U=U_new, key=key)
+    if shift:
+        new_state = _shift_nominal(new_state, config.u_per_command)
+
+    return action, new_state
+
+
+def reset(
+    config: MPPIConfig, mppi_state: MPPIState, key: jax.Array
+) -> MPPIState:
+    """Reset nominal trajectory."""
+    U_new = jnp.tile(mppi_state.u_init, (config.horizon, 1))
+    return replace(mppi_state, U=U_new, key=key)
+
+
+def get_rollouts(
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    current_obs: jax.Array,
+    dynamics: DynamicsFn,
+    num_rollouts: int = 1,
+) -> jax.Array:
+    """Forward-simulate trajectories for visualization."""
+    noise, key = _sample_noise(
+        mppi_state.key,
+        num_rollouts,
+        config.horizon,
+        mppi_state.noise_mu,
+        mppi_state.noise_sigma,
+        sample_null_action=False,
+    )
+    perturbed_actions = mppi_state.U[None, :, :] + noise
+    scaled_actions = perturbed_actions * config.u_scale
+    scaled_actions = _bound_action(
+        scaled_actions, mppi_state.u_min, mppi_state.u_max
+    )
+
+    def rollout_single(actions, obs):
+        def step_fn(state, inputs):
+            t, action = inputs
+            next_state = _call_dynamics(
+                dynamics, state, action, t, config.step_dependent_dynamics
+            )
+            return next_state, _state_for_cost(next_state, config.nx)
+
+        ts = jnp.arange(config.horizon)
+        init_state = obs
+        _, states = jax.lax.scan(step_fn, init_state, (ts, actions))
+        init_out = _state_for_cost(init_state, config.nx)
+        return jnp.concatenate([init_out[None, :], states], axis=0)
+
+    if current_obs.ndim == 1:
+        rollouts = jax.vmap(lambda a: rollout_single(a, current_obs))(
+            scaled_actions
+        )
+    else:
+        rollouts = jax.vmap(
+            lambda obs: jax.vmap(lambda a: rollout_single(a, obs))(
+                scaled_actions
+            )
+        )(current_obs)
+
+    return rollouts
