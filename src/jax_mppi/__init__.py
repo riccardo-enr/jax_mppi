@@ -11,6 +11,11 @@ try:
 except ImportError:
     autotune_qd = None
 
+try:
+    from . import autotune_evosax
+except ImportError:
+    autotune_evosax = None
+
 from .mppi import MPPIConfig, MPPIState, command, create, get_rollouts, reset
 
 __all__ = [
@@ -26,4 +31,5 @@ __all__ = [
     "autotune",
     "autotune_global",
     "autotune_qd",
+    "autotune_evosax",
 ]
