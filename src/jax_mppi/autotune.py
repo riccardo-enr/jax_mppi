@@ -1,7 +1,7 @@
 """Autotuning framework for JAX-MPPI.
 
 This module provides automatic hyperparameter optimization for MPPI controllers
-using CMA-ES and other optimization strategies. Supports tuning of:
+using multiple optimization backends. Supports tuning of:
 - Lambda (temperature parameter)
 - Noise sigma (exploration covariance)
 - Noise mu (exploration mean)
@@ -9,7 +9,11 @@ using CMA-ES and other optimization strategies. Supports tuning of:
 
 Compatible with MPPI, SMPPI, and KMPPI variants.
 
-Example:
+Optimizers:
+- CMAESOpt (from `cma` library) - Classic CMA-ES
+- CMAESOpt, SepCMAESOpt, OpenESOpt (from `evosax`) - JAX-native, GPU-accelerated
+
+Example with cma:
     >>> import jax_mppi as jmppi
     >>> config, state = jmppi.mppi.create(...)
     >>>
@@ -25,6 +29,15 @@ Example:
     ...     ],
     ...     evaluate_fn=evaluate,
     ...     optimizer=jmppi.autotune.CMAESOpt(population=10),
+    ... )
+    >>> best = tuner.optimize_all(iterations=30)
+
+Example with evosax (JAX-native, GPU-accelerated):
+    >>> from jax_mppi import autotune_evosax
+    >>> tuner = jmppi.autotune.Autotune(
+    ...     params_to_tune=[...],
+    ...     evaluate_fn=evaluate,
+    ...     optimizer=autotune_evosax.CMAESOpt(population=10),  # JAX-native
     ... )
     >>> best = tuner.optimize_all(iterations=30)
 """
