@@ -84,11 +84,11 @@ class Optimizer(abc.ABC):
 
 ---
 
-### Step 2: Create evosax optimizer module
+### Step 2: Create evosax optimizer module ✅ DONE
 
-**New File:** `src/jax_mppi/autotune_evosax.py` (~300-400 lines)
+**New File:** `src/jax_mppi/autotune_evosax.py` (~387 lines)
 
-**Contents:**
+**Contents (Implemented):**
 
 #### 2.1 EvoSaxOptimizer base class
 
@@ -217,7 +217,7 @@ class SepCMAESOpt(EvoSaxOptimizer):
 
 ---
 
-### Step 4: Update package exports
+### Step 4: Update package exports ✅ DONE
 
 **File:** `src/jax_mppi/__init__.py`
 
