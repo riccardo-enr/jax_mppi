@@ -41,7 +41,7 @@ pip install jax-mppi[autotuning]  # Autotuning features
 
 ### Development Installation
 
-For contributors who want to work on the package:
+For contributors who want to work on the package (requires Python 3.12+):
 
 ```bash
 # Clone the repository
