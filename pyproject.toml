@@ -1,6 +1,6 @@
 [project]
 name = "jax-mppi"
-version = "0.1.1"
+version = "0.2.0"
 description = "JAX implementation of Model Predictive Path Integral (MPPI) control"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -34,6 +34,7 @@ dev = [
     "hyperopt>=0.2.7",  # HyperOpt search algorithm
     "bayesian-optimization>=1.4.0",  # BayesOpt search algorithm
     "ribs[all]>=0.6.0",  # CMA-ME quality diversity
+    "evosax>=0.1.0",  # JAX-native evolutionary strategies
 ]
 docs = [
     "mkdocs-material",
@@ -41,6 +42,7 @@ docs = [
 ]
 autotuning = [
     "cma>=3.3.0",  # CMA-ES optimizer (core autotuning)
+    "evosax>=0.1.0",  # JAX-native evolutionary strategies
     # Additional optimizers (install separately if needed):
     # ray[tune]>=2.0.0
     # hyperopt>=0.2.7

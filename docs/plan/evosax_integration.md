@@ -2,7 +2,7 @@
 
 **Goal:** Add evosax as a JAX-native optimization backend for the autotuning framework in jax-mppi.
 
-**Status:** Planning
+**Status:** In Progress
 
 ---
 
