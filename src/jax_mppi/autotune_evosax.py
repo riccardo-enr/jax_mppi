@@ -137,10 +137,12 @@ class EvoSaxOptimizer(Optimizer):
         # Get strategy from evosax.algorithms
         try:
             from evosax import algorithms
+
             strategy_cls = getattr(algorithms, self.strategy)
         except (AttributeError, ImportError):
             try:
                 from evosax import algorithms
+
                 available = algorithms.__all__
             except:
                 available = []
@@ -183,9 +185,7 @@ class EvoSaxOptimizer(Optimizer):
         # Ask: sample population with evosax API
         self.rng_key, subkey = jax.random.split(self.rng_key)
         params = self.es.default_params
-        solutions, self.es_state = self.es.ask(
-            subkey, self.es_state, params
-        )
+        solutions, self.es_state = self.es.ask(subkey, self.es_state, params)
 
         # Evaluate all solutions sequentially
         # (JAX-pure evaluation would use vmap for parallelization)
