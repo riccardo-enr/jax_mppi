@@ -34,20 +34,7 @@ jobs:
             - name: Run ruff format
               run: uv run ruff format .
 
-            - name: Install Markdown Lint
-              run: npm install -g markdownlint-cli2
-
-            - name: Run Markdown Auto-fix
+            - name: Install and Run Markdown Lint
               run: |
-                  cd docs
-                  node .markdownlint-fix.js
-
-            - name: Verify Markdown Lint (after auto-fix)
-              run: markdownlint-cli2 --config docs/.markdownlint-cli2.yaml "**/*.md" "#node_modules"
-
-            - name: Commit auto-fixed files
-              uses: stefanzweifel/git-auto-commit-action@v5
-              with:
-                  commit_message: "fix(docs): auto-fix markdown linting violations"
-                  commit_options: "--no-verify"
-                  file_pattern: "docs/**/*.md"
+                  npm install -g markdownlint-cli2
+                  markdownlint-cli2 --config docs/.markdownlint-cli2.yaml "**/*.md" "#node_modules"
