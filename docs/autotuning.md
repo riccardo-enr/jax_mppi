@@ -124,26 +124,29 @@ CMA-ES is a state-of-the-art evolutionary algorithm for continuous optimization.
 The algorithm proceeds in generations $g$. At each generation:
 
 1.  **Sampling**: We sample $\lambda_{pop}$ candidate parameters $\theta_i$ (offspring):
+
     \[
     \theta_i \sim \mathbf{m}^{(g)} + \sigma^{(g)} \mathcal{N}(\mathbf{0}, \mathbf{C}^{(g)}) \quad \text{for } i = 1, \dots, \lambda_{pop}
     \]
 
-2.  **Evaluation**: Each candidate $\theta_i$ is evaluated by running an MPPI simulation to estimate $\mathcal{J}(\theta_i)$.
+3.  **Evaluation**: Each candidate $\theta_i$ is evaluated by running an MPPI simulation to estimate $\mathcal{J}(\theta_i)$.
 
-3.  **Selection and Recombination**: The candidates are sorted by their cost $\mathcal{J}(\theta_i)$. The top $\mu$ candidates (parents) are selected to update the mean:
+4.  **Selection and Recombination**: The candidates are sorted by their cost $\mathcal{J}(\theta_i)$. The top $\mu$ candidates (parents) are selected to update the mean:7
+
     \[
     \mathbf{m}^{(g+1)} = \sum_{i=1}^{\mu} w_i \theta_{i:\lambda_{pop}}
     \]
     where $w_i$ are positive weights summing to 1, and $\theta_{i:\lambda_{pop}}$ denotes the $i$-th best candidate.
 
-4.  **Covariance Adaptation**: The covariance matrix $\mathbf{C}^{(g)}$ is updated to increase the likelihood of successful steps. This involves two paths:
+6.  **Covariance Adaptation**: The covariance matrix $\mathbf{C}^{(g)}$ is updated to increase the likelihood of successful steps. This involves two paths:
     *   **Rank-1 Update**: Uses the evolution path $\mathbf{p}_c$ to exploit correlations between consecutive steps.
     *   **Rank-$\mu$ Update**: Uses the variance of the successful steps.
+
     \[
     \mathbf{C}^{(g+1)} = (1 - c_1 - c_\mu) \mathbf{C}^{(g)} + c_1 \mathbf{p}_c \mathbf{p}_c^T + c_\mu \sum_{i=1}^{\mu} w_i (\theta_{i:\lambda_{pop}} - \mathbf{m}^{(g)})(\theta_{i:\lambda_{pop}} - \mathbf{m}^{(g)})^T / \sigma^{(g)2}
     \]
 
-5.  **Step Size Control**: The global step size $\sigma^{(g)}$ is updated using the conjugate evolution path $\mathbf{p}_\sigma$ to control the overall scale of the distribution.
+7.  **Step Size Control**: The global step size $\sigma^{(g)}$ is updated using the conjugate evolution path $\mathbf{p}_\sigma$ to control the overall scale of the distribution.
 
 ### Quality Diversity with CMA-ME
 
