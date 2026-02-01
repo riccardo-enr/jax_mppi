@@ -217,6 +217,58 @@ class TestSMPPICommand:
         assert action.shape == (nu,)
         assert isinstance(new_state, smppi.SMPPIState)
 
+    def test_step_dependent_dynamics(self):
+        """Test that step-dependent dynamics are used correctly."""
+        nx, nu = 2, 1
+        noise_sigma = jnp.eye(nu)
+
+        config, state = smppi.create(
+            nx=nx,
+            nu=nu,
+            noise_sigma=noise_sigma,
+            step_dependent_dynamics=True,
+        )
+
+        def step_dependent_dynamics(state, action, t):
+            return state + action + t * 0.1
+
+        def step_dependent_cost(state, action, t):
+            return jnp.sum(state**2) + jnp.sum(action**2) + t * 0.01
+
+        current_state = jnp.zeros(nx)
+        action, new_state = smppi.command(
+            config,
+            state,
+            current_state,
+            step_dependent_dynamics,
+            step_dependent_cost,
+        )
+
+        assert action.shape == (nu,)
+
+    def test_sample_null_action(self):
+        """Test that sample_null_action works correctly."""
+        nx, nu = 2, 1
+        noise_sigma = jnp.eye(nu)
+
+        config, state = smppi.create(
+            nx=nx,
+            nu=nu,
+            noise_sigma=noise_sigma,
+            sample_null_action=True,
+        )
+
+        current_state = jnp.zeros(nx)
+        action, new_state = smppi.command(
+            config,
+            state,
+            current_state,
+            simple_dynamics,
+            quadratic_cost,
+        )
+
+        assert action.shape == (nu,)
+
 
 class TestSMPPISmoothness:
     """Tests for SMPPI smoothness features."""

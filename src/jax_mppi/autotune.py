@@ -662,7 +662,7 @@ def save_convergence_plot(
     initial_cost: float,
     output_path: str | Path = "docs/media/autotune_convergence.png",
     title: str = "Autotuning Convergence",
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     """Save convergence plot to docs/media.
 
