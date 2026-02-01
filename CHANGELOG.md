@@ -7,9 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### [0.1.5] - 2026-02-01
+## [0.1.5] - 2026-02-01
 
-- Fixed autotuning comparison example to report `noise_sigma` correctly and avoid NumPy scalar conversion deprecation warnings
+### Added
+
+- JAX-native evosax autotuning backend with CMA-ES, Sep-CMA-ES, and OpenES optimizers
+- Evosax vs CMA-ES comparison example script
+- Comprehensive evosax optimizer test suite
+- MIT License file
+- Dedicated testing documentation
+
+### Changed
+
+- README autotuning section with evosax usage guidance and optimizer matrix
+- Pyproject dependency groups for autotuning and autotuning-extra, plus new `chex` dependency
+- CI test workflow to install autotuning dependencies
+- Autotuning modules refactored to support evosax backend integration
+
+### Fixed
+
+- Evosax API usage updates for current evosax versions
+- MPPI `create` API usage in the evosax comparison example
+- Example output to report `noise_sigma` correctly and avoid NumPy scalar conversion deprecation warnings
 
 ## [0.1.1] - 2026-02-01
 
@@ -60,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - Documentation structure with scientific theory for MPPI variants
 
-[unreleased]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.1...HEAD
+[unreleased]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.1...v0.1.5
 [0.1.1]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/riccardo-enr/jax_mppi/releases/tag/v0.1.0
