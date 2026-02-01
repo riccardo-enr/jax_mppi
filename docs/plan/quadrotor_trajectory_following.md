@@ -29,41 +29,46 @@ A quadrotor trajectory following example will:
 ### Functional Requirements
 
 #### Quadrotor Dynamics Model
-   - 6-DOF rigid body dynamics
-   - State representation: position (3D), velocity (3D), orientation (quaternion), angular velocity (3D) = 13D
-   - Control inputs: body thrust + body rates (roll, pitch, yaw rates)
-   - Physical parameters: mass, inertia matrix, arm length
-   - Full nonlinear dynamics with quaternion-based attitude representation
+
+- 6-DOF rigid body dynamics
+- State representation: position (3D), velocity (3D), orientation (quaternion), angular velocity (3D) = 13D
+- Control inputs: body thrust + body rates (roll, pitch, yaw rates)
+- Physical parameters: mass, inertia matrix, arm length
+- Full nonlinear dynamics with quaternion-based attitude representation
 
 #### Trajectory Generation
-   - Multiple reference trajectory types:
-     - Circular/helical trajectories
-     - Lemniscate (figure-8) trajectories
-     - Minimum snap polynomial trajectories
-     - Waypoint-based trajectories
-   - Time-parameterized trajectories with position, velocity, acceleration references
+
+- Multiple reference trajectory types:
+  - Circular/helical trajectories
+  - Lemniscate (figure-8) trajectories
+  - Minimum snap polynomial trajectories
+  - Waypoint-based trajectories
+- Time-parameterized trajectories with position, velocity, acceleration references
 
 #### Cost Functions
-   - Position tracking error (weighted L2 norm)
-   - Velocity tracking error
-   - Attitude tracking error (quaternion distance: 1 - |q^T q_ref|)
-   - Control effort penalty (R matrix on actions)
-   - Trajectory smoothness penalty (action rate limiting)
-   - Terminal cost for goal convergence
+
+- Position tracking error (weighted L2 norm)
+- Velocity tracking error
+- Attitude tracking error (quaternion distance: 1 - |q^T q_ref|)
+- Control effort penalty (R matrix on actions)
+- Trajectory smoothness penalty (action rate limiting)
+- Terminal cost for goal convergence
 
 #### Examples to Implement
-   - **Example 1**: Basic hover control (stabilization around setpoint)
-   - **Example 2**: Circular trajectory following
-   - **Example 3**: Figure-8 trajectory with MPPI/SMPPI/KMPPI comparison
-   - **Example 4**: Minimum snap trajectory following
-   - **Example 5**: Obstacle avoidance during trajectory following (stretch goal)
+
+- **Example 1**: Basic hover control (stabilization around setpoint)
+- **Example 2**: Circular trajectory following
+- **Example 3**: Figure-8 trajectory with MPPI/SMPPI/KMPPI comparison
+- **Example 4**: Minimum snap trajectory following
+- **Example 5**: Obstacle avoidance during trajectory following (stretch goal)
 
 #### Visualization
-   - 3D trajectory plots (reference vs actual)
-   - Tracking error over time
-   - Control inputs over time
-   - Energy consumption
-   - Optional: animated 3D quadrotor visualization
+
+- 3D trajectory plots (reference vs actual)
+- Tracking error over time
+- Control inputs over time
+- Energy consumption
+- Optional: animated 3D quadrotor visualization
 
 ### Non-Functional Requirements
 
