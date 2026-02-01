@@ -134,35 +134,38 @@ class EvoSaxOptimizer(Optimizer):
             evaluate_fn, maximize=self.maximize
         )
 
-        # Get strategy from evosax
+        # Get strategy from evosax.algorithms
         try:
-            strategy_cls = getattr(self.evosax, self.strategy)
-        except AttributeError:
-            available = [
-                name
-                for name in dir(self.evosax)
-                if not name.startswith("_")
-            ]
+            from evosax import algorithms
+            strategy_cls = getattr(algorithms, self.strategy)
+        except (AttributeError, ImportError):
+            try:
+                from evosax import algorithms
+                available = algorithms.__all__
+            except:
+                available = []
             raise ValueError(
                 f"Unknown strategy '{self.strategy}'. "
-                f"Available: {available}"
+                f"Available strategies: {available}"
             )
 
-        # Initialize strategy with parameters
-        strategy_kwargs = {
-            "popsize": self.population,
-            "num_dims": len(initial_params),
+        # Initialize strategy with evosax API
+        # solution is just a template for the solution shape
+        solution_template = jnp.zeros(len(initial_params))
+
+        self.es = strategy_cls(
+            population_size=self.population,
+            solution=solution_template,
             **self.es_params,
-        }
+        )
 
-        self.es = strategy_cls(**strategy_kwargs)
-
-        # Initialize ES state
+        # Initialize ES state with evosax API
         self.rng_key = jax.random.PRNGKey(0)
-        self.es_state = self.es.initialize(
+        params = self.es.default_params  # Get default hyperparameters
+        self.es_state = self.es.init(
             self.rng_key,
-            init_mean=jnp.array(initial_params),
-            init_std=self.sigma_init,
+            mean=jnp.array(initial_params),
+            params=params,
         )
 
         self.best_params = initial_params.copy()
@@ -177,9 +180,12 @@ class EvoSaxOptimizer(Optimizer):
         if self.es is None or self.es_state is None:
             raise RuntimeError("Must call setup_optimization() first")
 
-        # Ask: sample population
+        # Ask: sample population with evosax API
         self.rng_key, subkey = jax.random.split(self.rng_key)
-        solutions = self.es.ask(subkey, self.es_state)
+        params = self.es.default_params
+        solutions, self.es_state = self.es.ask(
+            subkey, self.es_state, params
+        )
 
         # Evaluate all solutions sequentially
         # (JAX-pure evaluation would use vmap for parallelization)
@@ -197,10 +203,10 @@ class EvoSaxOptimizer(Optimizer):
 
         fitness_array = jnp.array(fitness_values, dtype=jnp.float32)
 
-        # Tell: update ES state with fitness values
+        # Tell: update ES state with fitness values using evosax API
         self.rng_key, subkey = jax.random.split(self.rng_key)
-        self.es_state = self.es.tell(
-            solutions, fitness_array, self.es_state
+        self.es_state, metrics = self.es.tell(
+            subkey, solutions, fitness_array, self.es_state, params
         )
 
         # Track best result
@@ -308,7 +314,7 @@ class OpenESOpt(EvoSaxOptimizer):
             **kwargs: Additional arguments passed to EvoSaxOptimizer
         """
         super().__init__(
-            strategy="OpenES",
+            strategy="Open_ES",
             population=population,
             sigma_init=sigma,
             **kwargs,
