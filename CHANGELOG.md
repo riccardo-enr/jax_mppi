@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-02-01
+
+### Changed
+
+- Version bump only
+
 ## [0.1.6] - 2026-02-01
 
 ### Changed
@@ -85,7 +91,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - Documentation structure with scientific theory for MPPI variants
 
-[unreleased]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.6...HEAD
+[unreleased]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.1...v0.1.5
 [0.1.1]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.0...v0.1.1
