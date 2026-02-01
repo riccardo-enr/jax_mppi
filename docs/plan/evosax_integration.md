@@ -298,9 +298,9 @@ def test_evosax_cmaes_simple():
 
 ---
 
-### Step 6: Create example
+### Step 6: Create example ✅ DONE
 
-**New File:** `examples/autotune_evosax_comparison.py` (~200-250 lines)
+**New File:** `examples/autotune_evosax_comparison.py` (~307 lines)
 
 **Purpose:** Compare evosax vs. cma library performance
 
