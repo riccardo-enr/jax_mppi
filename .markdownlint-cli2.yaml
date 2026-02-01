@@ -1,19 +1,8 @@
 config:
-  MD004: false  # Unordered list style
-  MD007: false  # Unordered list indentation
-  MD009: false  # Trailing spaces
   MD013: false  # Line length
-  MD022: false  # Headings should be surrounded by blank lines
-  MD024: false  # Multiple headings with the same content
-  MD026: false  # Trailing punctuation in heading
-  MD030: false  # Spaces after list markers
-  MD031: false  # Fenced code blocks should be surrounded by blank lines
-  MD032: false  # Lists should be surrounded by blank lines
+  MD024: false  # Multiple headings with the same content (CHANGELOG)
   MD033: false  # Allow inline HTML
-  MD040: false  # Fenced code blocks should have a language specified
   MD041: false  # First line in file should be a top level header
-  MD050: false  # Strong style
-  MD060: false  # Table column style
 
 globs:
   - "**/*.md"
