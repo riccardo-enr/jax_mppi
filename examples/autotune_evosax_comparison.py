@@ -108,7 +108,7 @@ def create_evaluation_function(
             rollouts=jnp.zeros((1, 1, 2)),
             params={
                 "lambda": holder.config.lambda_,
-                "sigma": np.diag(np.array(holder.state.noise_sigma)),
+                "noise_sigma": np.diag(np.array(holder.state.noise_sigma)),
             },
             iteration=0,
         )
@@ -157,11 +157,13 @@ def run_optimization(
 
     total_time = time.time() - start_time
     best_result = tuner.get_best_result()
+    best_lambda = float(np.asarray(best_result.params["lambda"]).item())
+    best_sigma = best_result.params.get("noise_sigma", None)
 
     print("\nFinal Results:")
     print(f"  Best cost: {best_result.mean_cost:.6f}")
-    print(f"  Lambda: {best_result.params['lambda']:.4f}")
-    print(f"  Sigma: {best_result.params['sigma']}")
+    print(f"  Lambda: {best_lambda:.4f}")
+    print(f"  Sigma: {best_sigma}")
     print(f"  Total time: {total_time:.2f}s")
 
     return {
@@ -218,9 +220,9 @@ def plot_results(results_dict):
 
     plt.tight_layout()
     plt.savefig(
-        "examples/autotune_comparison.png", dpi=150, bbox_inches="tight"
+        "docs/media/autotune_comparison.png", dpi=150, bbox_inches="tight"
     )
-    print("\n✓ Plot saved to examples/autotune_comparison.png")
+    print("\n✓ Plot saved to docs/media/autotune_comparison.png")
     plt.show()
 
 
@@ -234,7 +236,7 @@ def main():
     evaluate_fn, params, holder = create_evaluation_function()
 
     iterations = 20
-    population = 10
+    population = 50
     sigma = 0.3
 
     results = {}
