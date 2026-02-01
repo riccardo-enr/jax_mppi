@@ -31,6 +31,7 @@ for x in solutions:
 ## 3. Data Transfer Overhead
 
 The interface forces repeated data movement between device and host:
+
 1. `solutions` (from `es.ask`) are JAX arrays on GPU.
 2. `np.array(x)` moves individual solution vectors to CPU.
 3. `evaluate_fn` likely uses JAX internally, so it might move data back to GPU for simulation.
@@ -40,6 +41,7 @@ The interface forces repeated data movement between device and host:
 ## 4. Lack of End-to-End JIT Compilation
 
 `evosax` allows for the entire optimization process (multiple generations) to be JIT-compiled using `jax.lax.scan`.
+
 - **Current State**: `optimize_step` is a Python method that cannot be JIT-compiled because it calls the Python-based `evaluate_fn` loop.
 - **Unused Code**: `_create_jax_evaluate_fn` exists in `autotune_evosax.py` but is not utilized effectively to enable JAX-pure evaluation.
 
