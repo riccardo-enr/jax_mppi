@@ -37,4 +37,4 @@ jobs:
             - name: Install and Run Markdown Lint
               run: |
                   npm install -g markdownlint-cli2
-                  markdownlint-cli2 "**/*.md" "#node_modules"
+                  markdownlint-cli2 --config docs/.markdownlint-cli2.yaml "**/*.md" "#node_modules"
