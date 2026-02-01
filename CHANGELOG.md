@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed autotuning comparison example to report `noise_sigma` correctly and avoid NumPy scalar conversion deprecation warnings
+
 ## [0.1.1] - 2026-02-01
 
 ### Changed
