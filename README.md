@@ -1,9 +1,10 @@
 # jax_mppi
 
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![JAX](https://img.shields.io/badge/backend-JAX-blue)
-![Status](https://img.shields.io/badge/status-planning-yellow)
+![Python](https://img.shields.io/badge/python-3.12+-blue)
+![Status](https://img.shields.io/badge/status-alpha-orange)
+[![Build](https://github.com/riccardo-enr/jax_mppi/actions/workflows/test.yml/badge.svg)](https://github.com/riccardo-enr/jax_mppi/actions/workflows/test.yml)
+[![Publish to PyPI](https://github.com/riccardo-enr/jax_mppi/actions/workflows/publish.yml/badge.svg)](https://github.com/riccardo-enr/jax_mppi/actions/workflows/publish.yml)
 
 **jax_mppi** is a functional, JIT-compilable port of the [pytorch_mppi](https://github.com/UM-ARM-Lab/pytorch_mppi) library to JAX. It implements Model Predictive Path Integral (MPPI) control with a focus on performance and composability.
 
@@ -29,11 +30,25 @@ This library embraces JAX's functional paradigm:
 ## Installation
 
 ```bash
+# Install from PyPI
+pip install jax-mppi
+
+# Or with optional dependencies
+pip install jax-mppi[dev]  # Development tools
+pip install jax-mppi[docs]  # Documentation
+pip install jax-mppi[autotuning]  # Autotuning features
+```
+
+### Development Installation
+
+For contributors who want to work on the package (requires Python 3.12+):
+
+```bash
 # Clone the repository
-git clone https://github.com/yourusername/jax_mppi.git
+git clone https://github.com/riccardo-enr/jax_mppi.git
 cd jax_mppi
 
-# Install dependencies
+# Install in development mode
 pip install -e .
 ```
 
