@@ -4,7 +4,7 @@ version = "0.1.1"
 description = "JAX implementation of Model Predictive Path Integral (MPPI) control"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = "MIT"}
+license = {file = "LICENSE"}
 authors = [{name = "Riccardo Enrico"}]
 keywords = ["jax", "mppi", "model-predictive-control", "robotics", "optimal-control", "trajectory-optimization"]
 classifiers = [
