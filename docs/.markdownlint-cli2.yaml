@@ -1,12 +1,16 @@
 config:
-  MD013: false  # Line length
-  MD024: false  # Multiple headings with the same content (CHANGELOG)
-  MD033: false  # Allow inline HTML
-  MD041: false  # First line in file should be a top level header
+    MD013: false # Line length
+    MD024: false # Multiple headings with the same content (CHANGELOG)
+    MD033: false # Allow inline HTML
+    MD041: false # First line in file should be a top level header
+    blank-line-before-math: true
 
 globs:
-  - "**/*.md"
+    - "**/*.md"
 
 ignores:
-  - "node_modules"
-  - ".venv"
+    - "node_modules"
+    - ".venv"
+
+customRules:
+    - .markdownlint-custom-rules.js

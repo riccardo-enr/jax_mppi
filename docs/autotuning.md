@@ -124,6 +124,7 @@ CMA-ES is a state-of-the-art evolutionary algorithm for continuous optimization.
 The algorithm proceeds in generations $g$. At each generation:
 
 1. **Sampling**: We sample $\lambda_{pop}$ candidate parameters $\theta_i$ (offspring):
+
     \[
     \theta_i \sim \mathbf{m}^{(g)} + \sigma^{(g)} \mathcal{N}(\mathbf{0}, \mathbf{C}^{(g)}) \quad \text{for } i = 1, \dots, \lambda_{pop}
     \]
@@ -131,6 +132,7 @@ The algorithm proceeds in generations $g$. At each generation:
 2. **Evaluation**: Each candidate $\theta_i$ is evaluated by running an MPPI simulation to estimate $\mathcal{J}(\theta_i)$.
 
 3. **Selection and Recombination**: The candidates are sorted by their cost $\mathcal{J}(\theta_i)$. The top $\mu$ candidates (parents) are selected to update the mean:
+
     \[
     \mathbf{m}^{(g+1)} = \sum_{i=1}^{\mu} w_i \theta_{i:\lambda_{pop}}
     \]
@@ -139,6 +141,7 @@ The algorithm proceeds in generations $g$. At each generation:
 4. **Covariance Adaptation**: The covariance matrix $\mathbf{C}^{(g)}$ is updated to increase the likelihood of successful steps. This involves two paths:
     - **Rank-1 Update**: Uses the evolution path $\mathbf{p}_c$ to exploit correlations between consecutive steps.
     - **Rank-$\mu$ Update**: Uses the variance of the successful steps.
+
     \[
     \mathbf{C}^{(g+1)} = (1 - c_1 - c_\mu) \mathbf{C}^{(g)} + c_1 \mathbf{p}_c \mathbf{p}_c^T + c_\mu \sum_{i=1}^{\mu} w_i (\theta_{i:\lambda_{pop}} - \mathbf{m}^{(g)})(\theta_{i:\lambda_{pop}} - \mathbf{m}^{(g)})^T / \sigma^{(g)2}
     \]
@@ -188,6 +191,7 @@ where $\Theta_{global}$ can be defined by complex distributions (e.g., Log-Unifo
 Ray Tune orchestrates the search using algorithms like:
 
 - **Bayesian Optimization**: Uses a Gaussian Process surrogate model $P(f \mid \mathcal{D})$ to approximate the objective and an acquisition function $a(\theta)$ (e.g., Expected Improvement) to select the next sample:
+
     \[
     \theta_{next} = \arg\max_{\theta} a(\theta)
     \]

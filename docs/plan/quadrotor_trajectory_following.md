@@ -34,6 +34,7 @@ The state vector $\mathbf{x} \in \mathbb{R}^{13}$ is defined as:
 
 $$
 \mathbf{x} = [\mathbf{p}^T, \mathbf{v}^T, \mathbf{q}^T, \boldsymbol{\omega}^T]^T
+
 $$
 
 where:
@@ -47,6 +48,7 @@ The control input $\mathbf{u} \in \mathbb{R}^{4}$ consists of the total thrust a
 
 $$
 \mathbf{u} = [T, \omega_{x,cmd}, \omega_{y,cmd}, \omega_{z,cmd}]^T
+
 $$
 
 ### Dynamics
@@ -54,30 +56,40 @@ $$
 The system dynamics are governed by the following equations:
 
 1. **Translational Kinematics**:
+
    $$
    \dot{\mathbf{p}} = \mathbf{v}
+
    $$
 
 2. **Translational Dynamics**:
+
    $$
    \dot{\mathbf{v}} = \mathbf{g} + \frac{1}{m} R(\mathbf{q}) \begin{bmatrix} 0 \\ 0 \\ T \end{bmatrix}
+
    $$
    where $\mathbf{g} = [0, 0, -g]^T$ is the gravity vector, $m$ is the mass, and $R(\mathbf{q})$ is the rotation matrix derived from quaternion $\mathbf{q}$.
 
 3. **Rotational Kinematics**:
    The time derivative of the quaternion is given by:
+
    $$
    \dot{\mathbf{q}} = \frac{1}{2} \mathbf{q} \otimes \begin{bmatrix} 0 \\ \boldsymbol{\omega} \end{bmatrix}
+
    $$
    where $\otimes$ denotes quaternion multiplication. In matrix form involving the skew-symmetric matrix:
+
    $$
    \dot{\mathbf{q}} = \frac{1}{2} \Omega(\boldsymbol{\omega}) \mathbf{q}
+
    $$
    *Note: The implementation must ensure $\|\mathbf{q}\| = 1$, typically by normalization after integration.*
 
 4. **Rotational Dynamics** (First-order actuator model):
+
    $$
    \dot{\boldsymbol{\omega}} = \frac{1}{\tau_\omega} (\boldsymbol{\omega}_{cmd} - \boldsymbol{\omega})
+
    $$
    where $\tau_\omega$ is the time constant for the angular velocity tracking.
 
@@ -87,6 +99,7 @@ The MPPI controller optimizes a cost function $J$ over a horizon $H$. The instan
 
 $$
 C(\mathbf{x}_t, \mathbf{u}_t) = \|\mathbf{p}_t - \mathbf{p}_{ref,t}\|_{Q_{pos}}^2 + \|\mathbf{v}_t - \mathbf{v}_{ref,t}\|_{Q_{vel}}^2 + \|\mathbf{u}_t\|_{R}^2
+
 $$
 
 where $\|\mathbf{z}\|_W^2 = \mathbf{z}^T W \mathbf{z}$.
