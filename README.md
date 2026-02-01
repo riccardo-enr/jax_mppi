@@ -1,11 +1,10 @@
 # jax_mppi
 
-[![Publish to PyPI](https://github.com/riccardo-enr/jax_mppi/actions/workflows/publish.yml/badge.svg?branch=main)](https://github.com/riccardo-enr/jax_mppi/actions/workflows/publish.yml)
-![Python](https://img.shields.io/pypi/pyversions/jax-mppi)
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![JAX](https://img.shields.io/badge/backend-JAX-blue)
+![Python](https://img.shields.io/pypi/pyversions/jax-mppi)
 ![Status](https://img.shields.io/badge/status-alpha-orange)
+[![Build](https://github.com/riccardo-enr/jax_mppi/actions/workflows/test.yml/badge.svg)](https://github.com/riccardo-enr/jax_mppi/actions/workflows/test.yml)
+[![Publish to PyPI](https://github.com/riccardo-enr/jax_mppi/actions/workflows/publish.yml/badge.svg)](https://github.com/riccardo-enr/jax_mppi/actions/workflows/publish.yml)
 
 **jax_mppi** is a functional, JIT-compilable port of the [pytorch_mppi](https://github.com/UM-ARM-Lab/pytorch_mppi) library to JAX. It implements Model Predictive Path Integral (MPPI) control with a focus on performance and composability.
 
