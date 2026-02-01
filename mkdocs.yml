@@ -34,6 +34,7 @@ extra_javascript:
 markdown_extensions:
     - pymdownx.arithmatex:
           generic: true
+          block_tag: "pre"
     - pymdownx.tasklist:
           custom_checkbox: true
 
