@@ -2,8 +2,7 @@
 export default [
     {
         names: ["blank-line-before-math"],
-        description:
-            "Blank line required before opening $$ or \\[, and after closing $$",
+        description: "Blank line required before and after block-level $$ math",
         tags: ["spacing"],
         function: (params, onError) => {
             const { lines } = params;
@@ -11,33 +10,26 @@ export default [
                 const line = lines[i];
                 const trimmedLine = line.trim();
 
-                // Check for opening $$ or \[ at the start of line
-                const isOpeningMath =
-                    (trimmedLine.startsWith("$$") &&
-                        !trimmedLine.startsWith("$$$")) ||
-                    trimmedLine.startsWith("\\[");
+                // Only check for block-level math (lines that are exactly $$)
+                const isBlockMath = trimmedLine === "$$";
 
-                // Check for closing $$ at the end of line
-                const isClosingMath =
-                    trimmedLine.endsWith("$$") && trimmedLine !== "$$";
-
-                // Blank line before opening math
-                if (isOpeningMath && i > 0 && lines[i - 1].trim() !== "") {
+                // Blank line before block math
+                if (isBlockMath && i > 0 && lines[i - 1].trim() !== "") {
                     onError({
                         lineNumber: i + 1,
-                        detail: `Blank line required before math delimiter`,
+                        detail: `Blank line required before block math`,
                     });
                 }
 
-                // Blank line after closing math
+                // Blank line after block math
                 if (
-                    isClosingMath &&
+                    isBlockMath &&
                     i < lines.length - 1 &&
                     lines[i + 1].trim() !== ""
                 ) {
                     onError({
                         lineNumber: i + 1,
-                        detail: `Blank line required after closing math delimiter`,
+                        detail: `Blank line required after block math`,
                     });
                 }
             }

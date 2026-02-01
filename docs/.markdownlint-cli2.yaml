@@ -3,7 +3,7 @@ config:
     MD024: false # Multiple headings with the same content (CHANGELOG)
     MD033: false # Allow inline HTML
     MD041: false # First line in file should be a top level header
-    blank-line-before-math: true
+    MD049: false # Emphasis style (allow underscores in LaTeX)
 
 globs:
     - "**/*.md"
@@ -12,5 +12,5 @@ ignores:
     - "node_modules"
     - ".venv"
 
-customRules:
-    - .markdownlint-custom-rules.js
+# customRules:
+#     - .markdownlint-custom-rules.js

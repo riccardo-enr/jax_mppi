@@ -34,7 +34,6 @@ The state vector $\mathbf{x} \in \mathbb{R}^{13}$ is defined as:
 
 $$
 \mathbf{x} = [\mathbf{p}^T, \mathbf{v}^T, \mathbf{q}^T, \boldsymbol{\omega}^T]^T
-
 $$
 
 where:
