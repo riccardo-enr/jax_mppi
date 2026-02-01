@@ -365,7 +365,7 @@ def generate_lemniscate_trajectory(
 
 ## File Structure
 
-```
+```python
 jax_mppi/
 ├── src/jax_mppi/
 │   ├── dynamics/
