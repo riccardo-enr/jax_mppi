@@ -322,9 +322,9 @@ def test_evosax_cmaes_simple():
 
 ---
 
-### Step 7: Documentation
+### Step 7: Documentation ✅ DONE
 
-#### 7.1 Update README.md
+#### 7.1 Update README.md ✅ DONE
 
 Add evosax to the autotuning section:
 
