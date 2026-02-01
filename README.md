@@ -52,6 +52,16 @@ cd jax_mppi
 pip install -e .
 ```
 
+## Versioning
+
+This project uses **Semantic Versioning** following the `major.minor.patch` scheme:
+
+- **Major**: Breaking changes to the API or significant feature additions.
+- **Minor**: New features or enhancements that are backward compatible.
+- **Patch**: Bug fixes and minor updates.
+
+See [CHANGELOG](./CHANGELOG.md) for detailed version history.
+
 ## Usage
 
 ```python
