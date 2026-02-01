@@ -59,5 +59,6 @@ nav:
     - Development:
           - Porting Plan: plan/porting_pytorch_jax.md
           - Evosax Integration Plan: plan/evosax_integration.md
+          - Quadrotor Trajectory Following Plan: plan/quadrotor_trajectory_following.md
           - Testing Guide: testing.md
           - Releasing Guide: releasing.md
