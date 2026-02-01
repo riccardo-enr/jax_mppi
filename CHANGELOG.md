@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-02-01
+
+### Changed
+
+- Updated minimum Python version requirement to 3.12
+- Updated Ruff target version to Python 3.12
+- Removed support for Python 3.9, 3.10, 3.11 (targeting 3.12+)
+- Prepared package for initial PyPI release with complete metadata
+- Updated README with PyPI installation instructions
+
+### Added
+
+- GitHub Actions workflow for automated PyPI publishing via trusted publishing
+- Comprehensive PyPI metadata (classifiers, keywords, project URLs)
+- CHANGELOG following Keep a Changelog format
+
 ## [0.1.0] - 2026-02-01
 
 ### Added
@@ -40,5 +56,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - Documentation structure with scientific theory for MPPI variants
 
-[unreleased]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/riccardo-enr/jax_mppi/releases/tag/v0.1.0
