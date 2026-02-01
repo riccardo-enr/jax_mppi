@@ -196,7 +196,7 @@ class SepCMAESOpt(EvoSaxOptimizer):
 
 ---
 
-### Step 3: Update main autotune module
+### Step 3: Update main autotune module ✅ DONE
 
 **File:** `src/jax_mppi/autotune.py`
 
@@ -234,9 +234,9 @@ except ImportError:
 
 ---
 
-### Step 5: Create tests
+### Step 5: Create tests ✅ DONE
 
-**New File:** `tests/test_autotune_evosax.py` (~200-300 lines)
+**New File:** `tests/test_autotune_evosax.py` (~408 lines)
 
 **Test coverage:**
 
