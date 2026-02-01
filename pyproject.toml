@@ -23,6 +23,7 @@ dependencies = [
   "jax[cuda13]",
   "numpy",
   "jaxtyping",
+  "chex"
 ]
 
 [project.optional-dependencies]
