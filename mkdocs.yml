@@ -58,3 +58,5 @@ nav:
           - Pendulum: examples/pendulum.md
     - Development:
           - Porting Plan: plan/porting_pytorch_jax.md
+          - Evosax Integration Plan: plan/evosax_integration.md
+          - Testing Guide: testing.md

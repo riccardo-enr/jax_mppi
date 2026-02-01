@@ -243,6 +243,60 @@ class TestKMPPICommand:
         assert action.shape == (nu,)
         assert isinstance(new_state, kmppi.KMPPIState)
 
+    def test_step_dependent_dynamics(self):
+        """Test that step-dependent dynamics are used correctly."""
+        nx, nu = 2, 1
+        noise_sigma = jnp.eye(nu)
+
+        config, state, kernel_fn = kmppi.create(
+            nx=nx,
+            nu=nu,
+            noise_sigma=noise_sigma,
+            step_dependent_dynamics=True,
+        )
+
+        def step_dependent_dynamics(state, action, t):
+            return state + action + t * 0.1
+
+        def step_dependent_cost(state, action, t):
+            return jnp.sum(state**2) + jnp.sum(action**2) + t * 0.01
+
+        current_state = jnp.zeros(nx)
+        action, new_state = kmppi.command(
+            config,
+            state,
+            current_state,
+            step_dependent_dynamics,
+            step_dependent_cost,
+            kernel_fn,
+        )
+
+        assert action.shape == (nu,)
+
+    def test_sample_null_action(self):
+        """Test that sample_null_action works correctly."""
+        nx, nu = 2, 1
+        noise_sigma = jnp.eye(nu)
+
+        config, state, kernel_fn = kmppi.create(
+            nx=nx,
+            nu=nu,
+            noise_sigma=noise_sigma,
+            sample_null_action=True,
+        )
+
+        current_state = jnp.zeros(nx)
+        action, new_state = kmppi.command(
+            config,
+            state,
+            current_state,
+            simple_dynamics,
+            quadratic_cost,
+            kernel_fn,
+        )
+
+        assert action.shape == (nu,)
+
     def test_command_updates_theta(self):
         """Test that command updates control points."""
         nx, nu = 2, 1

@@ -443,7 +443,7 @@ def save_search_progress_plot(
     iteration_costs: list[float],
     output_path: str | Path = "docs/media/autotune_global_progress.png",
     title: str = "Global Hyperparameter Search Progress",
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     """Save global search progress plot to docs/media.
 
