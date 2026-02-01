@@ -1,7 +1,7 @@
 # jax_mppi
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![Python](https://img.shields.io/pypi/pyversions/jax-mppi)
+![Python](https://img.shields.io/badge/python-3.12+-blue)
 ![Status](https://img.shields.io/badge/status-alpha-orange)
 [![Build](https://github.com/riccardo-enr/jax_mppi/actions/workflows/test.yml/badge.svg)](https://github.com/riccardo-enr/jax_mppi/actions/workflows/test.yml)
 [![Publish to PyPI](https://github.com/riccardo-enr/jax_mppi/actions/workflows/publish.yml/badge.svg)](https://github.com/riccardo-enr/jax_mppi/actions/workflows/publish.yml)
