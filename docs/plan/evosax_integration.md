@@ -77,6 +77,7 @@ class Optimizer(abc.ABC):
 **File:** `pyproject.toml`
 
 **Changes:**
+
 - Add `evosax>=0.1.0` to `[project.optional-dependencies.autotuning]` section
 - Add to `[project.optional-dependencies.dev]` section as well
 
@@ -120,6 +121,7 @@ class EvoSaxOptimizer(Optimizer):
 ```
 
 **Key features:**
+
 - Strategy selection from evosax's 15+ algorithms
 - JIT-compiled ask-evaluate-tell loop
 - Support for both single-step and batch optimization
@@ -143,6 +145,7 @@ def _create_jax_evaluate_fn(
 **Challenge:** The user-provided `evaluate_fn` may not be JAX-pure (e.g., it might use numpy, modify state, etc.). Need to handle this gracefully.
 
 **Solutions:**
+
 - **Option A:** Use `jax.pure_callback` to call non-pure evaluation functions
 - **Option B:** Require evaluation function to be JAX-pure for evosax optimizer
 - **Option C:** Provide both pure and impure modes
@@ -163,10 +166,12 @@ def _batch_evaluate(
 ```
 
 **Benefits:**
+
 - GPU parallelization of fitness evaluations
 - Significant speedup when dynamics/cost are JIT-compiled
 
 **Challenges:**
+
 - Requires evaluation to be JAX-pure and vmappable
 - May need sequential fallback for non-pure evaluations
 
@@ -201,10 +206,12 @@ class SepCMAESOpt(EvoSaxOptimizer):
 **File:** `src/jax_mppi/autotune.py`
 
 **Changes:**
+
 - Update module docstring to mention evosax as an option
 - Update examples to show evosax usage
 
 **Example addition:**
+
 ```python
 >>> # With evosax (JAX-native, GPU-accelerated)
 >>> from jax_mppi import autotune_evosax
@@ -222,6 +229,7 @@ class SepCMAESOpt(EvoSaxOptimizer):
 **File:** `src/jax_mppi/__init__.py`
 
 **Changes:**
+
 ```python
 # Add conditional import
 try:
@@ -269,6 +277,7 @@ except ImportError:
    - Test with invalid strategy name (should raise clear error)
 
 **Test structure example:**
+
 ```python
 def test_evosax_cmaes_simple():
     """Test CMA-ES on simple quadratic objective."""
@@ -305,6 +314,7 @@ def test_evosax_cmaes_simple():
 **Purpose:** Compare evosax vs. cma library performance
 
 **Contents:**
+
 1. Setup simple pendulum MPPI tuning task
 2. Run with `CMAESOpt` from `cma` library (baseline)
 3. Run with `CMAESOpt` from evosax
@@ -359,13 +369,13 @@ opt = CMAESOpt(population=10, sigma=0.1)
 ```
 
 **After:**
+
 ```python
 from jax_mppi.autotune_evosax import CMAESOpt
 opt = CMAESOpt(population=10, sigma=0.1)
 ```
 
 **Benefits:** 5-10x faster with GPU acceleration
-```
 
 ---
 
@@ -456,6 +466,7 @@ def _apply_bounds(x, lower, upper):
 Strategies to support (from evosax):
 
 ### Gradient-free ES
+
 1. **CMA_ES** - Classic Covariance Matrix Adaptation
 2. **Sep_CMA_ES** - Separable CMA-ES (faster for high-dim)
 3. **IPOP_CMA_ES** - Increasing population CMA-ES
@@ -467,7 +478,8 @@ Strategies to support (from evosax):
 9. **PersistentES** - Persistent Evolution Strategies
 10. **LES** - Learned Evolution Strategies (meta-learned)
 
-### Recommendation for defaults:
+### Recommendation for defaults
+
 - **Default:** CMA_ES (well-tested, robust)
 - **High-dimensional:** Sep_CMA_ES (scales better)
 - **Large population budget:** OpenES (naturally parallelizable)
@@ -478,25 +490,27 @@ Strategies to support (from evosax):
 
 ### Advantages of evosax
 
-| Feature | `cma` library | `evosax` |
-|---------|---------------|----------|
-| Language | Python + C | Pure JAX |
-| JIT compilation | ❌ | ✅ |
-| GPU acceleration | ❌ | ✅ |
-| Batched evaluation | ❌ | ✅ (via vmap) |
-| Integration with JAX code | ⚠️ (numpy conversion) | ✅ (native) |
-| Algorithm variety | CMA-ES variants only | 15+ strategies |
-| Performance (CPU) | Good | Similar |
-| Performance (GPU) | N/A | Excellent (5-10x) |
+| Feature                   | `cma` library         | `evosax`          |
+| ------------------------- | --------------------- | ----------------- |
+| Language                  | Python + C            | Pure JAX          |
+| JIT compilation           | ❌                    | ✅                |
+| GPU acceleration          | ❌                    | ✅                |
+| Batched evaluation        | ❌                    | ✅ (via vmap)     |
+| Integration with JAX code | ⚠️ (numpy conversion) | ✅ (native)       |
+| Algorithm variety         | CMA-ES variants only  | 15+ strategies    |
+| Performance (CPU)         | Good                  | Similar           |
+| Performance (GPU)         | N/A                   | Excellent (5-10x) |
 
 ### When to use each
 
 **Use `cma` library when:**
+
 - You need the original CMA-ES implementation
 - Your evaluation function has complex Python dependencies
 - You're not using GPU
 
 **Use `evosax` when:**
+
 - You want GPU acceleration
 - Your MPPI code is already JIT-compiled
 - You want to experiment with different ES algorithms
@@ -507,22 +521,26 @@ Strategies to support (from evosax):
 ## Testing Strategy
 
 ### Unit tests
+
 - Test each strategy initialization
 - Test optimize_step produces valid results
 - Test parameter bounds enforcement
 - Test with different parameter dimensions
 
 ### Integration tests
+
 - Compare convergence to `cma` library on same problems
 - Test with actual MPPI parameter tuning
 - Verify GPU execution (if GPU available)
 
 ### Performance benchmarks
+
 - Compare wall-clock time vs `cma` library
 - Measure JIT compilation overhead
 - Profile GPU vs CPU performance
 
 ### Regression tests
+
 - Ensure results are deterministic with fixed seed
 - Verify backward compatibility with existing Optimizer API
 
@@ -535,6 +553,7 @@ Strategies to support (from evosax):
 **Problem:** First call to evosax optimizer incurs JIT compilation cost.
 
 **Solution:**
+
 - Document warmup requirement
 - Provide `warmup()` method that JIT-compiles with dummy data
 - Consider pre-compilation for common parameter dimensions
@@ -544,6 +563,7 @@ Strategies to support (from evosax):
 **Problem:** Most user evaluation functions are not JAX-pure (use numpy, I/O, etc.).
 
 **Solution:**
+
 - Use `jax.pure_callback` to wrap impure functions
 - Provide clear error messages when incompatible operations are detected
 - Document limitations and workarounds
@@ -553,6 +573,7 @@ Strategies to support (from evosax):
 **Problem:** GPU memory may be limited for large populations.
 
 **Solution:**
+
 - Add memory usage estimates in docs
 - Provide chunk-based evaluation for very large populations
 - Default to reasonable population sizes
@@ -562,6 +583,7 @@ Strategies to support (from evosax):
 **Problem:** JAX PRNG behaves differently than numpy.random.
 
 **Solution:**
+
 - Document PRNG handling
 - Ensure reproducibility with fixed JAX random keys
 - Provide utility to seed evosax optimizer
@@ -570,22 +592,23 @@ Strategies to support (from evosax):
 
 ## Timeline Estimate
 
-| Step | Description | Estimated Lines | Time |
-|------|-------------|----------------|------|
-| 1 | Add dependency to pyproject.toml | ~5 | 5 min |
-| 2 | Implement autotune_evosax.py | ~350 | 4-6 hours |
-| 3 | Update autotune.py docs | ~20 | 30 min |
-| 4 | Update __init__.py | ~5 | 5 min |
-| 5 | Create test_autotune_evosax.py | ~250 | 3-4 hours |
-| 6 | Create example comparison script | ~200 | 2-3 hours |
-| 7 | Update documentation | ~100 | 1-2 hours |
-| **Total** | | **~930 lines** | **11-16 hours** |
+| Step      | Description                      | Estimated Lines | Time            |
+| --------- | -------------------------------- | --------------- | --------------- |
+| 1         | Add dependency to pyproject.toml | ~5              | 5 min           |
+| 2         | Implement autotune_evosax.py     | ~350            | 4-6 hours       |
+| 3         | Update autotune.py docs          | ~20             | 30 min          |
+| 4         | Update **init**.py               | ~5              | 5 min           |
+| 5         | Create test_autotune_evosax.py   | ~250            | 3-4 hours       |
+| 6         | Create example comparison script | ~200            | 2-3 hours       |
+| 7         | Update documentation             | ~100            | 1-2 hours       |
+| **Total** |                                  | **~930 lines**  | **11-16 hours** |
 
 ---
 
 ## Success Criteria
 
 ### Functional Requirements
+
 - [ ] EvoSaxOptimizer implements Optimizer ABC correctly
 - [ ] All evosax strategies can be instantiated
 - [ ] Optimization converges on test problems
@@ -593,17 +616,20 @@ Strategies to support (from evosax):
 - [ ] Parameter bounds are respected
 
 ### Performance Requirements
+
 - [ ] Evosax is faster than `cma` on GPU (>2x speedup)
 - [ ] Evosax is competitive with `cma` on CPU (within 20%)
 - [ ] JIT compilation overhead is acceptable (<5s for typical problems)
 
 ### Quality Requirements
+
 - [ ] All tests pass (>95% coverage)
 - [ ] Documentation is clear and complete
 - [ ] Examples run without errors
 - [ ] Code follows existing style conventions
 
 ### Integration Requirements
+
 - [ ] Works with all parameter types (Lambda, NoiseSigma, Mu, Horizon)
 - [ ] Compatible with existing Autotune orchestrator
 - [ ] No breaking changes to existing API
@@ -614,18 +640,21 @@ Strategies to support (from evosax):
 ## Future Extensions
 
 ### Short-term (post-MVP)
+
 1. Add more evosax strategies (GLD, LM-MA-ES, etc.)
 2. Implement proper constrained optimization variants
 3. Add support for multi-objective optimization
 4. Create Jupyter notebook tutorial
 
 ### Medium-term
+
 1. Integrate with autotune_qd.py for quality diversity
 2. Add learned evolution strategies (LES) with meta-learning
 3. Implement adaptive strategy selection
 4. Add visualization of ES state (e.g., covariance ellipsoids)
 
 ### Long-term
+
 1. Develop JAX-native quality diversity framework
 2. Add support for multi-fidelity optimization
 3. Implement distributed evosax with multi-GPU support

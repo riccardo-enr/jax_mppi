@@ -48,18 +48,18 @@ Port `pytorch_mppi` to JAX, producing a functional, JIT-compilable MPPI library.
   
 ### Package Size Comparison
 
-| Package | Core Code | Tests | Examples | Total |
-|---------|-----------|-------|----------|-------|
-| **pytorch_mppi** | 1214 lines | ~500 lines | ~800 lines | ~2500 lines |
-| **jax_mppi** (current) | 2919 lines | 2124 lines | 681 lines | **5724 lines** |
-| **Completion %** | 240% | 425% | 85% | **229%** |
+| Package                | Core Code  | Tests      | Examples   | Total          |
+| ---------------------- | ---------- | ---------- | ---------- | -------------- |
+| **pytorch_mppi**       | 1214 lines | ~500 lines | ~800 lines | ~2500 lines    |
+| **jax_mppi** (current) | 2919 lines | 2124 lines | 681 lines  | **5724 lines** |
+| **Completion %**       | 240%       | 425%       | 85%        | **229%**       |
 
 Core code now includes: mppi.py (353), smppi.py (634), kmppi.py (660), autotune.py (656), autotune_global.py (375), autotune_qd.py (218), plus supporting modules.
 
 ### Feature Parity Matrix
 
 | Feature | pytorch_mppi | jax_mppi | Status |
-|---------|--------------|----------|--------|
+| :--- | :--- | :--- | :--- |
 | **Core MPPI Algorithm** | ✓ | ✓ | ✅ Complete |
 | Basic sampling & weighting | ✓ | ✓ | ✅ |
 | Control bounds (u_min/u_max) | ✓ | ✓ | ✅ |
@@ -99,7 +99,7 @@ Core code now includes: mppi.py (353), smppi.py (634), kmppi.py (660), autotune.
 
 ### Current File Structure
 
-```
+```text
 jax_mppi/
 ├── pyproject.toml              ✅ Exists
 ├── README.md                   ✅ Exists
@@ -141,22 +141,22 @@ jax_mppi/
    - Estimated ~250-300 lines for smppi.py
    - Estimated ~150-200 lines for tests
    - Reference: `../pytorch_mppi/src/pytorch_mppi/mppi.py` (SMPPI class)
-   
+
 2. **Phase 4: KMPPI Implementation** (High Priority)
    - Novel contribution with kernel interpolation
    - Estimated ~300-350 lines for kmppi.py
    - Estimated ~150-200 lines for tests
    - Reference: `../pytorch_mppi/src/pytorch_mppi/mppi.py` (KMPPI class)
-   
+
 3. **Phase 5: Smooth Comparison Example** (Medium Priority)
    - Demonstrates value of SMPPI and KMPPI
    - Estimated ~200-250 lines
    - Reference: `../pytorch_mppi/tests/smooth_mppi.py`
-   
+
 4. **Additional Examples** (Low Priority)
    - Pendulum with learned dynamics
    - More complex environments
-   
+
 5. **Phase 6: Autotuning** (Optional/Stretch)
    - Advanced feature for hyperparameter optimization
    - Estimated ~300-400 lines
@@ -172,21 +172,22 @@ Use `@jax.tree_util.register_dataclass` (or `flax.struct.dataclass`) to hold MPP
 
 ### Key JAX mappings from PyTorch
 
-| PyTorch | JAX |
-|---|---|
-| `torch.distributions.MultivariateNormal` | `jax.random.multivariate_normal` |
-| `tensor.to(device)` | `jax.device_put` / automatic |
-| Python for-loop over horizon | `jax.lax.scan` |
-| `@handle_batch_input` decorator | `jax.vmap` |
-| `torch.roll` | `jnp.roll` |
-| `torch.linalg.solve` | `jnp.linalg.solve` |
-| In-place mutation (`self.U = ...`) | Return new state (pytree) |
+| PyTorch                                    | JAX                              |
+| ------------------------------------------ | -------------------------------- |
+| `torch.distributions.MultivariateNormal`   | `jax.random.multivariate_normal` |
+| `tensor.to(device)`                        | `jax.device_put` / automatic     |
+| Python for-loop over horizon               | `jax.lax.scan`                   |
+| `@handle_batch_input` decorator            | `jax.vmap`                       |
+| `torch.roll`                               | `jnp.roll`                       |
+| `torch.linalg.solve`                       | `jnp.linalg.solve`               |
+| In-place mutation (`self.U = ...`)         | Return new state (pytree)        |
 
 ---
 
 ## Notes from `../pytorch_mppi` review (Jan 2026)
 
 Actionable parity items to carry over:
+
 - **SMPPI semantics:** maintains `action_sequence` separately from lifted control `U`; integrates with `delta_t`; smoothness cost from `diff(action_sequence)`.
 - **SMPPI bounds:** support `action_min`/`action_max` distinct from `u_min`/`u_max` (control-derivative bounds).
 - **KMPPI internals:** keep `theta` as control points; build `Tk`/`Hs` time grids; kernel interpolation via `solve(Ktktk, K)`; batch interpolation with `vmap`.
@@ -197,7 +198,7 @@ Actionable parity items to carry over:
 
 ## Package Structure
 
-```
+```text
 jax_mppi/
 ├── pyproject.toml
 ├── README.md
@@ -233,6 +234,7 @@ jax_mppi/
 1. **`pyproject.toml`** — project metadata, deps: `jax[cuda13]`, `jaxlib`, optional `gymnasium` for examples.
 
 2. **`types.py`** — Type definitions:
+
    ```python
    # Dynamics: (state, action) -> next_state  or  (state, action, t) -> next_state
    DynamicsFn = Callable[..., jax.Array]
@@ -245,6 +247,7 @@ jax_mppi/
 3. **`mppi.py`** — Core implementation:
 
    **Data structures (registered as JAX pytrees):**
+
    ```python
    @dataclass
    class MPPIConfig:
@@ -277,6 +280,7 @@ jax_mppi/
    ```
 
    **Functions:**
+
    ```python
    def create(
        nx, nu, noise_sigma, num_samples=100, horizon=15, lambda_=1.0,
@@ -341,6 +345,7 @@ jax_mppi/
 **Files:** `src/jax_mppi/smppi.py`, `tests/test_smppi.py`
 
 1. **Data structures:**
+
    ```python
    @dataclass
    class SMPPIState(MPPIState):
@@ -365,6 +370,7 @@ jax_mppi/
 **Files:** `src/jax_mppi/kmppi.py`, `tests/test_kmppi.py`
 
 1. **Kernel abstractions:**
+
    ```python
    def rbf_kernel(t, tk, sigma=1.0):
        d = jnp.sum((t[:, None] - tk) ** 2, axis=-1)
@@ -378,6 +384,7 @@ jax_mppi/
    ```
 
 2. **Data structures:**
+
    ```python
    @dataclass
    class KMPPIState(MPPIState):
@@ -436,6 +443,7 @@ IMPORTANT: You should always use the virtual environment. To run the tests and a
 ## Actionable Task Checklist
 
 ### Core MPPI (Phase 1)
+
 - [x] Mirror `pytorch_mppi` signature flags: `rollout_samples`, `sample_null_action`, `noise_abs_cost`.
 - [x] Implement `get_rollouts` handling: accept single or batched `state`; allow dynamics that augment state (take `:nx`).
 - [x] Add `shift_nominal_trajectory` via `jnp.roll` + `u_init` fill.
@@ -443,6 +451,7 @@ IMPORTANT: You should always use the virtual environment. To run the tests and a
 - [x] Add `u_per_command` slicing and `u_scale` application in `command`.
 
 ### SMPPI (Phase 3)
+
 - [x] Carry `action_sequence` in state and integrate `U` with `delta_t`.
 - [x] Implement distinct action bounds (`action_min`/`action_max`) vs control bounds (`u_min`/`u_max`).
 - [x] Add smoothness cost from `diff(action_sequence)` and weight `w_action_seq_cost`.
@@ -452,6 +461,7 @@ IMPORTANT: You should always use the virtual environment. To run the tests and a
 - [x] Recompute effective noise after bounding for accurate cost.
 
 ### KMPPI (Phase 4)
+
 - [x] Implement `theta` control points + interpolation kernel (RBF by default).
 - [x] Build `Tk`/`Hs` grids and re-build on horizon changes.
 - [x] Use `solve(Ktktk, K)` for interpolation weights (no explicit inverse).
@@ -461,5 +471,6 @@ IMPORTANT: You should always use the virtual environment. To run the tests and a
 - [x] Batched interpolation with vmap.
 
 ### Autotune + Examples (Phase 6)
+
 - [ ] Mirror autotune interface from `pytorch_mppi/autotune*.py` at a minimal level (evaluation fn + optimizer loop).
 - [ ] Port `tests/auto_tune_parameters.py` logic into a JAX-friendly example.

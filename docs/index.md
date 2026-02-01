@@ -11,20 +11,20 @@
 
 This library embraces JAX's functional paradigm:
 
--   **Pure Functions**: Core logic is implemented as pure functions `command(state, mppi_state) -> (action, mppi_state)`.
--   **Dataclass State**: State is held in `jax.tree_util.register_dataclass` containers, allowing easy integration with `jit`, `vmap`, and `grad`.
--   **No Side Effects**: Unlike the PyTorch version, there is no mutable `self`. State transitions are explicit.
+- **Pure Functions**: Core logic is implemented as pure functions `command(state, mppi_state) -> (action, mppi_state)`.
+- **Dataclass State**: State is held in `jax.tree_util.register_dataclass` containers, allowing easy integration with `jit`, `vmap`, and `grad`.
+- **No Side Effects**: Unlike the PyTorch version, there is no mutable `self`. State transitions are explicit.
 
 ## Key Features
 
--   **Core MPPI**: Robust implementation of the standard MPPI algorithm.
--   **Smooth MPPI (SMPPI)**: Maintains action sequences and smoothness costs for better trajectory generation.
--   **Kernel MPPI (KMPPI)**: Uses kernel interpolation for control points, reducing the parameter space.
--   **Autotuning**: Built-in hyperparameter optimization using CMA-ES, Ray Tune, and Quality Diversity.
--   **JAX Integration**:
-    -   `jax.vmap` for efficient batch processing.
-    -   `jax.lax.scan` for fast horizon loops.
-    -   Fully compatible with JIT compilation for high-performance control loops.
+- **Core MPPI**: Robust implementation of the standard MPPI algorithm.
+- **Smooth MPPI (SMPPI)**: Maintains action sequences and smoothness costs for better trajectory generation.
+- **Kernel MPPI (KMPPI)**: Uses kernel interpolation for control points, reducing the parameter space.
+- **Autotuning**: Built-in hyperparameter optimization using CMA-ES, Ray Tune, and Quality Diversity.
+- **JAX Integration**:
+  - `jax.vmap` for efficient batch processing.
+  - `jax.lax.scan` for fast horizon loops.
+  - Fully compatible with JIT compilation for high-performance control loops.
 
 ## Installation
 
@@ -82,7 +82,7 @@ for _ in range(100):
 
 ## Project Structure
 
-```
+```text
 jax_mppi/
 ├── src/jax_mppi/
 │   ├── mppi.py              # Core MPPI implementation
@@ -104,12 +104,12 @@ jax_mppi/
 
 The development is structured in phases:
 
-1.  **Core MPPI**: Basic implementation with JAX parity.
-2.  **Integration**: Pendulum example and verification.
-3.  **Smooth MPPI**: Implementation of smoothness constraints.
-4.  **Kernel MPPI**: Kernel-based control parameterization.
-5.  **Comparisons**: Benchmarking and visual comparisons.
-6.  **Autotuning**: Parameter optimization using CMA-ES, Ray Tune, and QD.
+1. **Core MPPI**: Basic implementation with JAX parity.
+2. **Integration**: Pendulum example and verification.
+3. **Smooth MPPI**: Implementation of smoothness constraints.
+4. **Kernel MPPI**: Kernel-based control parameterization.
+5. **Comparisons**: Benchmarking and visual comparisons.
+6. **Autotuning**: Parameter optimization using CMA-ES, Ray Tune, and QD.
 
 ## Credits
 

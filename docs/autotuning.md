@@ -6,9 +6,9 @@ JAX-MPPI includes a robust autotuning framework to optimize MPPI hyperparameters
 
 The autotuning process involves three main components:
 
-1.  **Tunable Parameters**: Parameters you want to optimize (e.g., `LambdaParameter`, `NoiseSigmaParameter`).
-2.  **Evaluation Function**: A function that runs MPPI with a specific configuration and returns a cost (and optionally other metrics).
-3.  **Optimizer**: The algorithm used to search for the best parameters (e.g., `CMAESOpt`).
+1. **Tunable Parameters**: Parameters you want to optimize (e.g., `LambdaParameter`, `NoiseSigmaParameter`).
+2. **Evaluation Function**: A function that runs MPPI with a specific configuration and returns a cost (and optionally other metrics).
+3. **Optimizer**: The algorithm used to search for the best parameters (e.g., `CMAESOpt`).
 
 ## Basic Usage (CMA-ES)
 
@@ -90,10 +90,10 @@ tuner = autotune.Autotune(
 
 The framework supports tuning the following parameters out-of-the-box:
 
--   `LambdaParameter`: MPPI temperature ($\lambda$).
--   `NoiseSigmaParameter`: Exploration noise covariance diagonal.
--   `MuParameter`: Exploration noise mean.
--   `HorizonParameter`: Planning horizon length (resizes internal buffers automatically).
+- `LambdaParameter`: MPPI temperature ($\lambda$).
+- `NoiseSigmaParameter`: Exploration noise covariance diagonal.
+- `MuParameter`: Exploration noise mean.
+- `HorizonParameter`: Planning horizon length (resizes internal buffers automatically).
 
 You can also define custom parameters by subclassing `TunableParameter`.
 
@@ -123,38 +123,40 @@ CMA-ES is a state-of-the-art evolutionary algorithm for continuous optimization.
 
 The algorithm proceeds in generations $g$. At each generation:
 
-1.  **Sampling**: We sample $\lambda_{pop}$ candidate parameters $\theta_i$ (offspring):
+1. **Sampling**: We sample $\lambda_{pop}$ candidate parameters $\theta_i$ (offspring):
     \[
     \theta_i \sim \mathbf{m}^{(g)} + \sigma^{(g)} \mathcal{N}(\mathbf{0}, \mathbf{C}^{(g)}) \quad \text{for } i = 1, \dots, \lambda_{pop}
     \]
 
-2.  **Evaluation**: Each candidate $\theta_i$ is evaluated by running an MPPI simulation to estimate $\mathcal{J}(\theta_i)$.
+2. **Evaluation**: Each candidate $\theta_i$ is evaluated by running an MPPI simulation to estimate $\mathcal{J}(\theta_i)$.
 
-3.  **Selection and Recombination**: The candidates are sorted by their cost $\mathcal{J}(\theta_i)$. The top $\mu$ candidates (parents) are selected to update the mean:
+3. **Selection and Recombination**: The candidates are sorted by their cost $\mathcal{J}(\theta_i)$. The top $\mu$ candidates (parents) are selected to update the mean:
     \[
     \mathbf{m}^{(g+1)} = \sum_{i=1}^{\mu} w_i \theta_{i:\lambda_{pop}}
     \]
     where $w_i$ are positive weights summing to 1, and $\theta_{i:\lambda_{pop}}$ denotes the $i$-th best candidate.
 
-4.  **Covariance Adaptation**: The covariance matrix $\mathbf{C}^{(g)}$ is updated to increase the likelihood of successful steps. This involves two paths:
-    *   **Rank-1 Update**: Uses the evolution path $\mathbf{p}_c$ to exploit correlations between consecutive steps.
-    *   **Rank-$\mu$ Update**: Uses the variance of the successful steps.
+4. **Covariance Adaptation**: The covariance matrix $\mathbf{C}^{(g)}$ is updated to increase the likelihood of successful steps. This involves two paths:
+    - **Rank-1 Update**: Uses the evolution path $\mathbf{p}_c$ to exploit correlations between consecutive steps.
+    - **Rank-$\mu$ Update**: Uses the variance of the successful steps.
     \[
     \mathbf{C}^{(g+1)} = (1 - c_1 - c_\mu) \mathbf{C}^{(g)} + c_1 \mathbf{p}_c \mathbf{p}_c^T + c_\mu \sum_{i=1}^{\mu} w_i (\theta_{i:\lambda_{pop}} - \mathbf{m}^{(g)})(\theta_{i:\lambda_{pop}} - \mathbf{m}^{(g)})^T / \sigma^{(g)2}
     \]
 
-5.  **Step Size Control**: The global step size $\sigma^{(g)}$ is updated using the conjugate evolution path $\mathbf{p}_\sigma$ to control the overall scale of the distribution.
+5. **Step Size Control**: The global step size $\sigma^{(g)}$ is updated using the conjugate evolution path $\mathbf{p}_\sigma$ to control the overall scale of the distribution.
 
 ### Quality Diversity with CMA-ME
 
 Quality Diversity (QD) algorithms optimize for a set of high-performing solutions that are diverse with respect to a user-defined measure. `jax_mppi` uses **CMA-ME (Covariance Matrix Adaptation MAP-Elites)**, which combines the search power of CMA-ES with the archive maintenance of MAP-Elites.
 
 #### Problem Formulation
+
 We seek to find a collection of parameters $P = \{\theta_1, \dots, \theta_N\}$ that maximize the quality function $f(\theta) = -\mathcal{J}(\theta)$ while covering the behavior space $\mathcal{B}$.
 
 Let $\mathbf{b}(\theta): \Theta \to \mathcal{B}$ be a function mapping parameters to a behavior descriptor (e.g., control smoothness, risk sensitivity).
 
 #### MAP-Elites Archive
+
 The behavior space $\mathcal{B}$ is discretized into a grid of cells (the archive $\mathcal{A}$). Each cell $\mathcal{A}_{\mathbf{z}}$ stores the best solution found so far that maps to that cell index $\mathbf{z}$:
 
 \[
@@ -162,15 +164,16 @@ The behavior space $\mathcal{B}$ is discretized into a grid of cells (the archiv
 \]
 
 #### CMA-ME Algorithm
+
 CMA-ME maintains a set of **emitters**, which are instances of CMA-ES optimizing for improvement in the archive.
 
-1.  **Emission**: An emitter samples a candidate $\theta$ from its distribution $\mathcal{N}(\mathbf{m}, \sigma^2 \mathbf{C})$.
-2.  **Evaluation**: Calculate quality $f(\theta)$ and behavior $\mathbf{b}(\theta)$.
-3.  **Archive Update**:
-    *   Determine the cell index $\mathbf{z} = \text{index}(\mathbf{b}(\theta))$.
-    *   If cell $\mathcal{A}_{\mathbf{z}}$ is empty or $f(\theta) > f(\mathcal{A}_{\mathbf{z}})$, replace the occupant with $\theta$.
-    *   Calculate the "improvement" value $\Delta$ (e.g., $f(\theta) - f(\mathcal{A}_{\mathbf{z}}^{old})$).
-4.  **Emitter Update**: The CMA-ES emitter updates its mean and covariance based on the improvement $\Delta$, guiding the search toward regions of the behavior space where quality can be improved or new cells can be discovered.
+1. **Emission**: An emitter samples a candidate $\theta$ from its distribution $\mathcal{N}(\mathbf{m}, \sigma^2 \mathbf{C})$.
+2. **Evaluation**: Calculate quality $f(\theta)$ and behavior $\mathbf{b}(\theta)$.
+3. **Archive Update**:
+    - Determine the cell index $\mathbf{z} = \text{index}(\mathbf{b}(\theta))$.
+    - If cell $\mathcal{A}_{\mathbf{z}}$ is empty or $f(\theta) > f(\mathcal{A}_{\mathbf{z}})$, replace the occupant with $\theta$.
+    - Calculate the "improvement" value $\Delta$ (e.g., $f(\theta) - f(\mathcal{A}_{\mathbf{z}}^{old})$).
+4. **Emitter Update**: The CMA-ES emitter updates its mean and covariance based on the improvement $\Delta$, guiding the search toward regions of the behavior space where quality can be improved or new cells can be discovered.
 
 ### Global Optimization with Ray Tune
 
@@ -183,10 +186,11 @@ For global search over large, potentially non-convex spaces with complex constra
 where $\Theta_{global}$ can be defined by complex distributions (e.g., Log-Uniform, Categorical).
 
 Ray Tune orchestrates the search using algorithms like:
-*   **Bayesian Optimization**: Uses a Gaussian Process surrogate model $P(f \mid \mathcal{D})$ to approximate the objective and an acquisition function $a(\theta)$ (e.g., Expected Improvement) to select the next sample:
+
+- **Bayesian Optimization**: Uses a Gaussian Process surrogate model $P(f \mid \mathcal{D})$ to approximate the objective and an acquisition function $a(\theta)$ (e.g., Expected Improvement) to select the next sample:
     \[
     \theta_{next} = \arg\max_{\theta} a(\theta)
     \]
-*   **HyperOpt (TPE)**: Models $p(\theta \mid y)$ using Tree-structured Parzen Estimators to sample promising candidates.
+- **HyperOpt (TPE)**: Models $p(\theta \mid y)$ using Tree-structured Parzen Estimators to sample promising candidates.
 
 These methods are particularly useful for "warm-starting" the local search (CMA-ES) or finding the best family of parameters (e.g., finding the right order of magnitude for $\lambda$).

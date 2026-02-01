@@ -12,24 +12,24 @@
 
 This library embraces JAX's functional paradigm:
 
--   **Pure Functions**: Core logic is implemented as pure functions `command(state, mppi_state) -> (action, mppi_state)`.
--   **Dataclass State**: State is held in `jax.tree_util.register_dataclass` containers, allowing easy integration with `jit`, `vmap`, and `grad`.
--   **No Side Effects**: Unlike the PyTorch version, there is no mutable `self`. State transitions are explicit.
+- **Pure Functions**: Core logic is implemented as pure functions `command(state, mppi_state) -> (action, mppi_state)`.
+- **Dataclass State**: State is held in `jax.tree_util.register_dataclass` containers, allowing easy integration with `jit`, `vmap`, and `grad`.
+- **No Side Effects**: Unlike the PyTorch version, there is no mutable `self`. State transitions are explicit.
 
 ## Key Features
 
--   **Core MPPI**: Robust implementation of the standard MPPI algorithm.
--   **Smooth MPPI (SMPPI)**: Maintains action sequences and smoothness costs for better trajectory generation.
--   **Kernel MPPI (KMPPI)**: Uses kernel interpolation for control points, reducing the parameter space.
--   **Autotuning**: Built-in hyperparameter optimization with multiple backends:
-    -   **CMA-ES** (via `cma` library) - Classic evolution strategy
-    -   **CMA-ES, Sep-CMA-ES, OpenES** (via `evosax`) - JAX-native, GPU-accelerated ⚡
-    -   **Ray Tune** - Distributed hyperparameter search
-    -   **CMA-ME** (via `ribs`) - Quality diversity optimization
--   **JAX Integration**:
-    -   `jax.vmap` for efficient batch processing.
-    -   `jax.lax.scan` for fast horizon loops.
-    -   Fully compatible with JIT compilation for high-performance control loops.
+- **Core MPPI**: Robust implementation of the standard MPPI algorithm.
+- **Smooth MPPI (SMPPI)**: Maintains action sequences and smoothness costs for better trajectory generation.
+- **Kernel MPPI (KMPPI)**: Uses kernel interpolation for control points, reducing the parameter space.
+- **Autotuning**: Built-in hyperparameter optimization with multiple backends:
+  - **CMA-ES** (via `cma` library) - Classic evolution strategy
+  - **CMA-ES, Sep-CMA-ES, OpenES** (via `evosax`) - JAX-native, GPU-accelerated ⚡
+  - **Ray Tune** - Distributed hyperparameter search
+  - **CMA-ME** (via `ribs`) - Quality diversity optimization
+- **JAX Integration**:
+  - `jax.vmap` for efficient batch processing.
+  - `jax.lax.scan` for fast horizon loops.
+  - Fully compatible with JIT compilation for high-performance control loops.
 
 ## Installation
 
@@ -153,14 +153,14 @@ best = tuner.optimize_all(iterations=50)
 
 ### Available Optimizers
 
-| Optimizer | Backend | GPU Support | Best For |
-|-----------|---------|-------------|----------|
-| `autotune.CMAESOpt` | `cma` library | ❌ | Classic CMA-ES, stable |
-| `autotune_evosax.CMAESOpt` | evosax | ✅ | JAX-native, 5-10x faster on GPU |
-| `autotune_evosax.SepCMAESOpt` | evosax | ✅ | High-dimensional problems |
-| `autotune_evosax.OpenESOpt` | evosax | ✅ | Large populations, parallelization |
-| `autotune_global.RayOptimizer` | Ray Tune | ✅ | Distributed search |
-| `autotune_qd.CMAMEOpt` | ribs | ❌ | Quality diversity |
+| Optimizer                      | Backend       | GPU Support | Best For                           |
+| ------------------------------ | ------------- | ----------- | ---------------------------------- |
+| `autotune.CMAESOpt`            | `cma` library | ❌          | Classic CMA-ES, stable             |
+| `autotune_evosax.CMAESOpt`     | evosax        | ✅          | JAX-native, 5-10x faster on GPU    |
+| `autotune_evosax.SepCMAESOpt`  | evosax        | ✅          | High-dimensional problems          |
+| `autotune_evosax.OpenESOpt`    | evosax        | ✅          | Large populations, parallelization |
+| `autotune_global.RayOptimizer` | Ray Tune      | ✅          | Distributed search                 |
+| `autotune_qd.CMAMEOpt`         | ribs          | ❌          | Quality diversity                  |
 
 ### Evosax vs CMA Library
 
@@ -177,6 +177,7 @@ optimizer = CMAESOpt(population=10, sigma=0.1)
 ```
 
 **Benefits of evosax:**
+
 - ⚡ **5-10x faster** on GPU due to JIT compilation
 - 🔧 **Multiple strategies** (CMA-ES, Sep-CMA-ES, OpenES, SNES, xNES)
 - 🎯 **JAX-native** - seamless integration with JAX code
@@ -186,7 +187,7 @@ See `examples/autotune_evosax_comparison.py` for a detailed performance comparis
 
 ## Project Structure
 
-```
+```text
 jax_mppi/
 ├── src/jax_mppi/
 │   ├── mppi.py              # Core MPPI implementation
@@ -210,12 +211,12 @@ jax_mppi/
 
 The development is structured in phases:
 
-1.  **Core MPPI**: Basic implementation with JAX parity.
-2.  **Integration**: Pendulum example and verification.
-3.  **Smooth MPPI**: Implementation of smoothness constraints.
-4.  **Kernel MPPI**: Kernel-based control parameterization.
-5.  **Comparisons**: Benchmarking and visual comparisons.
-6.  **Autotuning**: Parameter optimization using CMA-ES, Ray Tune, and QD.
+1. **Core MPPI**: Basic implementation with JAX parity.
+2. **Integration**: Pendulum example and verification.
+3. **Smooth MPPI**: Implementation of smoothness constraints.
+4. **Kernel MPPI**: Kernel-based control parameterization.
+5. **Comparisons**: Benchmarking and visual comparisons.
+6. **Autotuning**: Parameter optimization using CMA-ES, Ray Tune, and QD.
 
 ## Credits
 
