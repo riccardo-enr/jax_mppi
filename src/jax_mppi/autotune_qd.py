@@ -20,7 +20,7 @@ Example:
 """
 
 from pathlib import Path
-from typing import Callable, List, Tuple
+from typing import Any, Callable, List, Tuple
 
 import numpy as np
 
@@ -242,7 +242,7 @@ def save_qd_heatmap(
     costs: list[float],
     output_path: str | Path = "docs/media/autotune_qd_heatmap.png",
     title: str = "Quality Diversity Archive Heatmap",
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     """Save quality diversity optimization progress to docs/media.
 
