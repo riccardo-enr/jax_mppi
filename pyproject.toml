@@ -4,6 +4,20 @@ version = "0.1.0"
 description = "JAX implementation of Model Predictive Path Integral (MPPI) control"
 readme = "README.md"
 requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "Riccardo Enrico"}]
+keywords = ["jax", "mppi", "model-predictive-control", "robotics", "optimal-control", "trajectory-optimization"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "jax[cuda13]",
     "numpy",
@@ -35,6 +49,12 @@ autotuning = [
     # bayesian-optimization>=1.4.0
     # ribs[all]>=0.6.0
 ]
+
+[project.urls]
+Homepage = "https://github.com/riccardo-enr/jax_mppi"
+Repository = "https://github.com/riccardo-enr/jax_mppi"
+Documentation = "https://riccardo-enr.github.io/jax_mppi/"
+"Bug Tracker" = "https://github.com/riccardo-enr/jax_mppi/issues"
 
 [tool.ruff]
 line-length = 80
