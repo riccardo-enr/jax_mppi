@@ -22,6 +22,7 @@ from jax_mppi import autotune
 
 def create_pendulum_system():
     """Create a simple pendulum system for testing."""
+
     # Pendulum dynamics
     def dynamics(x, u):
         theta, theta_dot = x[0], x[1]
@@ -30,14 +31,18 @@ def create_pendulum_system():
         m = 1.0
         b = 0.1
 
-        theta_ddot = -g / L * jnp.sin(theta) - b * theta_dot / (m * L ** 2) + u[0] / (m * L ** 2)
+        theta_ddot = (
+            -g / L * jnp.sin(theta)
+            - b * theta_dot / (m * L**2)
+            + u[0] / (m * L**2)
+        )
         return jnp.array([theta_dot, theta_ddot])
 
     # Cost function: reach upright position (theta=0)
     def cost(x, u):
         theta, theta_dot = x[0], x[1]
         # Quadratic cost on angle and angular velocity
-        return theta ** 2 + 0.1 * theta_dot ** 2 + 0.01 * u[0] ** 2
+        return theta**2 + 0.1 * theta_dot**2 + 0.01 * u[0] ** 2
 
     return dynamics, cost
 
@@ -118,9 +123,9 @@ def run_optimization(
     iterations: int = 20,
 ):
     """Run optimization and track convergence."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Running {optimizer_name}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Setup autotune
     tuner = autotune.Autotune(
@@ -144,13 +149,15 @@ def run_optimization(
         times.append(time.time() - start_time)
 
         if i % 5 == 0 or i == iterations - 1:
-            print(f"  Iteration {i+1:2d}: cost = {result.mean_cost:8.4f} "
-                  f"(time: {iter_time:6.3f}s)")
+            print(
+                f"  Iteration {i + 1:2d}: cost = {result.mean_cost:8.4f} "
+                f"(time: {iter_time:6.3f}s)"
+            )
 
     total_time = time.time() - start_time
     best_result = tuner.get_best_result()
 
-    print(f"\nFinal Results:")
+    print("\nFinal Results:")
     print(f"  Best cost: {best_result.mean_cost:.6f}")
     print(f"  Lambda: {best_result.params['lambda']:.4f}")
     print(f"  Sigma: {best_result.params['sigma']}")
@@ -185,14 +192,21 @@ def plot_results(results_dict):
     best_costs = [results_dict[name]["best_cost"] for name in names]
 
     x_pos = np.arange(len(names))
-    bars = ax2.bar(x_pos, times, color=["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4"])
+    bars = ax2.bar(
+        x_pos, times, color=["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4"]
+    )
 
     # Add cost labels on bars
     for i, (bar, cost) in enumerate(zip(bars, best_costs)):
         height = bar.get_height()
-        ax2.text(bar.get_x() + bar.get_width() / 2, height,
-                f"cost: {cost:.4f}",
-                ha="center", va="bottom", fontsize=9)
+        ax2.text(
+            bar.get_x() + bar.get_width() / 2,
+            height,
+            f"cost: {cost:.4f}",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
 
     ax2.set_xlabel("Optimizer", fontsize=12)
     ax2.set_ylabel("Total Time (seconds)", fontsize=12)
@@ -202,16 +216,18 @@ def plot_results(results_dict):
     ax2.grid(True, alpha=0.3, axis="y")
 
     plt.tight_layout()
-    plt.savefig("examples/autotune_comparison.png", dpi=150, bbox_inches="tight")
+    plt.savefig(
+        "examples/autotune_comparison.png", dpi=150, bbox_inches="tight"
+    )
     print("\n✓ Plot saved to examples/autotune_comparison.png")
     plt.show()
 
 
 def main():
     """Run comparison of different optimizers."""
-    print("="*60)
+    print("=" * 60)
     print("MPPI Autotuning: evosax vs cma Library Comparison")
-    print("="*60)
+    print("=" * 60)
 
     # Create evaluation function (shared across all optimizers)
     evaluate_fn, params, holder = create_evaluation_function()
@@ -300,7 +316,9 @@ def main():
     if len(results) > 1:
         plot_results(results)
     else:
-        print("\n⚠ Not enough optimizers to compare. Install both cma and evosax.")
+        print(
+            "\n⚠ Not enough optimizers to compare. Install both cma and evosax."
+        )
 
 
 if __name__ == "__main__":
