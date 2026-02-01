@@ -27,9 +27,7 @@ class TestEvoSaxOptimizer:
 
             pytest.skip("evosax is installed")
         except ImportError:
-            with pytest.raises(
-                ImportError, match="evosax"
-            ):
+            with pytest.raises(ImportError, match="evosax"):
                 autotune_evosax.EvoSaxOptimizer()
 
     def test_evosax_requires_setup(self):
@@ -43,9 +41,7 @@ class TestEvoSaxOptimizer:
     def test_evosax_invalid_strategy(self):
         """EvoSaxOptimizer raises error for invalid strategy."""
         pytest.importorskip("evosax")
-        optimizer = autotune_evosax.EvoSaxOptimizer(
-            strategy="InvalidStrategy"
-        )
+        optimizer = autotune_evosax.EvoSaxOptimizer(strategy="InvalidStrategy")
 
         def dummy_eval(x):
             return autotune.EvaluationResult(
@@ -166,7 +162,7 @@ class TestCMAESOpt:
         pytest.importorskip("evosax")
 
         def evaluate(x):
-            cost = float(np.sum(x ** 2))
+            cost = float(np.sum(x**2))
             return autotune.EvaluationResult(
                 mean_cost=cost,
                 rollouts=jnp.zeros((1, 1, len(x))),
@@ -200,7 +196,7 @@ class TestSepCMAESOpt:
 
         def evaluate(x):
             # Separable: f(x) = sum(x_i^2)
-            cost = float(np.sum(x ** 2))
+            cost = float(np.sum(x**2))
             return autotune.EvaluationResult(
                 mean_cost=cost,
                 rollouts=jnp.zeros((1, 1, len(x))),
@@ -224,7 +220,7 @@ class TestOpenESOpt:
         """OpenESOpt can be created."""
         pytest.importorskip("evosax")
         optimizer = autotune_evosax.OpenESOpt(population=50, sigma=0.1)
-        assert optimizer.strategy == "OpenES"
+        assert optimizer.strategy == "Open_ES"
         assert optimizer.population == 50
 
     def test_openes_convergence(self):
@@ -364,9 +360,7 @@ class TestEvoSaxIntegration:
             lam = holder.config.lambda_
             sigma = np.diag(np.array(holder.state.noise_sigma))
             # Cost is distance from target (lambda=2, sigma=[0.3, 0.3])
-            cost = float(
-                (lam - 2.0) ** 2 + np.sum((sigma - 0.3) ** 2)
-            )
+            cost = float((lam - 2.0) ** 2 + np.sum((sigma - 0.3) ** 2))
             return autotune.EvaluationResult(
                 mean_cost=cost,
                 rollouts=jnp.zeros((1, 1, 1)),
