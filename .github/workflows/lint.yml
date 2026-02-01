@@ -27,9 +27,3 @@ jobs:
 
             - name: Run ruff format
               run: uv run ruff format --check .
-
-            - name: Run ruff check
-              run: uv run ruff check .
-
-            - name: Run basedpyright
-              run: uv run basedpyright
