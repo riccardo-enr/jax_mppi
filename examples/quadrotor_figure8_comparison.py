@@ -11,6 +11,7 @@ The comparison evaluates tracking accuracy, control smoothness, and energy effic
 
 import sys
 from pathlib import Path
+import time
 
 # Add parent directory to path for imports when running directly
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -64,11 +65,11 @@ def run_controller(
     dt: float,
     seed: int,
 ):
-    """Run a single controller on the figure-8 trajectory.
+    """Run a single controller on the figure-8 trajectory using jax.lax.scan.
 
     Args:
         controller_type: "mppi", "smppi", or "kmppi"
-        reference: Reference trajectory [T x 6]
+        reference: Reference trajectory [T x 6] (should include lookahead)
         num_steps: Number of control steps
         num_samples: Number of MPPI samples
         horizon: Planning horizon
@@ -99,8 +100,8 @@ def run_controller(
         return dynamics_fn(state, action)
 
     # Cost weights
-    Q_pos = jnp.eye(3) * 100.0
-    Q_vel = jnp.eye(3) * 20.0
+    Q_pos = jnp.eye(3) * 200.0 # Tuned
+    Q_vel = jnp.eye(3) * 20.0  # Tuned
     R = jnp.diag(jnp.array([0.01, 0.1, 0.1, 0.1]))
 
     # Terminal cost
@@ -116,7 +117,13 @@ def run_controller(
 
     cost_builder = create_tracking_cost(Q_pos, Q_vel, R)
 
-    # Create controller
+    # -------------------------------------------------------------------------
+    # Create controller-specific update logic
+    # -------------------------------------------------------------------------
+
+    # Common signature for the simulation step function
+    # will be closed over by the specific controller implementation
+
     if controller_type == "mppi":
         config, controller_state = mppi.create(
             nx=nx, nu=nu, noise_sigma=noise_sigma,
@@ -125,17 +132,11 @@ def run_controller(
             step_dependent_dynamics=True,
         )
 
-        @jax.jit
-        def update_step(state, obs, ref_horizon):
-            running_cost = cost_builder(ref_horizon)
+        def update_fn(state, obs, running_cost):
             return mppi.command(
-                config=config,
-                mppi_state=state,
-                current_obs=obs,
-                dynamics=dynamics,
-                running_cost=running_cost,
-                terminal_cost=terminal_cost_fn,
-                shift=True,
+                config=config, mppi_state=state, current_obs=obs,
+                dynamics=dynamics, running_cost=running_cost,
+                terminal_cost=terminal_cost_fn, shift=True
             )
 
     elif controller_type == "smppi":
@@ -147,17 +148,11 @@ def run_controller(
             step_dependent_dynamics=True,
         )
 
-        @jax.jit
-        def update_step(state, obs, ref_horizon):
-            running_cost = cost_builder(ref_horizon)
+        def update_fn(state, obs, running_cost):
             return smppi.command(
-                config=config,
-                smppi_state=state,
-                current_obs=obs,
-                dynamics=dynamics,
-                running_cost=running_cost,
-                terminal_cost=terminal_cost_fn,
-                shift=True,
+                config=config, smppi_state=state, current_obs=obs,
+                dynamics=dynamics, running_cost=running_cost,
+                terminal_cost=terminal_cost_fn, shift=True
             )
 
     elif controller_type == "kmppi":
@@ -168,18 +163,12 @@ def run_controller(
             step_dependent_dynamics=True,
         )
 
-        @jax.jit
-        def update_step(state, obs, ref_horizon):
-            running_cost = cost_builder(ref_horizon)
+        def update_fn(state, obs, running_cost):
             return kmppi.command(
-                config=config,
-                kmppi_state=state,
-                current_obs=obs,
-                dynamics=dynamics,
-                running_cost=running_cost,
-                terminal_cost=terminal_cost_fn,
-                kernel_fn=kernel, # Pass the kernel object
-                shift=True,
+                config=config, kmppi_state=state, current_obs=obs,
+                dynamics=dynamics, running_cost=running_cost,
+                terminal_cost=terminal_cost_fn, kernel_fn=kernel,
+                shift=True
             )
     else:
         raise ValueError(f"Unknown controller type: {controller_type}")
@@ -192,47 +181,58 @@ def run_controller(
         0.0, 0.0, 0.0
     ])
 
-    # Storage
-    states, actions_taken, costs_history = [state], [], []
-
     print(f"\nRunning {controller_type.upper()}...")
 
-    # Control loop
-    for step in range(num_steps):
-        # Slice reference
-        ref_horizon = reference[step : step + horizon]
-        if len(ref_horizon) < horizon:
-             padding = jnp.tile(reference[-1], (horizon - len(ref_horizon), 1))
-             ref_horizon = jnp.concatenate([ref_horizon, padding], axis=0)
+    # -------------------------------------------------------------------------
+    # Simulation Loop via jax.lax.scan
+    # -------------------------------------------------------------------------
 
-        # Compute action
-        action, controller_state = update_step(controller_state, state, ref_horizon)
+    def simulation_step(carry, step_idx):
+        ctrl_state, current_state = carry
+
+        # Slice reference (dynamic slice for JIT)
+        ref_horizon = jax.lax.dynamic_slice(
+            reference, (step_idx, 0), (horizon, 6)
+        )
+
+        # Build cost function
+        running_cost = cost_builder(ref_horizon)
+
+        # Update controller
+        action, new_ctrl_state = update_fn(ctrl_state, current_state, running_cost)
 
         # Apply dynamics
-        state = dynamics_fn(state, action)
+        next_state = dynamics_fn(current_state, action)
 
-        # Cost for logging
-        current_ref = ref_horizon[0]
-        ref_pos = current_ref[0:3]
-        ref_vel = current_ref[3:6]
-
-        # Manually compute cost for logging
-        pos_error = state[0:3] - ref_pos
+        # Compute scalar cost for logging
+        current_ref_pos = ref_horizon[0, 0:3]
+        current_ref_vel = ref_horizon[0, 3:6]
+        pos_error = current_state[0:3] - current_ref_pos
         cost_pos = pos_error @ Q_pos @ pos_error
-        vel_error = state[3:6] - ref_vel
+        vel_error = current_state[3:6] - current_ref_vel
         cost_vel = vel_error @ Q_vel @ vel_error
         cost_control = action @ R @ action
-        cost = cost_pos + cost_vel + cost_control
+        step_cost = cost_pos + cost_vel + cost_control
 
-        states.append(state)
-        actions_taken.append(action)
-        costs_history.append(cost)
+        return (new_ctrl_state, next_state), (next_state, action, step_cost)
 
-        if step % 100 == 0:
-            pos_error = jnp.linalg.norm(state[0:3] - ref_pos)
-            print(f"  Step {step:4d}: pos_err={pos_error:.3f}m, cost={cost:.2f}")
+    # JIT and run
+    init_carry = (controller_state, state)
+    step_indices = jnp.arange(num_steps)
 
-    return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
+    scan_fn = jax.jit(lambda c, x: jax.lax.scan(simulation_step, c, x))
+
+    t0 = time.time()
+    _, (states_traj, actions_traj, costs_traj) = scan_fn(init_carry, step_indices)
+    states_traj.block_until_ready()
+    t1 = time.time()
+
+    print(f"  Simulation complete in {t1-t0:.4f}s")
+
+    # Combine results
+    states = jnp.concatenate([state[None, :], states_traj], axis=0)
+
+    return states, actions_traj, costs_traj
 
 
 def compute_smoothness_metrics(actions: jax.Array, dt: float) -> dict:
@@ -263,9 +263,9 @@ def compute_energy_consumption(actions: jax.Array, dt: float, mass: float) -> fl
 
 def run_quadrotor_figure8_comparison(
     num_steps: int = 1000,
-    num_samples: int = 800,
-    horizon: int = 25,
-    lambda_: float = 1.0,
+    num_samples: int = 2000, # Tuned
+    horizon: int = 50,       # Tuned
+    lambda_: float = 0.1,    # Tuned
     scale: float = 4.0,
     period: float = 20.0,
     visualize: bool = False,
@@ -289,12 +289,14 @@ def run_quadrotor_figure8_comparison(
     dt = 0.02  # 50 Hz
     height = -5.0  # 5m altitude
 
-    # Generate figure-8 reference
-    # Need extra horizon for lookahead
-    duration = (num_steps + horizon) * dt
+    # Generate figure-8 reference with extra padding for lookahead
+    # Padding: horizon * dt * 2 (safe margin)
+    duration = num_steps * dt
+    total_duration = duration + horizon * dt * 2.0
+
     reference = generate_lemniscate_trajectory(
         scale=scale, height=height, period=period,
-        duration=duration, dt=dt, axis="xy"
+        duration=total_duration, dt=dt, axis="xy"
     )
 
     print("=" * 60)
@@ -498,9 +500,9 @@ if __name__ == "__main__":
         description="Compare MPPI variants on quadrotor figure-8 trajectory"
     )
     parser.add_argument("--steps", type=int, default=1000, help="Number of control steps")
-    parser.add_argument("--samples", type=int, default=800, help="Number of MPPI samples")
-    parser.add_argument("--horizon", type=int, default=25, help="Planning horizon")
-    parser.add_argument("--lambda", type=float, default=1.0, dest="lambda_", help="Temperature")
+    parser.add_argument("--samples", type=int, default=2000, help="Number of MPPI samples")
+    parser.add_argument("--horizon", type=int, default=50, help="Planning horizon")
+    parser.add_argument("--lambda", type=float, default=0.1, dest="lambda_", help="Temperature")
     parser.add_argument("--scale", type=float, default=4.0, help="Figure-8 scale (m)")
     parser.add_argument("--period", type=float, default=20.0, help="Figure-8 period (s)")
     parser.add_argument("--visualize", action="store_true", help="Plot results")

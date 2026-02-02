@@ -5,8 +5,8 @@ This document details the findings regarding performance differences between the
 ## Summary
 
 - **`quadrotor_hover.py`**: Fast (~0.2s/step simulated).
-- **`quadrotor_circle.py`**: Previously slow (~45x slower). Optimized to use JIT.
-- **`quadrotor_figure8_comparison.py`**: Previously slowest. Optimized to use JIT.
+- **`quadrotor_circle.py`**: Previously slow (~45x slower). Optimized to use `jax.lax.scan` for maximum performance.
+- **`quadrotor_figure8_comparison.py`**: Previously slowest. Optimized to use `jax.lax.scan` for maximum performance.
 
 ## Root Cause Analysis
 
@@ -23,28 +23,30 @@ Originally, this example re-created the cost function at every time step to upda
 **Optimization Implemented:**
 The implementation has been refactored to:
 1.  Use `step_dependent_dynamics=True` to allow passing the time step `t` to the cost function.
-2.  Pass a slice of the reference trajectory (covering the current horizon) as an argument to the JIT-compiled update step.
-3.  Define the cost function inside the JITted step to close over this reference slice (which JAX treats as a traced data dependency, not a static parameter).
+2.  Use **`jax.lax.scan`** to wrap the entire simulation loop into a single JIT-compiled kernel. This eliminates Python loop dispatch overhead completely.
+3.  Pass the entire reference trajectory to the scan function and use `jax.lax.dynamic_slice` inside the loop to extract the current horizon's reference. This allows the cost function to close over dynamic data efficiently without recompilation.
 
-This allows the entire update step to be JIT-compiled once and reused efficiently.
+**Parameter Tuning:**
+To improve tracking performance, the following parameters were tuned:
+- `num_samples`: Increased from 1000 to 2000.
+- `horizon`: Increased from 30 to 50.
+- `lambda`: Decreased from 1.0 to 0.1 (sharper selection).
+- Cost weights: Significantly increased position and velocity weights.
 
 ### 3. `quadrotor_figure8_comparison.py` (Slowest -> Optimized)
 
 This example shared the same issue as `quadrotor_circle.py` but for three different controllers (`mppi`, `smppi`, `kmppi`).
 
 **Optimization Implemented:**
-Similar to `quadrotor_circle.py`, the controllers have been updated to use JIT-compiled update steps that accept the reference horizon as a dynamic argument. This works for all three variants:
-- **MPPI**: Standard update.
-- **SMPPI**: Uses `step_dependent_dynamics` to smooth actions against reference.
-- **KMPPI**: Captures the kernel function in the JIT closure (as a static object) while treating the reference as dynamic data.
+Similar to `quadrotor_circle.py`, the controllers have been updated to use `jax.lax.scan` for the simulation loop. This required adapting the update logic for all three variants to be compatible with `scan` and dynamic reference slicing.
 
-## Benchmark Verification
-
-Simulations verify that the optimized versions run significantly faster, comparable to the `quadrotor_hover.py` example (excluding the overhead of running multiple controllers or more complex dynamics).
+**Parameter Tuning:**
+Parameters were similarly tuned to handle the aggressive figure-8 trajectory (samples=2000, horizon=50, lambda=0.1).
 
 ## Recommendation (For Future Reference)
 
 When implementing tracking controllers with JAX MPPI:
-1.  **Parametrize the Cost Function**: Avoid capturing changing concrete values (like current target) in closures if they prevent JIT.
-2.  **Use Data Dependencies**: Pass changing targets as arguments (Tracers) to the JIT-compiled function.
-3.  **Step-Dependent Dynamics**: Use `step_dependent_dynamics=True` to utilize the relative time index `t` for looking up references in a passed trajectory slice.
+1.  **Use `jax.lax.scan`**: For simulation loops, wrapping the entire loop in `scan` provides the best performance by minimizing Python overhead.
+2.  **Parametrize the Cost Function**: Avoid capturing changing concrete values (like current target) in closures if they prevent JIT.
+3.  **Use Data Dependencies**: Pass changing targets as arguments (Tracers) to the JIT-compiled function.
+4.  **Step-Dependent Dynamics**: Use `step_dependent_dynamics=True` to utilize the relative time index `t` for looking up references in a passed trajectory slice.
