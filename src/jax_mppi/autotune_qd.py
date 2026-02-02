@@ -213,9 +213,9 @@ class CMAMEOpt(Optimizer):
             # Objective is negative cost, so negate to get cost
             cost = -row["objective"]
             # Behavior is stored in columns like "behavior_0", "behavior_1", etc.
-            behavior = np.array(
-                [row[f"index_{i}"] for i in range(self.behavior_dim)]
-            )
+            behavior = np.array([
+                row[f"index_{i}"] for i in range(self.behavior_dim)
+            ])
             results.append((params, cost, behavior))
 
         return results

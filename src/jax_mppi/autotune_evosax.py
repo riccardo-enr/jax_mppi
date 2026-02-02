@@ -17,7 +17,6 @@ Example:
     >>> best = optimizer.optimize_all(iterations=30)
 """
 
-import abc
 from typing import Any, Callable, Optional
 
 import jax

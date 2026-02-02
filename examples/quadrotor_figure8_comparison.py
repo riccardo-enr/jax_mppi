@@ -120,17 +120,16 @@ def run_controller(
             nx=nx, nu=nu, noise_sigma=noise_sigma,
             num_samples=num_samples, horizon=horizon,
             lambda_=lambda_, u_min=u_min, u_max=u_max, key=key,
-            smoothing_factor=0.5,  # Penalize control rate changes
+            w_action_seq_cost=0.5,  # Penalize control rate changes
         )
         command_fn = smppi.command
     elif controller_type == "kmppi":
-        config, controller_state = kmppi.create(
+        config, controller_state, kernel = kmppi.create(
             nx=nx, nu=nu, noise_sigma=noise_sigma,
             num_samples=num_samples, horizon=horizon,
             lambda_=lambda_, u_min=u_min, u_max=u_max, key=key,
-            kernel_bandwidth=1.0,
         )
-        command_fn = kmppi.command
+        command_fn = lambda **kwargs: kmppi.command(**kwargs, kernel=kernel)
     else:
         raise ValueError(f"Unknown controller type: {controller_type}")
 
