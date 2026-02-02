@@ -9,7 +9,11 @@ aggressive figure-8 trajectory. It compares:
 The comparison evaluates tracking accuracy, control smoothness, and energy efficiency.
 """
 
+import sys
 from pathlib import Path
+
+# Add parent directory to path for imports when running directly
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import jax
 import jax.numpy as jnp

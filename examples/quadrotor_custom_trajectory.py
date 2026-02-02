@@ -6,7 +6,11 @@ quadrotor will generate and track a smooth trajectory through them using
 cubic Hermite splines.
 """
 
+import sys
 from pathlib import Path
+
+# Add parent directory to path for imports when running directly
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import jax
 import jax.numpy as jnp

@@ -5,7 +5,11 @@ hover position. The quadrotor starts from a displaced position and must
 stabilize to the setpoint with zero velocity.
 """
 
+import sys
 from pathlib import Path
+
+# Add parent directory to path for imports when running directly
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import jax
 import jax.numpy as jnp
