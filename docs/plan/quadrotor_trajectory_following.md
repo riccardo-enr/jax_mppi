@@ -433,15 +433,16 @@ def generate_lemniscate_trajectory(
   - [x] Terminal cost
   - [x] Unit tests for costs
 
-### Phase 2: Trajectory Generators
+### Phase 2: Trajectory Generators ✓
 
-- [ ] Create trajectory generation utilities (`examples/quadrotor/trajectories.py`)
-  - [ ] Circular trajectory
-  - [ ] Figure-8 (lemniscate) trajectory
-  - [ ] Hover setpoint
-  - [ ] Minimum snap trajectory (stretch goal)
-  - [ ] Waypoint interpolation (stretch goal)
-- [ ] Unit tests for trajectory generators
+- [x] Create trajectory generation utilities (`examples/quadrotor/trajectories.py`)
+  - [x] Circular trajectory
+  - [x] Figure-8 (lemniscate) trajectory
+  - [x] Hover setpoint
+  - [x] Helix trajectory (bonus)
+  - [x] Waypoint interpolation with cubic Hermite splines
+  - [x] Trajectory metrics computation
+- [x] Unit tests for trajectory generators (28 tests, all passing)
 
 ### Phase 3: Basic Examples
 
@@ -631,6 +632,31 @@ jax_mppi/
 
 **Next Steps:**
 - Phase 2: Trajectory generators (circle, figure-8, hover setpoint)
+
+### 2026-02-02: Phase 2 Complete ✓
+
+**Completed:**
+- Implemented `examples/quadrotor/trajectories.py` with comprehensive trajectory generators
+  - `generate_hover_setpoint()` - Constant position stabilization
+  - `generate_circle_trajectory()` - Circular paths with configurable center and phase
+  - `generate_lemniscate_trajectory()` - Figure-8 patterns (horizontal or vertical)
+  - `generate_helix_trajectory()` - Spiral paths with vertical motion
+  - `generate_waypoint_trajectory()` - Smooth cubic Hermite interpolation through waypoints
+  - `compute_trajectory_metrics()` - Analyze distance, velocity, acceleration
+
+- Comprehensive test coverage (28 tests, all passing)
+  - Tests verify: trajectory shapes, periodicity, continuity
+  - Validates velocity/position relationships
+  - Checks metric computation accuracy
+
+**Key Features:**
+- All trajectories follow NED frame convention
+- Analytical derivatives for velocity (no numerical differentiation)
+- Configurable parameters (center, phase, duration, dt)
+- Support for both horizontal and vertical figure-8 patterns
+
+**Next Steps:**
+- Phase 3: Basic examples (hover control, circle following)
 
 ---
 
