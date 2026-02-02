@@ -31,23 +31,27 @@ def create_tracking_cost(
     Q_pos: jax.Array,
     Q_vel: jax.Array,
     R: jax.Array,
-    ref_pos: jax.Array,
-    ref_vel: jax.Array,
 ):
-    """Create trajectory tracking cost for a specific reference point."""
+    """Create trajectory tracking cost builder."""
 
-    def cost_fn(state: jax.Array, action: jax.Array) -> jax.Array:
-        pos_error = state[0:3] - ref_pos
-        cost_pos = pos_error @ Q_pos @ pos_error
+    def cost_builder(reference_horizon: jax.Array):
+        def cost_fn(state: jax.Array, action: jax.Array, t: int) -> jax.Array:
+            ref = reference_horizon[t]
+            ref_pos = ref[0:3]
+            ref_vel = ref[3:6]
 
-        vel_error = state[3:6] - ref_vel
-        cost_vel = vel_error @ Q_vel @ vel_error
+            pos_error = state[0:3] - ref_pos
+            cost_pos = pos_error @ Q_pos @ pos_error
 
-        cost_control = action @ R @ action
+            vel_error = state[3:6] - ref_vel
+            cost_vel = vel_error @ Q_vel @ vel_error
 
-        return cost_pos + cost_vel + cost_control
+            cost_control = action @ R @ action
 
-    return cost_fn
+            return cost_pos + cost_vel + cost_control
+        return cost_fn
+
+    return cost_builder
 
 
 def run_controller(
@@ -86,10 +90,13 @@ def run_controller(
     u_min = jnp.array([0.0, -8.0, -8.0, -8.0])
     u_max = jnp.array([4.0 * mass * gravity, 8.0, 8.0, 8.0])
 
-    dynamics = create_quadrotor_dynamics(
+    dynamics_fn = create_quadrotor_dynamics(
         dt=dt, mass=mass, gravity=gravity, tau_omega=0.05,
         u_min=u_min, u_max=u_max
     )
+
+    def dynamics(state, action, t):
+        return dynamics_fn(state, action)
 
     # Cost weights
     Q_pos = jnp.eye(3) * 100.0
@@ -107,29 +114,73 @@ def run_controller(
     # Noise covariance
     noise_sigma = jnp.diag(jnp.array([5.0, 1.5, 1.5, 1.5]))
 
+    cost_builder = create_tracking_cost(Q_pos, Q_vel, R)
+
     # Create controller
     if controller_type == "mppi":
         config, controller_state = mppi.create(
             nx=nx, nu=nu, noise_sigma=noise_sigma,
             num_samples=num_samples, horizon=horizon,
-            lambda_=lambda_, u_min=u_min, u_max=u_max, key=key
+            lambda_=lambda_, u_min=u_min, u_max=u_max, key=key,
+            step_dependent_dynamics=True,
         )
-        command_fn = mppi.command
+
+        @jax.jit
+        def update_step(state, obs, ref_horizon):
+            running_cost = cost_builder(ref_horizon)
+            return mppi.command(
+                config=config,
+                mppi_state=state,
+                current_obs=obs,
+                dynamics=dynamics,
+                running_cost=running_cost,
+                terminal_cost=terminal_cost_fn,
+                shift=True,
+            )
+
     elif controller_type == "smppi":
         config, controller_state = smppi.create(
             nx=nx, nu=nu, noise_sigma=noise_sigma,
             num_samples=num_samples, horizon=horizon,
             lambda_=lambda_, u_min=u_min, u_max=u_max, key=key,
             w_action_seq_cost=0.5,  # Penalize control rate changes
+            step_dependent_dynamics=True,
         )
-        command_fn = smppi.command
+
+        @jax.jit
+        def update_step(state, obs, ref_horizon):
+            running_cost = cost_builder(ref_horizon)
+            return smppi.command(
+                config=config,
+                smppi_state=state,
+                current_obs=obs,
+                dynamics=dynamics,
+                running_cost=running_cost,
+                terminal_cost=terminal_cost_fn,
+                shift=True,
+            )
+
     elif controller_type == "kmppi":
         config, controller_state, kernel = kmppi.create(
             nx=nx, nu=nu, noise_sigma=noise_sigma,
             num_samples=num_samples, horizon=horizon,
             lambda_=lambda_, u_min=u_min, u_max=u_max, key=key,
+            step_dependent_dynamics=True,
         )
-        command_fn = lambda **kwargs: kmppi.command(**kwargs, kernel=kernel)
+
+        @jax.jit
+        def update_step(state, obs, ref_horizon):
+            running_cost = cost_builder(ref_horizon)
+            return kmppi.command(
+                config=config,
+                kmppi_state=state,
+                current_obs=obs,
+                dynamics=dynamics,
+                running_cost=running_cost,
+                terminal_cost=terminal_cost_fn,
+                kernel_fn=kernel, # Pass the kernel object
+                shift=True,
+            )
     else:
         raise ValueError(f"Unknown controller type: {controller_type}")
 
@@ -148,25 +199,30 @@ def run_controller(
 
     # Control loop
     for step in range(num_steps):
-        # Create cost for current reference
-        ref_pos = reference[step, 0:3]
-        ref_vel = reference[step, 3:6]
-        running_cost_fn = create_tracking_cost(Q_pos, Q_vel, R, ref_pos, ref_vel)
+        # Slice reference
+        ref_horizon = reference[step : step + horizon]
+        if len(ref_horizon) < horizon:
+             padding = jnp.tile(reference[-1], (horizon - len(ref_horizon), 1))
+             ref_horizon = jnp.concatenate([ref_horizon, padding], axis=0)
 
         # Compute action
-        action, controller_state = command_fn(
-            config=config,
-            mppi_state=controller_state,
-            current_obs=state,
-            dynamics=dynamics,
-            running_cost=running_cost_fn,
-            terminal_cost=terminal_cost_fn,
-            shift=True,
-        )
+        action, controller_state = update_step(controller_state, state, ref_horizon)
 
         # Apply dynamics
-        state = dynamics(state, action)
-        cost = running_cost_fn(state, action)
+        state = dynamics_fn(state, action)
+
+        # Cost for logging
+        current_ref = ref_horizon[0]
+        ref_pos = current_ref[0:3]
+        ref_vel = current_ref[3:6]
+
+        # Manually compute cost for logging
+        pos_error = state[0:3] - ref_pos
+        cost_pos = pos_error @ Q_pos @ pos_error
+        vel_error = state[3:6] - ref_vel
+        cost_vel = vel_error @ Q_vel @ vel_error
+        cost_control = action @ R @ action
+        cost = cost_pos + cost_vel + cost_control
 
         states.append(state)
         actions_taken.append(action)
@@ -234,7 +290,8 @@ def run_quadrotor_figure8_comparison(
     height = -5.0  # 5m altitude
 
     # Generate figure-8 reference
-    duration = num_steps * dt
+    # Need extra horizon for lookahead
+    duration = (num_steps + horizon) * dt
     reference = generate_lemniscate_trajectory(
         scale=scale, height=height, period=period,
         duration=duration, dt=dt, axis="xy"
@@ -245,9 +302,9 @@ def run_quadrotor_figure8_comparison(
     print("=" * 60)
     print(f"\nTrajectory: figure-8, scale={scale}m, period={period}s")
     print(f"Control: {num_samples} samples, horizon={horizon}, λ={lambda_}")
-    print(f"Duration: {duration:.1f}s ({num_steps} steps @ {1/dt:.0f} Hz)")
+    print(f"Duration: {num_steps * dt:.1f}s ({num_steps} steps @ {1/dt:.0f} Hz)")
 
-    metrics = compute_trajectory_metrics(reference, dt)
+    metrics = compute_trajectory_metrics(reference[:num_steps], dt)
     print("\nReference trajectory metrics:")
     for metric_name, value in metrics.items():
         print(f"  {metric_name}: {value:.3f}")
@@ -261,11 +318,14 @@ def run_quadrotor_figure8_comparison(
         )
 
         # Compute metrics
+        # Adjust reference slicing to match states length (num_steps)
+        ref_slice = reference[:num_steps]
+
         pos_errors = jnp.linalg.norm(
-            states[50:-1, 0:3] - reference[50:, 0:3], axis=1
+            states[50:-1, 0:3] - ref_slice[50:, 0:3], axis=1
         )
         vel_errors = jnp.linalg.norm(
-            states[50:-1, 3:6] - reference[50:, 3:6], axis=1
+            states[50:-1, 3:6] - ref_slice[50:, 3:6], axis=1
         )
 
         smoothness = compute_smoothness_metrics(actions, dt)
@@ -312,10 +372,12 @@ def run_quadrotor_figure8_comparison(
 
             fig = plt.figure(figsize=(18, 12))
 
+            ref_plot = reference[:num_steps]
+
             # 3D trajectories
             ax1 = fig.add_subplot(2, 3, 1, projection="3d")
             ax1.plot(
-                reference[:, 0], reference[:, 1], reference[:, 2],
+                ref_plot[:, 0], ref_plot[:, 1], ref_plot[:, 2],
                 "k--", linewidth=2, alpha=0.7, label="Reference"
             )
             colors = {"mppi": "C0", "smppi": "C1", "kmppi": "C2"}
@@ -336,7 +398,7 @@ def run_quadrotor_figure8_comparison(
             # XY trajectory (top view)
             ax2 = plt.subplot(2, 3, 2)
             ax2.plot(
-                reference[:, 0], reference[:, 1],
+                ref_plot[:, 0], ref_plot[:, 1],
                 "k--", linewidth=2, alpha=0.7, label="Reference"
             )
             for controller, color in colors.items():
@@ -359,7 +421,7 @@ def run_quadrotor_figure8_comparison(
             for controller, color in colors.items():
                 states = results[controller]["states"]
                 errors = jnp.linalg.norm(
-                    states[:-1, 0:3] - reference[:, 0:3], axis=1
+                    states[:-1, 0:3] - ref_plot[:, 0:3], axis=1
                 )
                 ax3.plot(time, errors, color=color, label=controller.upper())
             ax3.set_xlabel("Time (s)")

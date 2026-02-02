@@ -23,41 +23,44 @@ from jax_mppi.costs.quadrotor import create_terminal_cost
 from jax_mppi.dynamics.quadrotor import create_quadrotor_dynamics
 
 
-def create_tracking_cost_at_time(
+def create_tracking_cost(
     Q_pos: jax.Array,
     Q_vel: jax.Array,
     R: jax.Array,
-    ref_pos: jax.Array,
-    ref_vel: jax.Array,
 ):
-    """Create trajectory tracking cost for a specific reference point.
+    """Create trajectory tracking cost using time index to look up reference.
 
     Args:
         Q_pos: Position error weight matrix
         Q_vel: Velocity error weight matrix
         R: Control effort weight matrix
-        ref_pos: Reference position [3]
-        ref_vel: Reference velocity [3]
 
     Returns:
-        Cost function that takes (state, action)
+        Cost function builder that takes reference_horizon
     """
 
-    def cost_fn(state: jax.Array, action: jax.Array) -> jax.Array:
-        # Position tracking error
-        pos_error = state[0:3] - ref_pos
-        cost_pos = pos_error @ Q_pos @ pos_error
+    def cost_builder(reference_horizon: jax.Array):
+        def cost_fn(state: jax.Array, action: jax.Array, t: int) -> jax.Array:
+            # Look up reference for current relative time t
+            ref = reference_horizon[t]
+            ref_pos = ref[0:3]
+            ref_vel = ref[3:6]
 
-        # Velocity tracking error
-        vel_error = state[3:6] - ref_vel
-        cost_vel = vel_error @ Q_vel @ vel_error
+            # Position tracking error
+            pos_error = state[0:3] - ref_pos
+            cost_pos = pos_error @ Q_pos @ pos_error
 
-        # Control effort
-        cost_control = action @ R @ action
+            # Velocity tracking error
+            vel_error = state[3:6] - ref_vel
+            cost_vel = vel_error @ Q_vel @ vel_error
 
-        return cost_pos + cost_vel + cost_control
+            # Control effort
+            cost_control = action @ R @ action
 
-    return cost_fn
+            return cost_pos + cost_vel + cost_control
+        return cost_fn
+
+    return cost_builder
 
 
 def run_quadrotor_circle(
@@ -107,12 +110,13 @@ def run_quadrotor_circle(
         radius=radius,
         height=height,
         period=period,
-        duration=duration,
+        duration=duration + horizon * dt, # Generate extra for horizon lookahead
         dt=dt,
     )
 
     print("\nTrajectory metrics:")
-    metrics = compute_trajectory_metrics(reference, dt)
+    # Only compute metrics for the duration part
+    metrics = compute_trajectory_metrics(reference[:num_steps], dt)
     for metric_name, value in metrics.items():
         print(f"  {metric_name}: {value:.3f}")
 
@@ -120,7 +124,7 @@ def run_quadrotor_circle(
     u_min = jnp.array([0.0, -5.0, -5.0, -5.0])
     u_max = jnp.array([4.0 * mass * gravity, 5.0, 5.0, 5.0])
 
-    dynamics = create_quadrotor_dynamics(
+    dynamics_fn = create_quadrotor_dynamics(
         dt=dt,
         mass=mass,
         gravity=gravity,
@@ -128,6 +132,10 @@ def run_quadrotor_circle(
         u_min=u_min,
         u_max=u_max,
     )
+
+    # Wrap dynamics to ignore time argument (since we use step_dependent_dynamics=True)
+    def dynamics(state, action, t):
+        return dynamics_fn(state, action)
 
     # Cost function weights
     Q_pos = jnp.eye(3) * 50.0   # Position error weight
@@ -157,7 +165,27 @@ def run_quadrotor_circle(
         u_min=u_min,
         u_max=u_max,
         key=key,
+        step_dependent_dynamics=True, # Enable passing t to cost function
     )
+
+    # Create cost builder
+    cost_builder = create_tracking_cost(Q_pos, Q_vel, R)
+
+    # Define the update step using JIT
+    @jax.jit
+    def update_step(mppi_state, obs, ref_horizon):
+        # Create cost function that closes over ref_horizon
+        running_cost_fn = cost_builder(ref_horizon)
+
+        return mppi.command(
+            config=config,
+            mppi_state=mppi_state,
+            current_obs=obs,
+            dynamics=dynamics,
+            running_cost=running_cost_fn,
+            terminal_cost=terminal_cost_fn,
+            shift=True,
+        )
 
     # Initial state: start at first reference point
     state = jnp.array([
@@ -179,29 +207,33 @@ def run_quadrotor_circle(
 
     # Control loop
     for step in range(num_steps):
-        # Create cost function for current reference point
-        ref_pos = reference[step, 0:3]
-        ref_vel = reference[step, 3:6]
-        running_cost_fn = create_tracking_cost_at_time(
-            Q_pos, Q_vel, R, ref_pos, ref_vel
-        )
+        # Slice reference for current horizon
+        # Reference should cover [step, step + horizon]
+        # Note: reference was generated with extra length
+        ref_horizon = reference[step : step + horizon]
 
-        # Compute optimal action
-        action, mppi_state = mppi.command(
-            config=config,
-            mppi_state=mppi_state,
-            current_obs=state,
-            dynamics=dynamics,
-            running_cost=running_cost_fn,
-            terminal_cost=terminal_cost_fn,
-            shift=True,
-        )
+        # If we run out of reference (shouldn't happen with correct generation), pad with last
+        if len(ref_horizon) < horizon:
+             padding = jnp.tile(reference[-1], (horizon - len(ref_horizon), 1))
+             ref_horizon = jnp.concatenate([ref_horizon, padding], axis=0)
+
+        # Compute optimal action with JIT
+        action, mppi_state = update_step(mppi_state, state, ref_horizon)
 
         # Apply action to environment
-        state = dynamics(state, action)
+        state = dynamics_fn(state, action)
 
-        # Compute cost
-        cost = running_cost_fn(state, action)
+        # Compute cost (using the first point of reference for current step cost)
+        current_ref_pos = ref_horizon[0, 0:3]
+        current_ref_vel = ref_horizon[0, 3:6]
+
+        # We can reuse the cost builder logic manually for logging
+        pos_error = state[0:3] - current_ref_pos
+        cost_pos = pos_error @ Q_pos @ pos_error
+        vel_error = state[3:6] - current_ref_vel
+        cost_vel = vel_error @ Q_vel @ vel_error
+        cost_control = action @ R @ action
+        cost = cost_pos + cost_vel + cost_control
 
         # Store
         states.append(state)
@@ -210,9 +242,8 @@ def run_quadrotor_circle(
 
         # Print progress
         if step % 100 == 0:
-            ref_pos = reference[step, 0:3]
-            pos_error = jnp.linalg.norm(state[0:3] - ref_pos)
-            vel_error = jnp.linalg.norm(state[3:6] - reference[step, 3:6])
+            pos_error = jnp.linalg.norm(state[0:3] - current_ref_pos)
+            vel_error = jnp.linalg.norm(state[3:6] - current_ref_vel)
             print(
                 f"Step {step:4d}: pos_err={pos_error:.3f}m, "
                 f"vel_err={vel_error:.3f}m/s, cost={cost:.2f}"
@@ -222,9 +253,12 @@ def run_quadrotor_circle(
     actions_taken = jnp.stack(actions_taken)
     costs_history = jnp.array(costs_history)
 
+    # Trim reference to match steps
+    reference_metrics = reference[:num_steps]
+
     # Compute tracking performance
-    pos_errors = jnp.linalg.norm(states[:-1, 0:3] - reference[:, 0:3], axis=1)
-    vel_errors = jnp.linalg.norm(states[:-1, 3:6] - reference[:, 3:6], axis=1)
+    pos_errors = jnp.linalg.norm(states[:-1, 0:3] - reference_metrics[:, 0:3], axis=1)
+    vel_errors = jnp.linalg.norm(states[:-1, 3:6] - reference_metrics[:, 3:6], axis=1)
 
     print(f"\nTracking performance:")
     print(f"  Mean position error: {jnp.mean(pos_errors):.4f}m")
@@ -245,7 +279,7 @@ def run_quadrotor_circle(
             # 3D trajectory
             ax1 = fig.add_subplot(2, 3, 1, projection="3d")
             ax1.plot(
-                reference[:, 0], reference[:, 1], reference[:, 2],
+                reference_metrics[:, 0], reference_metrics[:, 1], reference_metrics[:, 2],
                 "k--", linewidth=2, alpha=0.5, label="Reference"
             )
             ax1.plot(
@@ -266,7 +300,7 @@ def run_quadrotor_circle(
             # XY trajectory (top view)
             ax2 = plt.subplot(2, 3, 2)
             ax2.plot(
-                reference[:, 0], reference[:, 1],
+                reference_metrics[:, 0], reference_metrics[:, 1],
                 "k--", linewidth=2, alpha=0.5, label="Reference"
             )
             ax2.plot(states[:, 0], states[:, 1], "b-", linewidth=1, label="Actual")
@@ -291,9 +325,9 @@ def run_quadrotor_circle(
             # Position components
             ax4 = plt.subplot(2, 3, 4)
             ax4.plot(time, states[:, 0], "b-", label="px (actual)")
-            ax4.plot(time[:-1], reference[:, 0], "b--", alpha=0.5, label="px (ref)")
+            ax4.plot(time[:-1], reference_metrics[:, 0], "b--", alpha=0.5, label="px (ref)")
             ax4.plot(time, states[:, 1], "r-", label="py (actual)")
-            ax4.plot(time[:-1], reference[:, 1], "r--", alpha=0.5, label="py (ref)")
+            ax4.plot(time[:-1], reference_metrics[:, 1], "r--", alpha=0.5, label="py (ref)")
             ax4.set_ylabel("Position (m)")
             ax4.set_xlabel("Time (s)")
             ax4.legend()
@@ -303,7 +337,7 @@ def run_quadrotor_circle(
             # Altitude
             ax5 = plt.subplot(2, 3, 5)
             ax5.plot(time, states[:, 2], "b-", label="pz (actual)")
-            ax5.plot(time[:-1], reference[:, 2], "k--", alpha=0.5, label="pz (ref)")
+            ax5.plot(time[:-1], reference_metrics[:, 2], "k--", alpha=0.5, label="pz (ref)")
             ax5.set_ylabel("Z Position (m)")
             ax5.set_xlabel("Time (s)")
             ax5.legend()
