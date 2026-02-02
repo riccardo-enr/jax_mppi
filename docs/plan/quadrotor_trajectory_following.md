@@ -444,16 +444,18 @@ def generate_lemniscate_trajectory(
   - [x] Trajectory metrics computation
 - [x] Unit tests for trajectory generators (28 tests, all passing)
 
-### Phase 3: Basic Examples
+### Phase 3: Basic Examples ✓
 
-- [ ] Example 1: Hover control (`examples/quadrotor_hover.py`)
-  - [ ] Stabilization around fixed setpoint
-  - [ ] Visualization of state vs time
-  - [ ] Performance metrics (settling time, overshoot)
-- [ ] Example 2: Circle following (`examples/quadrotor_circle.py`)
-  - [ ] Circular trajectory tracking
-  - [ ] Tracking error visualization
-  - [ ] Control input visualization
+- [x] Example 1: Hover control (`examples/quadrotor_hover.py`)
+  - [x] Stabilization around fixed setpoint
+  - [x] Visualization of state vs time
+  - [x] Performance metrics (settling time, overshoot)
+- [x] Example 2: Circle following (`examples/quadrotor_circle.py`)
+  - [x] Circular trajectory tracking
+  - [x] Tracking error visualization
+  - [x] Control input visualization
+  - [x] 3D trajectory plotting
+- [x] Integration tests (11 tests covering both examples)
 
 ### Phase 4: Advanced Examples
 
@@ -657,6 +659,37 @@ jax_mppi/
 
 **Next Steps:**
 - Phase 3: Basic examples (hover control, circle following)
+
+### 2026-02-02: Phase 3 Complete ✓
+
+**Completed:**
+- Implemented `examples/quadrotor_hover.py` - Hover control stabilization
+  - MPPI-based hover controller with position and attitude tracking
+  - Performance metrics (settling time, position/velocity error)
+  - Comprehensive visualization (9 subplots: position, velocity, angular velocity, control inputs, errors, cost)
+  - Command-line interface with configurable parameters
+
+- Implemented `examples/quadrotor_circle.py` - Circular trajectory tracking
+  - Time-varying reference tracking using trajectory generators
+  - 3D trajectory visualization with top-view projection
+  - Tracking error analysis and metrics
+  - Configurable circle parameters (radius, period)
+
+- Integration tests (11 tests)
+  - Example execution tests
+  - Convergence validation
+  - Quaternion norm preservation
+  - Cost decrease verification
+  - Cross-example compatibility checks
+
+**Key Features:**
+- Both examples run at 50 Hz control rate (JIT-compiled)
+- Detailed visualizations saved to `docs/media/`
+- Proper NED frame convention throughout
+- Performance metrics automatically computed and reported
+
+**Next Steps:**
+- Phase 4: Advanced examples (figure-8 comparison, custom trajectories)
 
 ---
 
