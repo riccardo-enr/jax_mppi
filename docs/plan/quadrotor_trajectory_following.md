@@ -55,49 +55,76 @@ The system dynamics are governed by the following equations:
 
 #### Translational Kinematics
 
-\[
+$$
 \dot{\mathbf{p}} = \mathbf{v}
-\]
+$$
 
 #### Translational Dynamics
 
-\[
+$$
 \dot{\mathbf{v}} = \mathbf{g} + \frac{1}{m} R(\mathbf{q}) \begin{bmatrix} 0 \\ 0 \\ T \end{bmatrix}
-\]
+$$
 
-where $\mathbf{g} = [0, 0, -g]^T$ is the gravity vector, $m$ is the mass, and $R(\mathbf{q})$ is the rotation matrix derived from quaternion $\mathbf{q}$.
+where $\mathbf{g} = [0, 0, -g]^T$ is the gravity vector, $m$ is the mass, and $R(\mathbf{q})$ is the rotation matrix derived from quaternion $\mathbf{q} = [q_w, q_x, q_y, q_z]^T$:
+
+$$
+R(\mathbf{q}) = \begin{bmatrix}
+1 - 2(q_y^2 + q_z^2) & 2(q_x q_y - q_w q_z) & 2(q_x q_z + q_w q_y) \\
+2(q_x q_y + q_w q_z) & 1 - 2(q_x^2 + q_z^2) & 2(q_y q_z - q_w q_x) \\
+2(q_x q_z - q_w q_y) & 2(q_y q_z + q_w q_x) & 1 - 2(q_x^2 + q_y^2)
+\end{bmatrix}
+$$
 
 #### Rotational Kinematics
 
 The time derivative of the quaternion is given by:
 
-\[
+$$
 \dot{\mathbf{q}} = \frac{1}{2} \mathbf{q} \otimes \begin{bmatrix} 0 \\ \boldsymbol{\omega} \end{bmatrix}
-\]
+$$
 
-where $\otimes$ denotes quaternion multiplication. In matrix form involving the skew-symmetric matrix
+where $\otimes$ denotes quaternion multiplication. In matrix form involving the skew-symmetric matrix $\Omega(\boldsymbol{\omega})$:
 
-\[
+$$
 \dot{\mathbf{q}} = \frac{1}{2} \Omega(\boldsymbol{\omega}) \mathbf{q}
-\]
+$$
+
+with $\Omega(\boldsymbol{\omega})$ defined as:
+
+$$
+\Omega(\boldsymbol{\omega}) = \begin{bmatrix}
+0 & -\omega_x & -\omega_y & -\omega_z \\
+\omega_x & 0 & \omega_z & -\omega_y \\
+\omega_y & -\omega_z & 0 & \omega_x \\
+\omega_z & \omega_y & -\omega_x & 0
+\end{bmatrix}
+$$
 
 *Note: The implementation must ensure $\|\mathbf{q}\| = 1$, typically by normalization after integration.*
 
 #### Rotational Dynamics (First-order actuator model)
 
-\[
-\dot{\boldsymbol{\omega}} = \frac{1}{\tau_\omega} (\boldsymbol{\omega}_{cmd} - \boldsymbol{\omega})
-\]
+Ideally, the rotational dynamics are governed by Euler's equations for a rigid body:
 
-where $\tau_\omega$ is the time constant for the angular velocity tracking.
+$$
+J \dot{\boldsymbol{\omega}} = \boldsymbol{\tau} - \boldsymbol{\omega} \times (J \boldsymbol{\omega})
+$$
+
+where $J$ is the inertia matrix and $\boldsymbol{\tau}$ is the applied torque. However, commercial quadrotors often have an internal low-level controller regulating the body rates. We approximate this closed-loop behavior using a first-order system:
+
+$$
+\dot{\boldsymbol{\omega}} = \frac{1}{\tau_\omega} (\boldsymbol{\omega}_{cmd} - \boldsymbol{\omega})
+$$
+
+where $\boldsymbol{\omega}_{cmd}$ is the commanded body rate (control input), and $\tau_\omega$ is the time constant representing the bandwidth of the low-level controller.
 
 ### Cost Function
 
 The MPPI controller optimizes a cost function $J$ over a horizon $H$. The instantaneous cost $C(\mathbf{x}_t, \mathbf{u}_t)$ is defined as
 
-\[
+$$
 C(\mathbf{x}_t, \mathbf{u}_t) = \|\mathbf{p}_t - \mathbf{p}_{ref,t}\|_{Q_{pos}}^2 + \|\mathbf{v}_t - \mathbf{v}_{ref,t}\|_{Q_{vel}}^2 + \|\mathbf{u}_t\|_{R}^2
-\]
+$$
 
 where $\|\mathbf{z}\|_W^2 = \mathbf{z}^T W \mathbf{z}$.
 
