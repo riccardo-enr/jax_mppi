@@ -41,7 +41,7 @@ def create_tracking_cost(
         cost_pos = pos_error @ Q_pos @ pos_error
 
         vel_error = state[3:6] - ref_vel
-        cost_vel = vel_error @ Q_vel @ vel_vel
+        cost_vel = vel_error @ Q_vel @ vel_error
 
         cost_control = action @ R @ action
 
