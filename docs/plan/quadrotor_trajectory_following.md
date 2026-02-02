@@ -457,16 +457,20 @@ def generate_lemniscate_trajectory(
   - [x] 3D trajectory plotting
 - [x] Integration tests (11 tests covering both examples)
 
-### Phase 4: Advanced Examples
+### Phase 4: Advanced Examples ✓
 
-- [ ] Example 3: Figure-8 comparison (`examples/quadrotor_figure8_comparison.py`)
-  - [ ] MPPI vs SMPPI vs KMPPI comparison
-  - [ ] Smoothness metrics
-  - [ ] Energy consumption comparison
-  - [ ] Side-by-side trajectory plots
-- [ ] Example 4: Custom trajectory (`examples/quadrotor_custom_trajectory.py`)
-  - [ ] Minimum snap or waypoint-based
-  - [ ] User-defined reference trajectories
+- [x] Example 3: Figure-8 comparison (`examples/quadrotor_figure8_comparison.py`)
+  - [x] MPPI vs SMPPI vs KMPPI comparison
+  - [x] Smoothness metrics (control rate, jerk)
+  - [x] Energy consumption comparison
+  - [x] Side-by-side trajectory plots (6 subplots)
+  - [x] Comprehensive performance comparison table
+- [x] Example 4: Custom trajectory (`examples/quadrotor_custom_trajectory.py`)
+  - [x] Waypoint-based trajectories with cubic Hermite interpolation
+  - [x] User-defined reference trajectories
+  - [x] Waypoint passage verification
+  - [x] Command-line waypoint parsing
+- [x] Integration tests (13 tests for advanced examples)
 
 ### Phase 5: Documentation and Polish
 
@@ -690,6 +694,40 @@ jax_mppi/
 
 **Next Steps:**
 - Phase 4: Advanced examples (figure-8 comparison, custom trajectories)
+
+### 2026-02-02: Phase 4 Complete ✓
+
+**Completed:**
+- Implemented `examples/quadrotor_figure8_comparison.py` - MPPI variant comparison
+  - Side-by-side comparison of MPPI, SMPPI, and KMPPI on aggressive figure-8
+  - Comprehensive metrics: tracking accuracy, control smoothness, energy consumption
+  - Smoothness metrics: control rate (acceleration) and jerk analysis
+  - 6-subplot visualization comparing all three variants
+  - Performance comparison table with 7 key metrics
+  - Demonstrates trade-offs between tracking accuracy and control smoothness
+
+- Implemented `examples/quadrotor_custom_trajectory.py` - Waypoint following
+  - User-defined waypoint trajectories with smooth interpolation
+  - Cubic Hermite splines for C1 continuity
+  - Waypoint passage verification and error reporting
+  - Command-line interface for custom waypoint specification
+  - 6-subplot visualization including waypoint markers
+  - Default square pattern demonstration
+
+- Integration tests (13 tests)
+  - Figure-8 comparison execution and metrics validation
+  - Custom trajectory with various waypoint configurations
+  - Quaternion normalization across all controllers
+  - Finite value checks for all outputs
+
+**Key Features:**
+- Figure-8 example shows SMPPI produces smoother control (lower jerk)
+- Custom trajectory allows arbitrary waypoint sequences
+- All examples maintain 50 Hz control rate
+- Publication-quality comparison visualizations
+
+**Next Steps:**
+- Phase 5: Documentation and polish
 
 ---
 
