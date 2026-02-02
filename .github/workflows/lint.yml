@@ -38,3 +38,6 @@ jobs:
               run: |
                   npm install -g markdownlint-cli2
                   markdownlint-cli2 --config docs/.markdownlint-cli2.yaml "**/*.md" "#node_modules"
+
+            - name: Check Math Block Formatting
+              run: python3 docs/scripts/lint_math_blocks.py
