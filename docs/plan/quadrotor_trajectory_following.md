@@ -28,6 +28,10 @@ A quadrotor trajectory following example will:
 
 The quadrotor is modeled as a rigid body with 6 degrees of freedom. The state space is 13-dimensional, representing position, velocity, orientation (quaternion), and angular velocity.
 
+**Frame Conventions:**
+- **NED (North-East-Down)**: Global/world frame where Z-axis points down (gravity is positive Z)
+- **FRD (Forward-Right-Down)**: Body frame where X-axis points forward, Y-axis points right, Z-axis points down
+
 ### State and Control
 
 The state vector $\mathbf{x} \in \mathbb{R}^{13}$ is defined as:
@@ -38,10 +42,10 @@ The state vector $\mathbf{x} \in \mathbb{R}^{13}$ is defined as:
 
 where:
 
-- $\mathbf{p} = [p_x, p_y, p_z]^T$ is the position in the world frame.
-- $\mathbf{v} = [v_x, v_y, v_z]^T$ is the linear velocity in the world frame.
-- $\mathbf{q} = [q_w, q_x, q_y, q_z]^T$ is the unit quaternion representing orientation (body to world).
-- $\boldsymbol{\omega} = [\omega_x, \omega_y, \omega_z]^T$ is the angular velocity in the body frame.
+- $\mathbf{p} = [p_x, p_y, p_z]^T$ is the position in the NED world frame.
+- $\mathbf{v} = [v_x, v_y, v_z]^T$ is the linear velocity in the NED world frame.
+- $\mathbf{q} = [q_w, q_x, q_y, q_z]^T$ is the unit quaternion representing orientation (body FRD to world NED).
+- $\boldsymbol{\omega} = [\omega_x, \omega_y, \omega_z]^T$ is the angular velocity in the FRD body frame.
 
 The control input $\mathbf{u} \in \mathbb{R}^{4}$ consists of the total thrust and body angular rates:
 
@@ -62,10 +66,10 @@ The system dynamics are governed by the following equations:
 #### Translational Dynamics
 
 \[
-\dot{\mathbf{v}} = \mathbf{g} + \frac{1}{m} R(\mathbf{q}) \begin{bmatrix} 0 \\ 0 \\ T \end{bmatrix}
+\dot{\mathbf{v}} = \mathbf{g} + \frac{1}{m} R(\mathbf{q}) \begin{bmatrix} 0 \\ 0 \\ -T \end{bmatrix}
 \]
 
-where $\mathbf{g} = [0, 0, -g]^T$ is the gravity vector, $m$ is the mass, and $R(\mathbf{q})$ is the rotation matrix derived from quaternion $\mathbf{q}$.
+where $\mathbf{g} = [0, 0, g]^T$ is the gravity vector in NED frame (positive down), $m$ is the mass, $T$ is the thrust magnitude (positive), and $R(\mathbf{q})$ is the rotation matrix from FRD body frame to NED world frame. The thrust vector in body frame is $[0, 0, -T]^T$ (upward thrust is negative Z in FRD).
 
 #### Rotational Kinematics
 
@@ -182,10 +186,11 @@ state = [
 
 ```python
 action = [
-    T,              # total thrust in body z-axis (N) - [0, max_thrust]
-    wx_cmd,         # roll rate command (rad/s) - body x-axis
-    wy_cmd,         # pitch rate command (rad/s) - body y-axis
-    wz_cmd          # yaw rate command (rad/s) - body z-axis
+    T,              # total thrust magnitude (N) - [0, max_thrust]
+                    # Acts in -Z direction of FRD body frame (upward)
+    wx_cmd,         # roll rate command (rad/s) - body X-axis (FRD forward)
+    wy_cmd,         # pitch rate command (rad/s) - body Y-axis (FRD right)
+    wz_cmd          # yaw rate command (rad/s) - body Z-axis (FRD down)
 ]
 ```
 
@@ -195,6 +200,7 @@ action = [
 - Easier to enforce control bounds than motor-level commands
 - More intuitive for trajectory tracking
 - Standard in many quadrotor control frameworks
+- FRD body frame convention: thrust acts in -Z direction (upward)
 
 ### Dynamics Model
 
@@ -212,9 +218,16 @@ def quadrotor_dynamics(
 ) -> jax.Array:
     """
     6-DOF quadrotor dynamics with quaternion representation.
+    Frame conventions: NED (world), FRD (body)
 
     State: [px, py, pz, vx, vy, vz, qw, qx, qy, qz, wx, wy, wz] (13D)
-    Action: [T, wx_cmd, wy_cmd, wz_cmd] (4D body thrust + body rates)
+    - Position/velocity in NED world frame
+    - Quaternion: body FRD to world NED
+    - Angular velocity in FRD body frame
+
+    Action: [T, wx_cmd, wy_cmd, wz_cmd] (4D)
+    - T: thrust magnitude (positive, acts in -Z body direction)
+    - w_cmd: angular rate commands in FRD body frame
 
     Returns: next_state after dt using RK4 integration
     """
@@ -222,21 +235,24 @@ def quadrotor_dynamics(
     pos = state[0:3]
     vel = state[3:6]
     quat = state[6:10]  # [qw, qx, qy, qz]
-    omega = state[10:13]  # angular velocity in body frame
+    omega = state[10:13]  # angular velocity in FRD body frame
 
     # Extract control
-    thrust = action[0]
+    thrust = action[0]  # positive magnitude
     omega_cmd = action[1:4]
 
-    # Rotation matrix from body to world frame
+    # Rotation matrix from FRD body to NED world frame
     R = quaternion_to_rotation_matrix(quat)
 
-    # Translational dynamics (world frame)
-    f_gravity = jnp.array([0, 0, -mass * gravity])
-    f_thrust = R @ jnp.array([0, 0, thrust])  # thrust in body +z
+    # Translational dynamics (NED world frame)
+    # Gravity: positive Z in NED (downward)
+    f_gravity = jnp.array([0, 0, mass * gravity])
+    # Thrust in body frame: [0, 0, -T] (upward in FRD)
+    # Transform to world frame
+    f_thrust = R @ jnp.array([0, 0, -thrust])
     accel = (f_gravity + f_thrust) / mass
 
-    # Rotational dynamics (body frame, first-order model)
+    # Rotational dynamics (FRD body frame, first-order model)
     # For more realism, can use: omega_dot = inv(I) @ (torque - omega x (I @ omega))
     omega_dot = (omega_cmd - omega) / tau_omega
 
@@ -265,10 +281,12 @@ def quadrotor_dynamics(
 
 #### Key Implementation Notes
 
+- **Frame Conventions**: NED world frame, FRD body frame
+- **Gravity**: Acts in +Z direction in NED (down is positive)
+- **Thrust**: Magnitude T (positive) acts in -Z direction in FRD (upward)
 - Quaternion normalization after integration is critical
 - RK4 integration recommended for better accuracy
 - First-order model for angular velocity (can be extended to full Euler dynamics)
-- Body frame thrust assumed along +z axis
 
 ### Cost Function Design
 
@@ -337,13 +355,22 @@ def generate_circle_trajectory(
     num_steps: int,
     dt: float
 ) -> jax.Array:
-    """Generate circular trajectory in xy plane."""
+    """
+    Generate circular trajectory in NED frame.
+    
+    Args:
+        radius: Circle radius in xy plane (m)
+        height: Altitude in NED frame (positive down, e.g., -5.0 for 5m above ground)
+        period: Period of one revolution (s)
+        num_steps: Number of trajectory points
+        dt: Time step (s)
+    """
     t = jnp.arange(num_steps) * dt
     omega = 2 * jnp.pi / period
 
     x = radius * jnp.cos(omega * t)
     y = radius * jnp.sin(omega * t)
-    z = jnp.ones_like(t) * height
+    z = jnp.ones_like(t) * height  # NED: positive down
 
     vx = -radius * omega * jnp.sin(omega * t)
     vy = radius * omega * jnp.cos(omega * t)
@@ -361,14 +388,23 @@ def generate_lemniscate_trajectory(
     num_steps: int,
     dt: float
 ) -> jax.Array:
-    """Generate figure-8 (lemniscate) trajectory."""
+    """
+    Generate figure-8 (lemniscate) trajectory in NED frame.
+    
+    Args:
+        scale: Size of the figure-8 (m)
+        height: Altitude in NED frame (positive down, e.g., -5.0 for 5m above ground)
+        period: Period of one complete figure-8 (s)
+        num_steps: Number of trajectory points
+        dt: Time step (s)
+    """
     t = jnp.arange(num_steps) * dt
     omega = 2 * jnp.pi / period
 
     # Lemniscate of Gerono
     x = scale * jnp.sin(omega * t)
     y = scale * jnp.sin(omega * t) * jnp.cos(omega * t)
-    z = jnp.ones_like(t) * height
+    z = jnp.ones_like(t) * height  # NED: positive down
 
     # Velocities (derivatives)
     vx = scale * omega * jnp.cos(omega * t)
@@ -381,21 +417,21 @@ def generate_lemniscate_trajectory(
 
 ## Implementation Plan
 
-### Phase 1: Core Components
+### Phase 1: Core Components ✓
 
 - [x] Explore existing codebase
 - [x] Create feature branch `feat/quadrotor-traj-foll-example`
 - [x] Draft implementation plan
-- [ ] Implement quadrotor dynamics module (`src/jax_mppi/dynamics/quadrotor.py`)
-  - [ ] Quaternion utilities (to rotation matrix, normalization, etc.)
-  - [ ] Quaternion kinematics
-  - [ ] 6-DOF dynamics with RK4 integration
-  - [ ] Unit tests for dynamics (quaternion norm preservation, energy conservation)
-- [ ] Implement trajectory cost functions (`src/jax_mppi/costs/quadrotor.py`)
-  - [ ] Position/velocity tracking cost
-  - [ ] Quaternion-based attitude tracking cost
-  - [ ] Terminal cost
-  - [ ] Unit tests for costs
+- [x] Implement quadrotor dynamics module (`src/jax_mppi/dynamics/quadrotor.py`)
+  - [x] Quaternion utilities (to rotation matrix, normalization, etc.)
+  - [x] Quaternion kinematics
+  - [x] 6-DOF dynamics with RK4 integration
+  - [x] Unit tests for dynamics (quaternion norm preservation, energy conservation)
+- [x] Implement trajectory cost functions (`src/jax_mppi/costs/quadrotor.py`)
+  - [x] Position/velocity tracking cost
+  - [x] Quaternion-based attitude tracking cost
+  - [x] Terminal cost
+  - [x] Unit tests for costs
 
 ### Phase 2: Trajectory Generators
 
@@ -544,7 +580,59 @@ jax_mppi/
 - Move to `docs/plan/completed/` when all phases are finished
 - Link any related issues or PRs here
 
+### Frame Convention Summary
+
+**NED-FRD Convention:**
+- **NED (North-East-Down)**: World/global frame
+  - X: North, Y: East, Z: Down (positive downward)
+  - Gravity: g = [0, 0, +9.81] m/s² (positive Z direction)
+  
+- **FRD (Forward-Right-Down)**: Body frame
+  - X: Forward, Y: Right, Z: Down (positive downward)
+  - Thrust: T acts in -Z direction (upward thrust)
+  - Angular rates: [ωx, ωy, ωz] about [Forward, Right, Down] axes
+
+**Important Implementation Details:**
+- Altitude: Negative values indicate height above ground (e.g., z = -5.0 means 5m altitude)
+- Thrust: Positive magnitude T, applied as [0, 0, -T] in body frame
+- Rotation matrix R(q): transforms from FRD body to NED world
+
 ---
 
-**Last Updated**: 2026-02-01
+## Progress Log
+
+### 2026-02-02: Phase 1 Complete ✓
+
+**Completed:**
+- Implemented `src/jax_mppi/dynamics/quadrotor.py` with full 6-DOF quadrotor dynamics
+  - Quaternion utilities: rotation matrix conversion, normalization, multiplication
+  - RK4 integration for accurate numerical integration
+  - First-order angular velocity tracking model
+  - NED-FRD frame conventions properly implemented
+  - Control bounds enforcement
+
+- Implemented `src/jax_mppi/costs/quadrotor.py` with comprehensive cost functions
+  - Trajectory tracking cost (position + velocity)
+  - Time-indexed trajectory cost
+  - Hover control cost (with attitude tracking)
+  - Terminal cost for goal reaching
+  - Quaternion distance metric
+
+- Comprehensive test coverage (40 tests, all passing)
+  - `tests/test_quadrotor_dynamics.py` (19 tests)
+  - `tests/test_quadrotor_costs.py` (21 tests)
+  - Tests verify: quaternion math, dynamics correctness, JIT compatibility, gradients
+
+**Key Features:**
+- All functions are JIT-compatible for high performance
+- Gradients work correctly through all dynamics and cost functions
+- Quaternion norm preservation verified during integration
+- Physical behaviors validated (gravity, thrust, angular tracking)
+
+**Next Steps:**
+- Phase 2: Trajectory generators (circle, figure-8, hover setpoint)
+
+---
+
+**Last Updated**: 2026-02-02
 **Author**: riccardo-enr
