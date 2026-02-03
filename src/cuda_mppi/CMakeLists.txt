@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.18)
 project(cuda_mppi LANGUAGES CXX CUDA)
 
-set(CMAKE_CUDA_STANDARD 14)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(Eigen3 REQUIRED)
 find_package(CUDAToolkit REQUIRED)
@@ -17,7 +17,7 @@ file(GLOB_RECURSE HEADERS "include/*.cuh" "include/*.h" "include/*.hpp")
 add_library(cuda_mppi_lib INTERFACE)
 
 # Interface dependencies
-target_link_libraries(cuda_mppi_lib INTERFACE 
+target_link_libraries(cuda_mppi_lib INTERFACE
     Eigen3::Eigen
     CUDA::curand
 )
@@ -30,7 +30,7 @@ target_include_directories(cuda_mppi_lib INTERFACE
 )
 
 # Python Extension (this will be jax_mppi.cuda_mppi)
-nanobind_add_module(cuda_mppi bindings/bindings.cpp)
+nanobind_add_module(cuda_mppi bindings/bindings.cu)
 target_link_libraries(cuda_mppi PRIVATE cuda_mppi_lib)
 
 # Install into the python package

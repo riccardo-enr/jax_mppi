@@ -181,6 +181,12 @@ public:
         );
     }
 
+    Eigen::VectorXf get_action() {
+        Eigen::VectorXf action(config_.nu);
+        HANDLE_ERROR(cudaMemcpy(action.data(), d_u_nom_, config_.nu * sizeof(float), cudaMemcpyDeviceToHost));
+        return action;
+    }
+
 private:
     MPPIConfig config_;
     Dynamics dynamics_;

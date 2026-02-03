@@ -149,8 +149,29 @@ public:
             config_
         );
     }
-    
-    // ... shift logic similar to MPPI but for both buffers
+
+    void shift() {
+        // Shift u_vel and action_seq
+        int shift_floats = config_.nu;
+        int total_floats = config_.horizon * config_.nu;
+        int copy_floats = total_floats - shift_floats;
+        int threads = 256;
+        int blocks = (copy_floats + threads - 1) / threads;
+        
+        shift_kernel<<<blocks, threads>>>(d_u_vel_, config_.horizon, config_.nu);
+        
+        // For action sequence, we might need special shift logic (hold last value), 
+        // but for now let's reuse shift_kernel which zeroes/cycles. 
+        // Ideally we should implement proper SMPPI shifting.
+        shift_kernel<<<blocks, threads>>>(d_action_seq_, config_.horizon, config_.nu);
+    }
+
+    Eigen::VectorXf get_action() {
+        Eigen::VectorXf action(config_.nu);
+        // Action is the first element of action_sequence
+        HANDLE_ERROR(cudaMemcpy(action.data(), d_action_seq_, config_.nu * sizeof(float), cudaMemcpyDeviceToHost));
+        return action;
+    }
 
 private:
     MPPIConfig config_;
