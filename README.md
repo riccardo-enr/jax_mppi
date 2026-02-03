@@ -50,13 +50,18 @@ pip install jax-mppi[autotuning-extra] # Ray Tune, Hyperopt, Ribs
 For contributors who want to work on the package (requires Python 3.12+):
 
 ```bash
-# Clone the repository
-git clone https://github.com/riccardo-enr/jax_mppi.git
+# Clone the repository with submodules
+git clone --recursive https://github.com/riccardo-enr/jax_mppi.git
 cd jax_mppi
+
+# Or if already cloned without --recursive
+git submodule update --init --recursive
 
 # Install in development mode
 pip install -e .
 ```
+
+**Note:** The CUDA backend lives in a separate repository ([cuda_mppi](https://github.com/riccardo-enr/cuda_mppi)) integrated as a git submodule at `third_party/cuda_mppi`. You need to initialize submodules to build the CUDA components.
 
 ## Versioning
 
