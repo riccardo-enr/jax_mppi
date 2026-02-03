@@ -1,0 +1,3 @@
+[submodule "third_party/cuda_mppi"]
+	path = third_party/cuda_mppi
+	url = git@github.com:riccardo-enr/cuda_mppi.git
