@@ -10,8 +10,8 @@ The comparison evaluates tracking accuracy, control smoothness, and energy effic
 """
 
 import sys
-from pathlib import Path
 import time
+from pathlib import Path
 
 # Add parent directory to path for imports when running directly
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -50,6 +50,7 @@ def create_tracking_cost(
             cost_control = action @ R @ action
 
             return cost_pos + cost_vel + cost_control
+
         return cost_fn
 
     return cost_builder
@@ -92,15 +93,19 @@ def run_controller(
     u_max = jnp.array([4.0 * mass * gravity, 8.0, 8.0, 8.0])
 
     dynamics_fn = create_quadrotor_dynamics(
-        dt=dt, mass=mass, gravity=gravity, tau_omega=0.05,
-        u_min=u_min, u_max=u_max
+        dt=dt,
+        mass=mass,
+        gravity=gravity,
+        tau_omega=0.05,
+        u_min=u_min,
+        u_max=u_max,
     )
 
     def dynamics(state, action, t):
         return dynamics_fn(state, action)
 
     # Cost weights
-    Q_pos = jnp.eye(3) * 200.0 # Tuned
+    Q_pos = jnp.eye(3) * 200.0  # Tuned
     Q_vel = jnp.eye(3) * 20.0  # Tuned
     R = jnp.diag(jnp.array([0.01, 0.1, 0.1, 0.1]))
 
@@ -108,8 +113,11 @@ def run_controller(
     goal_position = reference[-1, 0:3]
     goal_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
     terminal_cost_fn = create_terminal_cost(
-        Q_pos * 10.0, Q_vel * 10.0, jnp.eye(4) * 5.0,
-        goal_position, goal_quaternion
+        Q_pos * 10.0,
+        Q_vel * 10.0,
+        jnp.eye(4) * 5.0,
+        goal_position,
+        goal_quaternion,
     )
 
     # Noise covariance
@@ -126,59 +134,123 @@ def run_controller(
 
     if controller_type == "mppi":
         config, controller_state = mppi.create(
-            nx=nx, nu=nu, noise_sigma=noise_sigma,
-            num_samples=num_samples, horizon=horizon,
-            lambda_=lambda_, u_min=u_min, u_max=u_max, key=key,
+            nx=nx,
+            nu=nu,
+            noise_sigma=noise_sigma,
+            num_samples=num_samples,
+            horizon=horizon,
+            lambda_=lambda_,
+            u_min=u_min,
+            u_max=u_max,
+            key=key,
             step_dependent_dynamics=True,
         )
 
         def update_fn(state, obs, running_cost):
             return mppi.command(
-                config=config, mppi_state=state, current_obs=obs,
-                dynamics=dynamics, running_cost=running_cost,
-                terminal_cost=terminal_cost_fn, shift=True
+                config=config,
+                mppi_state=state,
+                current_obs=obs,
+                dynamics=dynamics,
+                running_cost=running_cost,
+                terminal_cost=terminal_cost_fn,
+                shift=True,
             )
 
     elif controller_type == "smppi":
+        # Smooth MPPI - operates in lifted velocity space
+        # U represents rates: thrust_rate (N/s), angular_acceleration (rad/s²)
+        # action_sequence = integral of U over time
+        # Relationship: action(t+1) = action(t) + U * dt
+
+        # Noise scaling for velocity space:
+        # Since action_change = velocity * dt, to get same exploration magnitude:
+        # var(action_change) = var(velocity) * dt²
+        # So: var(velocity) = var(action) / dt²
+        # noise_sigma is covariance, so divide by dt²
+        velocity_noise_sigma = noise_sigma / (dt * dt)
+
+        # Velocity bounds: limit rate of change of actions
+        # Need generous bounds to allow fast response
+        # Max action values: thrust=[0,40]N, angular=[-8,8]rad/s (figure-8)
+        # Over horizon dt*30=0.6s, we need to traverse full range
+        # So min velocity: 40N/0.6s ≈ 67 N/s, 16rad/s / 0.6s ≈ 27 rad/s²
+        # Use 2-3x safety margin for aggressive tracking
+        u_vel_min = jnp.array([-200.0, -80.0, -80.0, -80.0])
+        u_vel_max = jnp.array([200.0, 80.0, 80.0, 80.0])
+
         config, controller_state = smppi.create(
-            nx=nx, nu=nu, noise_sigma=noise_sigma,
-            num_samples=num_samples, horizon=horizon,
-            lambda_=lambda_, u_min=u_min, u_max=u_max, key=key,
-            w_action_seq_cost=0.5,  # Penalize control rate changes
-            step_dependent_dynamics=True,
+            nx=nx,
+            nu=nu,
+            noise_sigma=velocity_noise_sigma,
+            num_samples=num_samples,
+            horizon=horizon,
+            lambda_=lambda_,
+            u_min=u_vel_min,  # Velocity bounds (rates)
+            u_max=u_vel_max,
+            action_min=u_min,  # Final action bounds (same as MPPI)
+            action_max=u_max,
+            w_action_seq_cost=0.1,  # Lower smoothness weight for aggressive tracking
+            delta_t=dt,  # Integration timestep
+            step_dependent_dynamics=True,  # Enable step-dependent costs for trajectory tracking
+            key=key,
         )
 
         def update_fn(state, obs, running_cost):
             return smppi.command(
-                config=config, smppi_state=state, current_obs=obs,
-                dynamics=dynamics, running_cost=running_cost,
-                terminal_cost=terminal_cost_fn, shift=True
+                config=config,
+                smppi_state=state,
+                current_obs=obs,
+                dynamics=dynamics,
+                running_cost=running_cost,
+                terminal_cost=terminal_cost_fn,
+                shift=True,
             )
 
     elif controller_type == "kmppi":
         config, controller_state, kernel = kmppi.create(
-            nx=nx, nu=nu, noise_sigma=noise_sigma,
-            num_samples=num_samples, horizon=horizon,
-            lambda_=lambda_, u_min=u_min, u_max=u_max, key=key,
+            nx=nx,
+            nu=nu,
+            noise_sigma=noise_sigma,
+            num_samples=num_samples,
+            horizon=horizon,
+            lambda_=lambda_,
+            u_min=u_min,
+            u_max=u_max,
+            key=key,
             step_dependent_dynamics=True,
         )
 
         def update_fn(state, obs, running_cost):
             return kmppi.command(
-                config=config, kmppi_state=state, current_obs=obs,
-                dynamics=dynamics, running_cost=running_cost,
-                terminal_cost=terminal_cost_fn, kernel_fn=kernel,
-                shift=True
+                config=config,
+                kmppi_state=state,
+                current_obs=obs,
+                dynamics=dynamics,
+                running_cost=running_cost,
+                terminal_cost=terminal_cost_fn,
+                kernel_fn=kernel,
+                shift=True,
             )
+
     else:
         raise ValueError(f"Unknown controller type: {controller_type}")
 
     # Initial state
     state = jnp.array([
-        reference[0, 0], reference[0, 1], reference[0, 2],
-        0.0, 0.0, 0.0,
-        1.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0
+        reference[0, 0],
+        reference[0, 1],
+        reference[0, 2],
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
     ])
 
     print(f"\nRunning {controller_type.upper()}...")
@@ -199,7 +271,9 @@ def run_controller(
         running_cost = cost_builder(ref_horizon)
 
         # Update controller
-        action, new_ctrl_state = update_fn(ctrl_state, current_state, running_cost)
+        action, new_ctrl_state = update_fn(
+            ctrl_state, current_state, running_cost
+        )
 
         # Apply dynamics
         next_state = dynamics_fn(current_state, action)
@@ -223,11 +297,13 @@ def run_controller(
     scan_fn = jax.jit(lambda c, x: jax.lax.scan(simulation_step, c, x))
 
     t0 = time.time()
-    _, (states_traj, actions_traj, costs_traj) = scan_fn(init_carry, step_indices)
+    _, (states_traj, actions_traj, costs_traj) = scan_fn(
+        init_carry, step_indices
+    )
     states_traj.block_until_ready()
     t1 = time.time()
 
-    print(f"  Simulation complete in {t1-t0:.4f}s")
+    print(f"  Simulation complete in {t1 - t0:.4f}s")
 
     # Combine results
     states = jnp.concatenate([state[None, :], states_traj], axis=0)
@@ -253,7 +329,9 @@ def compute_smoothness_metrics(actions: jax.Array, dt: float) -> dict:
     }
 
 
-def compute_energy_consumption(actions: jax.Array, dt: float, mass: float) -> float:
+def compute_energy_consumption(
+    actions: jax.Array, dt: float, mass: float
+) -> float:
     """Compute total energy consumption (simplified)."""
     # Energy = sum of squared thrust over time
     thrust = actions[:, 0]
@@ -263,9 +341,9 @@ def compute_energy_consumption(actions: jax.Array, dt: float, mass: float) -> fl
 
 def run_quadrotor_figure8_comparison(
     num_steps: int = 1000,
-    num_samples: int = 2000, # Tuned
-    horizon: int = 50,       # Tuned
-    lambda_: float = 0.1,    # Tuned
+    num_samples: int = 2000,  # Tuned
+    horizon: int = 50,  # Tuned
+    lambda_: float = 0.1,  # Tuned
     scale: float = 4.0,
     period: float = 20.0,
     visualize: bool = False,
@@ -295,8 +373,12 @@ def run_quadrotor_figure8_comparison(
     total_duration = duration + horizon * dt * 2.0
 
     reference = generate_lemniscate_trajectory(
-        scale=scale, height=height, period=period,
-        duration=total_duration, dt=dt, axis="xy"
+        scale=scale,
+        height=height,
+        period=period,
+        duration=total_duration,
+        dt=dt,
+        axis="xy",
     )
 
     print("=" * 60)
@@ -304,7 +386,9 @@ def run_quadrotor_figure8_comparison(
     print("=" * 60)
     print(f"\nTrajectory: figure-8, scale={scale}m, period={period}s")
     print(f"Control: {num_samples} samples, horizon={horizon}, λ={lambda_}")
-    print(f"Duration: {num_steps * dt:.1f}s ({num_steps} steps @ {1/dt:.0f} Hz)")
+    print(
+        f"Duration: {num_steps * dt:.1f}s ({num_steps} steps @ {1 / dt:.0f} Hz)"
+    )
 
     metrics = compute_trajectory_metrics(reference[:num_steps], dt)
     print("\nReference trajectory metrics:")
@@ -315,8 +399,14 @@ def run_quadrotor_figure8_comparison(
     results = {}
     for controller in ["mppi", "smppi", "kmppi"]:
         states, actions, costs = run_controller(
-            controller, reference, num_steps, num_samples,
-            horizon, lambda_, dt, seed
+            controller,
+            reference,
+            num_steps,
+            num_samples,
+            horizon,
+            lambda_,
+            dt,
+            seed,
         )
 
         # Compute metrics
@@ -379,16 +469,25 @@ def run_quadrotor_figure8_comparison(
             # 3D trajectories
             ax1 = fig.add_subplot(2, 3, 1, projection="3d")
             ax1.plot(
-                ref_plot[:, 0], ref_plot[:, 1], ref_plot[:, 2],
-                "k--", linewidth=2, alpha=0.7, label="Reference"
+                ref_plot[:, 0],
+                ref_plot[:, 1],
+                ref_plot[:, 2],
+                "k--",
+                linewidth=2,
+                alpha=0.7,
+                label="Reference",
             )
             colors = {"mppi": "C0", "smppi": "C1", "kmppi": "C2"}
             for controller, color in colors.items():
                 states = results[controller]["states"]
                 ax1.plot(
-                    states[:, 0], states[:, 1], states[:, 2],
-                    color=color, linewidth=1, alpha=0.8,
-                    label=controller.upper()
+                    states[:, 0],
+                    states[:, 1],
+                    states[:, 2],
+                    color=color,
+                    linewidth=1,
+                    alpha=0.8,
+                    label=controller.upper(),
                 )
             ax1.set_xlabel("X (m)")
             ax1.set_ylabel("Y (m)")
@@ -400,15 +499,22 @@ def run_quadrotor_figure8_comparison(
             # XY trajectory (top view)
             ax2 = plt.subplot(2, 3, 2)
             ax2.plot(
-                ref_plot[:, 0], ref_plot[:, 1],
-                "k--", linewidth=2, alpha=0.7, label="Reference"
+                ref_plot[:, 0],
+                ref_plot[:, 1],
+                "k--",
+                linewidth=2,
+                alpha=0.7,
+                label="Reference",
             )
             for controller, color in colors.items():
                 states = results[controller]["states"]
                 ax2.plot(
-                    states[:, 0], states[:, 1],
-                    color=color, linewidth=1, alpha=0.8,
-                    label=controller.upper()
+                    states[:, 0],
+                    states[:, 1],
+                    color=color,
+                    linewidth=1,
+                    alpha=0.8,
+                    label=controller.upper(),
                 )
             ax2.set_xlabel("X (m)")
             ax2.set_ylabel("Y (m)")
@@ -436,7 +542,9 @@ def run_quadrotor_figure8_comparison(
             ax4 = plt.subplot(2, 3, 4)
             for controller, color in colors.items():
                 actions = results[controller]["actions"]
-                ax4.plot(time, actions[:, 0], color=color, label=controller.upper())
+                ax4.plot(
+                    time, actions[:, 0], color=color, label=controller.upper()
+                )
             ax4.set_xlabel("Time (s)")
             ax4.set_ylabel("Thrust (N)")
             ax4.legend()
@@ -448,7 +556,12 @@ def run_quadrotor_figure8_comparison(
             for controller, color in colors.items():
                 actions = results[controller]["actions"]
                 thrust_rate = jnp.diff(actions[:, 0]) / dt
-                ax5.plot(time[:-1], thrust_rate, color=color, label=controller.upper())
+                ax5.plot(
+                    time[:-1],
+                    thrust_rate,
+                    color=color,
+                    label=controller.upper(),
+                )
             ax5.set_xlabel("Time (s)")
             ax5.set_ylabel("Thrust Rate (N/s)")
             ax5.legend()
@@ -466,8 +579,17 @@ def run_quadrotor_figure8_comparison(
             for i, (controller, color) in enumerate(colors.items()):
                 values = [results[controller][k] for k in metrics_keys]
                 # Normalize for comparison
-                values_norm = [v / max(results[c][k] for c in colors) for v, k in zip(values, metrics_keys)]
-                ax6.bar(x + i * width, values_norm, width, label=controller.upper(), color=color)
+                values_norm = [
+                    v / max(results[c][k] for c in colors)
+                    for v, k in zip(values, metrics_keys)
+                ]
+                ax6.bar(
+                    x + i * width,
+                    values_norm,
+                    width,
+                    label=controller.upper(),
+                    color=color,
+                )
 
             ax6.set_ylabel("Normalized Value")
             ax6.set_title("Performance Comparison (Normalized)")
@@ -499,12 +621,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Compare MPPI variants on quadrotor figure-8 trajectory"
     )
-    parser.add_argument("--steps", type=int, default=1000, help="Number of control steps")
-    parser.add_argument("--samples", type=int, default=2000, help="Number of MPPI samples")
-    parser.add_argument("--horizon", type=int, default=50, help="Planning horizon")
-    parser.add_argument("--lambda", type=float, default=0.1, dest="lambda_", help="Temperature")
-    parser.add_argument("--scale", type=float, default=4.0, help="Figure-8 scale (m)")
-    parser.add_argument("--period", type=float, default=20.0, help="Figure-8 period (s)")
+    parser.add_argument(
+        "--steps", type=int, default=1000, help="Number of control steps"
+    )
+    parser.add_argument(
+        "--samples", type=int, default=2000, help="Number of MPPI samples"
+    )
+    parser.add_argument(
+        "--horizon", type=int, default=50, help="Planning horizon"
+    )
+    parser.add_argument(
+        "--lambda", type=float, default=0.1, dest="lambda_", help="Temperature"
+    )
+    parser.add_argument(
+        "--scale", type=float, default=4.0, help="Figure-8 scale (m)"
+    )
+    parser.add_argument(
+        "--period", type=float, default=20.0, help="Figure-8 period (s)"
+    )
     parser.add_argument("--visualize", action="store_true", help="Plot results")
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
 

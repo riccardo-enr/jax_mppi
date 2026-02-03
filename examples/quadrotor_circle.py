@@ -58,6 +58,7 @@ def create_tracking_cost(
             cost_control = action @ R @ action
 
             return cost_pos + cost_vel + cost_control
+
         return cost_fn
 
     return cost_builder
@@ -65,9 +66,9 @@ def create_tracking_cost(
 
 def run_quadrotor_circle(
     num_steps: int = 1000,
-    num_samples: int = 2000, # Tuned: Increased samples
-    horizon: int = 50,       # Tuned: Increased horizon
-    lambda_: float = 0.1,    # Tuned: Lower temperature (exploitation)
+    num_samples: int = 2000,  # Tuned: Increased samples
+    horizon: int = 30,  # Tuned: Increased horizon
+    lambda_: float = 0.1,  # Tuned: Lower temperature (exploitation)
     radius: float = 3.0,
     period: float = 15.0,
     visualize: bool = False,
@@ -96,7 +97,7 @@ def run_quadrotor_circle(
 
     # State and action dimensions
     nx = 13  # [px, py, pz, vx, vy, vz, qw, qx, qy, qz, wx, wy, wz]
-    nu = 4   # [thrust, wx_cmd, wy_cmd, wz_cmd]
+    nu = 4  # [thrust, wx_cmd, wy_cmd, wz_cmd]
 
     # Physical parameters
     mass = 1.0  # kg
@@ -112,7 +113,7 @@ def run_quadrotor_circle(
         radius=radius,
         height=height,
         period=period,
-        duration=duration + horizon * dt * 2.0, # Extra safety margin
+        duration=duration + horizon * dt * 2.0,  # Extra safety margin
         dt=dt,
     )
 
@@ -122,8 +123,8 @@ def run_quadrotor_circle(
         print(f"  {metric_name}: {value:.3f}")
 
     # Create dynamics
-    u_min = jnp.array([0.0, -5.0, -5.0, -5.0])
-    u_max = jnp.array([4.0 * mass * gravity, 5.0, 5.0, 5.0])
+    u_min = jnp.array([0.0, -3.0, -3.0, -3.0])
+    u_max = jnp.array([2.0 * mass * gravity, 3.0, 3.0, 3.0])
 
     dynamics_fn = create_quadrotor_dynamics(
         dt=dt,
@@ -134,13 +135,12 @@ def run_quadrotor_circle(
         u_max=u_max,
     )
 
-    # Wrap dynamics to ignore time argument (since we use step_dependent_dynamics=True)
     def dynamics(state, action, t):
         return dynamics_fn(state, action)
 
     # Cost function weights (Tuned)
-    Q_pos = jnp.eye(3) * 200.0  # Increased position weight
-    Q_vel = jnp.eye(3) * 20.0   # Increased velocity weight
+    Q_pos = jnp.eye(3) * 500.0  # Increased position weight
+    Q_vel = jnp.eye(3) * 50.0  # Increased velocity weight
     R = jnp.diag(jnp.array([0.01, 0.1, 0.1, 0.1]))  # Control effort
 
     # Terminal cost (track last reference point)
@@ -148,12 +148,17 @@ def run_quadrotor_circle(
     goal_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
     terminal_cost_fn = create_terminal_cost(
-        Q_pos * 10.0, Q_vel * 10.0, jnp.eye(4) * 5.0,
-        goal_position, goal_quaternion
+        Q_pos * 10.0,
+        Q_vel * 10.0,
+        jnp.eye(4) * 5.0,
+        goal_position,
+        goal_quaternion,
     )
 
     # Noise covariance (exploration in control space)
-    noise_sigma = jnp.diag(jnp.array([2.0, 0.5, 0.5, 0.5])) # Tuned: Reduced noise
+    noise_sigma = jnp.diag(
+        jnp.array([2.0, 0.5, 0.5, 0.5])
+    )  # Tuned: Reduced noise
 
     # Create MPPI controller
     config, mppi_state = mppi.create(
@@ -166,7 +171,7 @@ def run_quadrotor_circle(
         u_min=u_min,
         u_max=u_max,
         key=key,
-        step_dependent_dynamics=True, # Enable passing t to cost function
+        step_dependent_dynamics=True,  # Enable passing t to cost function
     )
 
     # Create cost builder
@@ -174,16 +179,25 @@ def run_quadrotor_circle(
 
     # Initial state: start at first reference point
     state = jnp.array([
-        reference[0, 0], reference[0, 1], reference[0, 2],  # start position
-        0.0, 0.0, 0.0,                                       # zero initial velocity
-        1.0, 0.0, 0.0, 0.0,                                  # level quaternion
-        0.0, 0.0, 0.0                                        # zero angular velocity
+        reference[0, 0],
+        reference[0, 1],
+        reference[0, 2],  # start position
+        0.0,
+        0.0,
+        0.0,  # zero initial velocity
+        1.0,
+        0.0,
+        0.0,
+        0.0,  # level quaternion
+        0.0,
+        0.0,
+        0.0,  # zero angular velocity
     ])
 
     print("\nRunning MPPI on quadrotor circular trajectory tracking...")
     print(f"  Samples: {num_samples}, Horizon: {horizon}, Lambda: {lambda_}")
     print(f"  Circle: radius={radius}m, period={period}s, altitude={-height}m")
-    print(f"  Control rate: {1/dt:.0f} Hz")
+    print(f"  Control rate: {1 / dt:.0f} Hz")
 
     # ---------------------------------------------------------
     # JIT-compiled Simulation Loop using jax.lax.scan
@@ -195,9 +209,7 @@ def run_quadrotor_circle(
         # Slice reference for current horizon
         # Use dynamic_slice for JIT compatibility
         ref_horizon = jax.lax.dynamic_slice(
-            reference,
-            (step_idx, 0),
-            (horizon, 6)
+            reference, (step_idx, 0), (horizon, 6)
         )
 
         # Build cost function closing over ref_horizon
@@ -238,13 +250,16 @@ def run_quadrotor_circle(
 
     print("Compiling and running simulation loop...")
     import time
+
     t0 = time.time()
-    _, (states_traj, actions_traj, costs_traj) = scan_fn(init_carry, step_indices)
+    _, (states_traj, actions_traj, costs_traj) = scan_fn(
+        init_carry, step_indices
+    )
     # Block to ensure completion
     states_traj.block_until_ready()
     t1 = time.time()
 
-    print(f"Simulation complete in {t1-t0:.4f}s")
+    print(f"Simulation complete in {t1 - t0:.4f}s")
 
     # Prepend initial state
     states = jnp.concatenate([state[None, :], states_traj], axis=0)
@@ -257,7 +272,7 @@ def run_quadrotor_circle(
     pos_errors = jnp.linalg.norm(states[:-1, 0:3] - ref_match[:, 0:3], axis=1)
     vel_errors = jnp.linalg.norm(states[:-1, 3:6] - ref_match[:, 3:6], axis=1)
 
-    print(f"\nTracking performance:")
+    print("\nTracking performance:")
     print(f"  Mean position error: {jnp.mean(pos_errors):.4f}m")
     print(f"  Max position error: {jnp.max(pos_errors):.4f}m")
     print(f"  RMS position error: {jnp.sqrt(jnp.mean(pos_errors**2)):.4f}m")
@@ -276,16 +291,30 @@ def run_quadrotor_circle(
             # 3D trajectory
             ax1 = fig.add_subplot(2, 3, 1, projection="3d")
             ax1.plot(
-                ref_match[:, 0], ref_match[:, 1], ref_match[:, 2],
-                "k--", linewidth=2, alpha=0.5, label="Reference"
+                ref_match[:, 0],
+                ref_match[:, 1],
+                ref_match[:, 2],
+                "k--",
+                linewidth=2,
+                alpha=0.5,
+                label="Reference",
             )
             ax1.plot(
-                states[:, 0], states[:, 1], states[:, 2],
-                "b-", linewidth=1, label="Actual"
+                states[:, 0],
+                states[:, 1],
+                states[:, 2],
+                "b-",
+                linewidth=1,
+                label="Actual",
             )
             ax1.scatter(
-                states[0, 0], states[0, 1], states[0, 2],
-                c="g", s=100, marker="o", label="Start"
+                states[0, 0],
+                states[0, 1],
+                states[0, 2],
+                c="g",
+                s=100,
+                marker="o",
+                label="Start",
             )
             ax1.set_xlabel("X (m)")
             ax1.set_ylabel("Y (m)")
@@ -297,11 +326,24 @@ def run_quadrotor_circle(
             # XY trajectory (top view)
             ax2 = plt.subplot(2, 3, 2)
             ax2.plot(
-                ref_match[:, 0], ref_match[:, 1],
-                "k--", linewidth=2, alpha=0.5, label="Reference"
+                ref_match[:, 0],
+                ref_match[:, 1],
+                "k--",
+                linewidth=2,
+                alpha=0.5,
+                label="Reference",
             )
-            ax2.plot(states[:, 0], states[:, 1], "b-", linewidth=1, label="Actual")
-            ax2.scatter(states[0, 0], states[0, 1], c="g", s=100, marker="o", label="Start")
+            ax2.plot(
+                states[:, 0], states[:, 1], "b-", linewidth=1, label="Actual"
+            )
+            ax2.scatter(
+                states[0, 0],
+                states[0, 1],
+                c="g",
+                s=100,
+                marker="o",
+                label="Start",
+            )
             ax2.set_xlabel("X (m)")
             ax2.set_ylabel("Y (m)")
             ax2.axis("equal")
@@ -322,9 +364,21 @@ def run_quadrotor_circle(
             # Position components
             ax4 = plt.subplot(2, 3, 4)
             ax4.plot(time_axis, states[:, 0], "b-", label="px (actual)")
-            ax4.plot(time_axis[:-1], ref_match[:, 0], "b--", alpha=0.5, label="px (ref)")
+            ax4.plot(
+                time_axis[:-1],
+                ref_match[:, 0],
+                "b--",
+                alpha=0.5,
+                label="px (ref)",
+            )
             ax4.plot(time_axis, states[:, 1], "r-", label="py (actual)")
-            ax4.plot(time_axis[:-1], ref_match[:, 1], "r--", alpha=0.5, label="py (ref)")
+            ax4.plot(
+                time_axis[:-1],
+                ref_match[:, 1],
+                "r--",
+                alpha=0.5,
+                label="py (ref)",
+            )
             ax4.set_ylabel("Position (m)")
             ax4.set_xlabel("Time (s)")
             ax4.legend()
@@ -334,7 +388,13 @@ def run_quadrotor_circle(
             # Altitude
             ax5 = plt.subplot(2, 3, 5)
             ax5.plot(time_axis, states[:, 2], "b-", label="pz (actual)")
-            ax5.plot(time_axis[:-1], ref_match[:, 2], "k--", alpha=0.5, label="pz (ref)")
+            ax5.plot(
+                time_axis[:-1],
+                ref_match[:, 2],
+                "k--",
+                alpha=0.5,
+                label="pz (ref)",
+            )
             ax5.set_ylabel("Z Position (m)")
             ax5.set_xlabel("Time (s)")
             ax5.legend()
@@ -344,8 +404,16 @@ def run_quadrotor_circle(
             # Control inputs
             time_actions = jnp.arange(len(actions_taken)) * dt
             ax6 = plt.subplot(2, 3, 6)
-            ax6.plot(time_actions, actions_taken[:, 0], label="Thrust", color="C3")
-            ax6.axhline(mass * gravity, color="k", linestyle="--", alpha=0.3, label="Hover")
+            ax6.plot(
+                time_actions, actions_taken[:, 0], label="Thrust", color="C3"
+            )
+            ax6.axhline(
+                mass * gravity,
+                color="k",
+                linestyle="--",
+                alpha=0.3,
+                label="Hover",
+            )
             ax6.set_ylabel("Thrust (N)")
             ax6.set_xlabel("Time (s)")
             ax6.legend()
@@ -372,14 +440,34 @@ def run_quadrotor_circle(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Quadrotor circle tracking with MPPI")
-    parser.add_argument("--steps", type=int, default=1000, help="Number of control steps")
-    parser.add_argument("--samples", type=int, default=2000, help="Number of MPPI samples")
-    parser.add_argument("--horizon", type=int, default=50, help="MPPI planning horizon")
-    parser.add_argument("--lambda", type=float, default=0.1, dest="lambda_", help="MPPI temperature")
-    parser.add_argument("--radius", type=float, default=3.0, help="Circle radius (m)")
-    parser.add_argument("--period", type=float, default=15.0, help="Circle period (s)")
-    parser.add_argument("--visualize", action="store_true", help="Plot results with matplotlib")
+    parser = argparse.ArgumentParser(
+        description="Quadrotor circle tracking with MPPI"
+    )
+    parser.add_argument(
+        "--steps", type=int, default=1000, help="Number of control steps"
+    )
+    parser.add_argument(
+        "--samples", type=int, default=2000, help="Number of MPPI samples"
+    )
+    parser.add_argument(
+        "--horizon", type=int, default=50, help="MPPI planning horizon"
+    )
+    parser.add_argument(
+        "--lambda",
+        type=float,
+        default=0.001,
+        dest="lambda_",
+        help="MPPI temperature",
+    )
+    parser.add_argument(
+        "--radius", type=float, default=3.0, help="Circle radius (m)"
+    )
+    parser.add_argument(
+        "--period", type=float, default=15.0, help="Circle period (s)"
+    )
+    parser.add_argument(
+        "--visualize", action="store_true", help="Plot results with matplotlib"
+    )
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
 
     args = parser.parse_args()
