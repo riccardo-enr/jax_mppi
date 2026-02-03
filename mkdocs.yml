@@ -60,6 +60,7 @@ nav:
           - Pendulum: examples/pendulum.md
     - Development:
           - Quadrotor Trajectory Following Plan: plan/quadrotor_trajectory_following.md
+          - CUDA MPPI Implementation Plan: plan/cuda_mppi_implementation.md
           - Completed Plans:
                 - Porting Plan: plan/completed/porting_pytorch_jax.md
                 - Evosax Integration Plan: plan/completed/evosax_integration.md
