@@ -1,0 +1,22 @@
+:root {
+  /* User defined palette */
+  --charcoal-blue: #2b3a4eff;
+  --blue-slate: #4a5a75ff;
+  --autumn-leaf: #e56b25ff;
+  --sandy-brown: #f2a365ff;
+  --gunmetal: #3b3b3bff;
+
+  /* MkDocs Material overrides - Light Scheme */
+  --md-primary-fg-color: var(--charcoal-blue);
+  --md-primary-fg-color--light: var(--blue-slate);
+  --md-primary-fg-color--dark: var(--gunmetal);
+  --md-accent-fg-color: var(--autumn-leaf);
+}
+
+[data-md-color-scheme="slate"] {
+  /* MkDocs Material overrides - Dark Scheme */
+  --md-primary-fg-color: var(--charcoal-blue);
+  --md-primary-fg-color--light: var(--blue-slate);
+  --md-primary-fg-color--dark: var(--gunmetal);
+  --md-accent-fg-color: var(--sandy-brown);
+}
