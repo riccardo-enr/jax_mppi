@@ -38,9 +38,9 @@ $$
 
 The system follows standard rigid body dynamics with a first-order actuator model for angular rates.
 
-1.  **Translational**: $\dot{\mathbf{v}} = \mathbf{g} + \frac{1}{m} R(\mathbf{q}) \begin{bmatrix} 0 \\ 0 \\ -T \end{bmatrix}$
-2.  **Rotational**: $\dot{\mathbf{q}} = \frac{1}{2} \mathbf{q} \otimes \begin{bmatrix} 0 \\ \boldsymbol{\omega} \end{bmatrix}$
-3.  **Actuators**: $\dot{\boldsymbol{\omega}} = \frac{1}{\tau_\omega} (\boldsymbol{\omega}_{cmd} - \boldsymbol{\omega})$
+1. **Translational**: $\dot{\mathbf{v}} = \mathbf{g} + \frac{1}{m} R(\mathbf{q}) \begin{bmatrix} 0 \\ 0 \\ -T \end{bmatrix}$
+2. **Rotational**: $\dot{\mathbf{q}} = \frac{1}{2} \mathbf{q} \otimes \begin{bmatrix} 0 \\ \boldsymbol{\omega} \end{bmatrix}$
+3. **Actuators**: $\dot{\boldsymbol{\omega}} = \frac{1}{\tau_\omega} (\boldsymbol{\omega}_{cmd} - \boldsymbol{\omega})$
 
 ### Cost Function
 

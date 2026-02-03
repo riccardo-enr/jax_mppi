@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **JIT Compilation**: Runtime compilation of user-defined dynamics and costs using NVRTC, allowing pure Python strings to be compiled into optimized CUDA kernels.
 - **Python Bindings**: Seamless integration via `nanobind`, exposing the CUDA controller to the Python ecosystem.
 - **Examples**:
-    - `cuda_pendulum_jit.py`: A complete example demonstrating the JIT-compiled controller with a pendulum environment.
+  - `cuda_pendulum_jit.py`: A complete example demonstrating the JIT-compiled controller with a pendulum environment.
 - **Documentation**: Comprehensive documentation for the CUDA implementation plans and usage.
 
 ### Changed
