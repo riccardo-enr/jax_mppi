@@ -350,9 +350,9 @@ class AutotuneGlobal(Autotune):
             for param in self.params_to_tune:
                 if param.dim() == 1:
                     # Single-valued parameter
-                    param_values[param.name()] = np.array(
-                        [config[param.name()]]
-                    )
+                    param_values[param.name()] = np.array([
+                        config[param.name()]
+                    ])
                 else:
                     # Multi-valued parameter
                     values = []
@@ -409,12 +409,10 @@ class AutotuneGlobal(Autotune):
             if param.dim() == 1:
                 value = np.array([best_config[param.name()]])
             else:
-                value = np.array(
-                    [
-                        best_config[f"{param.name()}_{i}"]
-                        for i in range(param.dim())
-                    ]
-                )
+                value = np.array([
+                    best_config[f"{param.name()}_{i}"]
+                    for i in range(param.dim())
+                ])
             validated = param.ensure_valid_value(value)
             param.apply_parameter_value(validated)
 

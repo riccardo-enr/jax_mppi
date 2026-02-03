@@ -34,6 +34,8 @@ extra_javascript:
 markdown_extensions:
     - pymdownx.arithmatex:
           generic: true
+    - pymdownx.tasklist:
+          custom_checkbox: true
 
 plugins:
     - search
@@ -57,7 +59,9 @@ nav:
     - Examples:
           - Pendulum: examples/pendulum.md
     - Development:
-          - Porting Plan: plan/porting_pytorch_jax.md
-          - Evosax Integration Plan: plan/evosax_integration.md
+          - Quadrotor Trajectory Following Plan: plan/quadrotor_trajectory_following.md
+          - Completed Plans:
+                - Porting Plan: plan/completed/porting_pytorch_jax.md
+                - Evosax Integration Plan: plan/completed/evosax_integration.md
           - Testing Guide: testing.md
           - Releasing Guide: releasing.md
