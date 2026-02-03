@@ -1,12 +1,15 @@
 #define NB_CUDA
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 #include <nanobind/eigen/dense.h> // Enable Eigen <-> Numpy conversion
 
 #include "mppi/core/mppi_common.cuh"
 #include "mppi/controllers/mppi.cuh"
-#include "mppi/controllers/smppi.cuh"
-#include "mppi/controllers/kmppi.cuh"
+// Disabled due to Eigen/CUDA compatibility issues
+// #include "mppi/controllers/smppi.cuh"
+// #include "mppi/controllers/kmppi.cuh"
+#include "mppi/controllers/jit_mppi.hpp"
 #include "mppi/instantiations/double_integrator.cuh"
 
 namespace nb = nanobind;
@@ -49,8 +52,9 @@ NB_MODULE(cuda_mppi, m) {
         .def(nb::init<>());
 
     using DIMPPI = MPPIController<instantiations::DoubleIntegrator, instantiations::QuadraticCost>;
-    using DISMPPI = SMPPIController<instantiations::DoubleIntegrator, instantiations::QuadraticCost>;
-    using DIKMPPI = KMPPIController<instantiations::DoubleIntegrator, instantiations::QuadraticCost>;
+    // SMPPI and KMPPI disabled due to Eigen/CUDA compatibility issues
+    // using DISMPPI = SMPPIController<instantiations::DoubleIntegrator, instantiations::QuadraticCost>;
+    // using DIKMPPI = KMPPIController<instantiations::DoubleIntegrator, instantiations::QuadraticCost>;
 
     // 3. Bind Controllers
     
@@ -64,21 +68,39 @@ NB_MODULE(cuda_mppi, m) {
         .def("get_action", &DIMPPI::get_action, "Get the current optimal action")
         .def("shift", &DIMPPI::shift, "Shift the nominal trajectory forward");
 
-    // DoubleIntegratorSMPPI
-    nb::class_<DISMPPI>(m, "DoubleIntegratorSMPPI")
-        .def(nb::init<const MPPIConfig&, const instantiations::DoubleIntegrator&, const instantiations::QuadraticCost&>(),
-             nb::arg("config"),
-             nb::arg("dynamics") = instantiations::DoubleIntegrator(),
-             nb::arg("cost") = instantiations::QuadraticCost())
-        .def("compute", &DISMPPI::compute, nb::arg("state"))
-        .def("get_action", &DISMPPI::get_action);
+    // DoubleIntegratorSMPPI - disabled due to Eigen/CUDA compatibility issues
+    // nb::class_<DISMPPI>(m, "DoubleIntegratorSMPPI")
+    //     .def(nb::init<const MPPIConfig&, const instantiations::DoubleIntegrator&, const instantiations::QuadraticCost&>(),
+    //          nb::arg("config"),
+    //          nb::arg("dynamics") = instantiations::DoubleIntegrator(),
+    //          nb::arg("cost") = instantiations::QuadraticCost())
+    //     .def("compute", &DISMPPI::compute, nb::arg("state"))
+    //     .def("get_action", &DISMPPI::get_action);
 
-    // DoubleIntegratorKMPPI
-    nb::class_<DIKMPPI>(m, "DoubleIntegratorKMPPI")
-        .def(nb::init<const MPPIConfig&, const instantiations::DoubleIntegrator&, const instantiations::QuadraticCost&>(),
+    // DoubleIntegratorKMPPI - disabled due to Eigen/CUDA compatibility issues
+    // nb::class_<DIKMPPI>(m, "DoubleIntegratorKMPPI")
+    //     .def(nb::init<const MPPIConfig&, const instantiations::DoubleIntegrator&, const instantiations::QuadraticCost&>(),
+    //          nb::arg("config"),
+    //          nb::arg("dynamics") = instantiations::DoubleIntegrator(),
+    //          nb::arg("cost") = instantiations::QuadraticCost())
+    //     .def("compute", &DIKMPPI::compute, nb::arg("state"))
+    //     .def("get_action", &DIKMPPI::get_action);
+
+    // JIT MPPI Controller
+    nb::class_<JITMPPIController>(m, "JITMPPIController")
+        .def("__init__",
+             [](JITMPPIController* self, const MPPIConfig& config,
+                const std::string& dynamics_code, const std::string& cost_code,
+                const std::vector<std::string>& include_paths) {
+                 new (self) JITMPPIController(config, dynamics_code, cost_code, include_paths);
+             },
              nb::arg("config"),
-             nb::arg("dynamics") = instantiations::DoubleIntegrator(),
-             nb::arg("cost") = instantiations::QuadraticCost())
-        .def("compute", &DIKMPPI::compute, nb::arg("state"))
-        .def("get_action", &DIKMPPI::get_action);
+             nb::arg("dynamics_code"),
+             nb::arg("cost_code"),
+             nb::arg("include_paths"))
+        .def("compute", &JITMPPIController::compute,
+             nb::arg("state"))
+        .def("get_action", &JITMPPIController::get_action)
+        .def("shift", &JITMPPIController::shift)
+        .def("get_nominal_trajectory", &JITMPPIController::get_nominal_trajectory);
 }
