@@ -58,6 +58,7 @@ nav:
           - types: api/types.md
     - Examples:
           - Pendulum: examples/pendulum.md
+          - Quadrotor Trajectory Following: examples/quadrotor.md
     - Development:
           - Quadrotor Trajectory Following Plan: plan/quadrotor_trajectory_following.md
           - CUDA MPPI Implementation Plan: plan/cuda_mppi_implementation.md

@@ -186,6 +186,12 @@ optimizer = CMAESOpt(population=10, sigma=0.1)
 
 See `examples/autotune_evosax_comparison.py` for a detailed performance comparison.
 
+## Examples
+
+- **Pendulum**: Simple inverted pendulum swing-up (`examples/pendulum.py`).
+- **Quadrotor**: Comprehensive 13D quadrotor trajectory following examples, including hover, circle tracking, and figure-8 maneuvers (`examples/quadrotor_*.py`). See `examples/quadrotor/README.md` for details.
+- **Autotuning**: Examples demonstrating hyperparameter optimization (`examples/autotune_*.py`).
+
 ## Project Structure
 
 ```text
@@ -201,6 +207,8 @@ jax_mppi/
 │   └── autotune_qd.py       # Quality Diversity optimization
 ├── examples/
 │   ├── pendulum.py                    # Pendulum environment example
+│   ├── quadrotor/                     # Quadrotor utilities
+│   ├── quadrotor_*.py                 # Quadrotor tracking examples
 │   ├── autotune_basic.py              # Basic autotuning example
 │   ├── autotune_pendulum.py           # Autotuning pendulum
 │   ├── autotune_evosax_comparison.py  # Evosax vs cma performance
