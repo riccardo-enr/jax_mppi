@@ -105,22 +105,57 @@ Expose the C++ MPPI controllers to Python to allow direct usage from the `jax_mp
     -   **Advanced (Zero-Copy)**: Accept `DLPack` capsules (from `jax.Array` or `torch.Tensor`) to pass GPU pointers directly to the C++ controllers, avoiding CPU-GPU transfers.
 
 ### Implementation Steps
-1.  **Project Config**: 
+1.  [x] **Project Config**: 
     -   Update `pyproject.toml` to support C++ extensions (e.g., using `scikit-build-core`).
     -   Add dependencies: `nanobind`, `scikit-build-core`.
-2.  **Bindings Code**:
+2.  [x] **Bindings Code**:
     -   Create `src/cuda_mppi/bindings/bindings.cpp`.
     -   Expose `MPPIConfig` struct as a Python class.
-    -   Expose `MPPIController`, `SMPPIController`, `KMPPIController` classes.
-    -   Bind methods like `compute(state)` and `get_action()`.
-    -   Implement type casters for `Eigen::VectorXf` <-> `numpy.ndarray` (using `nanobind/eigen/dense.h`).
-3.  **CMake Update**:
+    -   [ ] Expose `MPPIController`, `SMPPIController`, `KMPPIController` classes.
+    -   [ ] Bind methods like `compute(state)` and `get_action()`.
+    -   [ ] Implement type casters for `Eigen::VectorXf` <-> `numpy.ndarray` (using `nanobind/eigen/dense.h`).
+3.  [x] **CMake Update**:
     -   Add `nanobind_add_module` target.
     -   Link against `cuda_mppi` and CUDA libraries.
-4.  **Integration**:
+4.  [ ] **Integration**:
     -   Create a Python wrapper module (e.g., `jax_mppi.cuda`) that imports the extension.
     -   Add tests in `tests/` to verify correctness against the JAX implementation.
+
+## Phase 3: Runtime Dynamics Compilation (NVRTC)
+
+### Objective
+Allow users to define dynamics and cost functions in Python (initially as C++ code strings, or eventually transpiled from JAX) and compile the specialized MPPI controller at runtime. This avoids the need to recompile the shared library for every new system.
+
+### Strategy
+1.  **NVRTC (NVIDIA Runtime Compilation)**: Use NVRTC to compile CUDA C++ code strings into PTX at runtime.
+2.  **CUDA Driver API**: Use the Driver API (`cuModuleLoadData`, `cuLaunchKernel`) to load the compiled PTX and launch the `rollout_kernel`.
+3.  **Warm Start**: The compilation happens once during the "warm start" phase (controller initialization), enabling high-performance rollouts thereafter.
+
+### Implementation Steps
+1.  [ ] **Build Config**: Link against `nvrtc` and `cuda` (Driver API).
+2.  [ ] **JIT Compiler Class (`src/cuda_mppi/include/mppi/jit/jit_compiler.hpp`)**:
+    -   Inputs: Strings for `dynamics_struct_code` and `cost_struct_code`.
+    -   Action: Constructs the full `.cu` source code (headers + user structs + template instantiation).
+    -   Output: Compiles to PTX using `nvrtcProgramCompile`.
+3.  [ ] **JIT Controller (`JITMPPIController`)**:
+    -   A generic controller class that holds `CUfunction` handles instead of hardcoded kernels.
+    -   `compute()` method launches the generated kernel via `cuLaunchKernel`.
+4.  [ ] **Python Interface**:
+    -   Expose `JITMPPIController` to Python.
+    -   Example usage:
+        ```python
+        dynamics_code = """
+        struct PendulumDynamics {
+            __device__ void step(...) { ... }
+        };
+        """
+        controller = cuda_mppi.JITMPPIController(config, dynamics_code, cost_code)
+        ```
+5.  [ ] **Verification**:
+    -   Implement `examples/cuda_pendulum_jit.py`.
+    -   Verify that the JIT-compiled pendulum controller matches the JAX baseline.
 
 ## References
 -   `src/jax_mppi/*.py` (Source of truth for logic)
 -   `../MPPI-Generic` (Reference for CUDA patterns)
+-   NVRTC Documentation
