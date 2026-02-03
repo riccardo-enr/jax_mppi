@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-02-03
+
+### Added
+
+- **CUDA Backend**: High-performance C++/CUDA implementation of MPPI (`cuda_mppi`) for significant speedups.
+- **JIT Compilation**: Runtime compilation of user-defined dynamics and costs using NVRTC, allowing pure Python strings to be compiled into optimized CUDA kernels.
+- **Python Bindings**: Seamless integration via `nanobind`, exposing the CUDA controller to the Python ecosystem.
+- **Examples**:
+    - `cuda_pendulum_jit.py`: A complete example demonstrating the JIT-compiled controller with a pendulum environment.
+- **Documentation**: Comprehensive documentation for the CUDA implementation plans and usage.
+
+### Changed
+
+- Updated build system to `scikit-build-core` for mixed Python/C++ builds.
+
 ## [0.1.8] - 2026-02-01
 
 ### Changed
@@ -97,7 +112,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - Documentation structure with scientific theory for MPPI variants
 
-[unreleased]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.8...HEAD
+[unreleased]: https://github.com/riccardo-enr/jax_mppi/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.8...v0.2.0
 [0.1.8]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.5...v0.1.6
