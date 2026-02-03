@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-02-03
+
+### Changed
+
+- **CUDA Backend Architecture**: Extracted `cuda_mppi` implementation into a separate git repository ([riccardo-enr/cuda_mppi](https://github.com/riccardo-enr/cuda_mppi))
+- **Build System**: Updated CMake references to use submodule at `third_party/cuda_mppi` instead of `src/cuda_mppi`
+- **Development Workflow**: Repository now requires `git clone --recursive` to include CUDA components
+
+### Fixed
+
+- Updated include paths in JIT examples to reference submodule location
+- Updated justfile commands to use correct CUDA include directory
+
 ## [0.2.0] - 2026-02-03
 
 ### Added
@@ -112,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - Documentation structure with scientific theory for MPPI variants
 
-[unreleased]: https://github.com/riccardo-enr/jax_mppi/compare/v0.2.0...HEAD
+[unreleased]: https://github.com/riccardo-enr/jax_mppi/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/riccardo-enr/jax_mppi/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.8...v0.2.0
 [0.1.8]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.6...v0.1.7
