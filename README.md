@@ -61,7 +61,7 @@ git submodule update --init --recursive
 pip install -e .
 ```
 
-**Note:** The CUDA backend lives in a separate repository ([cuda_mppi](https://github.com/riccardo-enr/cuda_mppi)) integrated as a git submodule at `third_party/cuda_mppi`. You need to initialize submodules to build the CUDA components.
+**Note:** The CUDA backend lives in a separate repository ([cuda_mppi](https://github.com/riccardo-enr/cuda-mppi)) integrated as a git submodule at `third_party/cuda-mppi`. You need to initialize submodules to build the CUDA components.
 
 ## Versioning
 

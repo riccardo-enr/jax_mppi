@@ -18,7 +18,7 @@ all: hover figure8
 
 # Run CUDA JIT pendulum example
 jit-pendulum:
-    @export CUDA_MPPI_INCLUDE_DIR=$(pwd)/third_party/cuda_mppi/include && \
+    @export CUDA_MPPI_INCLUDE_DIR=$(pwd)/third_party/cuda-mppi/include && \
     uv run python examples/cuda_pendulum_jit.py --visualization
 
 # Run hover comparison with custom parameters

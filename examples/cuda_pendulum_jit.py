@@ -135,7 +135,7 @@ def main():
     else:
         # Try relative to this script
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        potential_include = os.path.join(script_dir, "../third_party/cuda_mppi/include")
+        potential_include = os.path.join(script_dir, "../third_party/cuda-mppi/include")
         if os.path.exists(potential_include):
             include_paths.append(os.path.abspath(potential_include))
             os.environ["CUDA_MPPI_INCLUDE_DIR"] = os.path.abspath(
@@ -159,11 +159,11 @@ def main():
         print(f"  ✗ Compilation failed: {e}")
         print("\nTroubleshooting:")
         print(
-            "  1. Set CUDA_MPPI_INCLUDE_DIR to point to third_party/cuda_mppi/include"
+            "  1. Set CUDA_MPPI_INCLUDE_DIR to point to third_party/cuda-mppi/include"
         )
         print("  2. Ensure CUDA toolkit is installed")
         print(
-            f"     export CUDA_MPPI_INCLUDE_DIR={os.path.abspath('../third_party/cuda_mppi/include')}"
+            f"     export CUDA_MPPI_INCLUDE_DIR={os.path.abspath('../third_party/cuda-mppi/include')}"
         )
         return
 
