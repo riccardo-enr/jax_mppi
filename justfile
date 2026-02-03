@@ -47,6 +47,10 @@ test-cuda:
 test:
     uv run pytest tests/
 
+# Initialize and update git submodules (cuda-mppi)
+submodule-update:
+    git submodule update --init --recursive
+
 # Clean generated media files
 clean:
     rm -f docs/media/quadrotor_*_comparison.png
