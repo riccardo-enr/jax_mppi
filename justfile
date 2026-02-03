@@ -16,6 +16,11 @@ figure8:
 # Run all quadrotor comparisons
 all: hover figure8
 
+# Run CUDA JIT pendulum example
+jit-pendulum:
+    @export CUDA_MPPI_INCLUDE_DIR=$(pwd)/src/cuda_mppi/include && \
+    uv run python examples/cuda_pendulum_jit.py --visualization
+
 # Run hover comparison with custom parameters
 hover-custom steps samples horizon lambda:
     uv run python examples/quadrotor_hover_comparison.py \
@@ -33,6 +38,10 @@ figure8-custom steps samples horizon lambda:
         --horizon {{ horizon }} \
         --lambda {{ lambda }} \
         --visualize
+
+# Test basic CUDA bindings
+test-cuda:
+    uv run python examples/test_cuda_mppi.py
 
 # Run tests
 test:

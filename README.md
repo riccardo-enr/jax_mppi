@@ -22,10 +22,11 @@ This library embraces JAX's functional paradigm:
 - **Smooth MPPI (SMPPI)**: Maintains action sequences and smoothness costs for better trajectory generation.
 - **Kernel MPPI (KMPPI)**: Uses kernel interpolation for control points, reducing the parameter space.
 - **Autotuning**: Built-in hyperparameter optimization with multiple backends:
-  - **CMA-ES** (via `cma` library) - Classic evolution strategy
-  - **CMA-ES, Sep-CMA-ES, OpenES** (via `evosax`) - JAX-native, GPU-accelerated ⚡
+  - **CMA-ES** (via \`cma\` library) - Classic evolution strategy
+  - **CMA-ES, Sep-CMA-ES, OpenES** (via \`evosax\`) - JAX-native, GPU-accelerated ⚡
   - **Ray Tune** - Distributed hyperparameter search
-  - **CMA-ME** (via `ribs`) - Quality diversity optimization
+  - **CMA-ME** (via \`ribs\`) - Quality diversity optimization
+- **CUDA/C++ Backend**: High-performance implementations of all controllers in CUDA/C++17, exposed to Python via \`nanobind\`. Ideal for deployments needing maximum throughput.
 - **JAX Integration**:
   - `jax.vmap` for efficient batch processing.
   - `jax.lax.scan` for fast horizon loops.
