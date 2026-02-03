@@ -1,0 +1,51 @@
+# JAX-MPPI Examples Runner
+# Run quadrotor comparison examples
+
+# Default recipe - show available commands
+default:
+    @just --list
+
+# Run quadrotor hover comparison
+hover:
+    uv run python examples/quadrotor_hover_comparison.py --visualize
+
+# Run quadrotor figure-8 comparison
+figure8:
+    uv run python examples/quadrotor_figure8_comparison.py --visualize
+
+# Run all quadrotor comparisons
+all: hover figure8
+
+# Run hover comparison with custom parameters
+hover-custom steps samples horizon lambda:
+    uv run python examples/quadrotor_hover_comparison.py \
+        --steps {{ steps }} \
+        --samples {{ samples }} \
+        --horizon {{ horizon }} \
+        --lambda {{ lambda }} \
+        --visualize
+
+# Run figure-8 comparison with custom parameters
+figure8-custom steps samples horizon lambda:
+    uv run python examples/quadrotor_figure8_comparison.py \
+        --steps {{ steps }} \
+        --samples {{ samples }} \
+        --horizon {{ horizon }} \
+        --lambda {{ lambda }} \
+        --visualize
+
+# Run tests
+test:
+    uv run pytest tests/
+
+# Clean generated media files
+clean:
+    rm -f docs/media/quadrotor_*_comparison.png
+
+# Show help for hover comparison
+help-hover:
+    uv run python examples/quadrotor_hover_comparison.py --help
+
+# Show help for figure8 comparison
+help-figure8:
+    uv run python examples/quadrotor_figure8_comparison.py --help
