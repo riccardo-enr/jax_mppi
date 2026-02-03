@@ -93,7 +93,34 @@ src/cuda_mppi/
 6.  [x] **KMPPI**: Implement `kmppi.cuh` and `kmppi.cu`.
 7.  [x] **Verification**: Create a dummy `main.cu` to instantiate these controllers and verify they compile.
 
+## Python Integration (Phase 2)
+
+### Objective
+Expose the C++ MPPI controllers to Python to allow direct usage from the `jax_mppi` package, potentially replacing the JAX implementation for performance-critical sections.
+
+### Strategy
+1.  **Binding Library**: Use `nanobind` (preferred for efficiency with CUDA types) or `pybind11` to create Python bindings for the C++ classes.
+2.  **Data Transfer**:
+    -   **Basic**: Accept NumPy arrays (CPU) and copy to GPU in C++.
+    -   **Advanced (Zero-Copy)**: Accept `DLPack` capsules (from `jax.Array` or `torch.Tensor`) to pass GPU pointers directly to the C++ controllers, avoiding CPU-GPU transfers.
+
+### Implementation Steps
+1.  **Project Config**: 
+    -   Update `pyproject.toml` to support C++ extensions (e.g., using `scikit-build-core`).
+    -   Add dependencies: `nanobind` (or `pybind11`), `scikit-build-core`.
+2.  **Bindings Code**:
+    -   Create `src/cuda_mppi/bindings/bindings.cpp`.
+    -   Expose `MPPIConfig` struct as a Python class.
+    -   Expose `MPPIController`, `SMPPIController`, `KMPPIController` classes.
+    -   Bind methods like `compute(state)` and `get_action()`.
+    -   Implement type casters for `Eigen::VectorXf` <-> `numpy.ndarray`.
+3.  **CMake Update**:
+    -   Add `nanobind_add_module` (or `pybind11_add_module`) target.
+    -   Link against `cuda_mppi` and CUDA libraries.
+4.  **Integration**:
+    -   Create a Python wrapper module (e.g., `jax_mppi.cuda`) that imports the extension.
+    -   Add tests in `tests/` to verify correctness against the JAX implementation.
+
 ## References
 -   `src/jax_mppi/*.py` (Source of truth for logic)
 -   `../MPPI-Generic` (Reference for CUDA patterns)
-
