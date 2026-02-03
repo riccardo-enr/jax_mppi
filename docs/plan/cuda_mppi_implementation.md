@@ -111,13 +111,13 @@ Expose the C++ MPPI controllers to Python to allow direct usage from the `jax_mp
 2.  [x] **Bindings Code**:
     -   Create `src/cuda_mppi/bindings/bindings.cpp`.
     -   Expose `MPPIConfig` struct as a Python class.
-    -   [ ] Expose `MPPIController`, `SMPPIController`, `KMPPIController` classes.
-    -   [ ] Bind methods like `compute(state)` and `get_action()`.
-    -   [ ] Implement type casters for `Eigen::VectorXf` <-> `numpy.ndarray` (using `nanobind/eigen/dense.h`).
+    -   [x] Expose `MPPIController`, `SMPPIController`, `KMPPIController` classes.
+    -   [x] Bind methods like `compute(state)` and `get_action()`.
+    -   [x] Implement type casters for `Eigen::VectorXf` <-> `numpy.ndarray` (using `nanobind/eigen/dense.h`).
 3.  [x] **CMake Update**:
     -   Add `nanobind_add_module` target.
     -   Link against `cuda_mppi` and CUDA libraries.
-4.  [ ] **Integration**:
+4.  [x] **Integration**:
     -   Create a Python wrapper module (e.g., `jax_mppi.cuda`) that imports the extension.
     -   Add tests in `tests/` to verify correctness against the JAX implementation.
 
