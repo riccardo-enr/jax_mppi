@@ -21,6 +21,7 @@ This library embraces JAX's functional paradigm:
 - **Smooth MPPI (SMPPI)**: Maintains action sequences and smoothness costs for better trajectory generation.
 - **Kernel MPPI (KMPPI)**: Uses kernel interpolation for control points, reducing the parameter space.
 - **Autotuning**: Built-in hyperparameter optimization using CMA-ES, Ray Tune, and Quality Diversity.
+- **CUDA/C++ Backend**: High-performance implementations of all controllers in CUDA/C++17, exposed to Python via \`nanobind\`.
 - **JAX Integration**:
   - `jax.vmap` for efficient batch processing.
   - `jax.lax.scan` for fast horizon loops.
@@ -119,3 +120,4 @@ This project is a direct port of [pytorch_mppi](https://github.com/UM-ARM-Lab/py
 
 - [Porting Plan](plan/completed/porting_pytorch_jax.md)
 - [Evosax Integration Plan](plan/completed/evosax_integration.md)
+- [CUDA MPPI Implementation Plan](plan/cuda_mppi_implementation.md)
