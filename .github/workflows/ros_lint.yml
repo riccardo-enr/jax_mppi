@@ -1,0 +1,24 @@
+name: ROS 2 Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ament_lint:
+    runs-on: ubuntu-latest
+    container: ros:jazzy
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install linters
+        run: |
+          apt-get update
+          apt-get install -y python3-ament-copyright python3-ament-flake8 python3-ament-pep257
+      - name: Run ament_copyright
+        run: ament_copyright src/
+      - name: Run ament_flake8
+        run: ament_flake8 src/
+      - name: Run ament_pep257
+        run: ament_pep257 src/
