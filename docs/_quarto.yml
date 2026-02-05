@@ -7,7 +7,7 @@ website:
   navbar:
     left:
       - text: "Home"
-        href: index.md
+        href: index.qmd
       - text: "Theory"
         href: theory.md
       - text: "Autotuning"
@@ -22,19 +22,12 @@ website:
     contents:
       - section: "Introduction"
         contents:
-          - index.md
+          - index.qmd
           - theory.md
       - section: "Algorithms"
         contents:
           - autotuning.md
           - i_mppi.qmd
-      - section: "API Reference"
-        contents:
-          - api/mppi.md
-          - api/smppi.md
-          - api/kmppi.md
-          - api/autotune.md
-          - api/types.md
       - section: "Examples"
         contents:
           - examples/pendulum.md

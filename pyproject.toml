@@ -34,10 +34,6 @@ dev = [
   "basedpyright",
   "ruff>=0.14.14",
 ]
-docs = [
-  "mkdocs-material",
-  "mkdocstrings[python]",
-]
 autotuning = [
   "cma>=3.3.0",
   "evosax>=0.1.0",
