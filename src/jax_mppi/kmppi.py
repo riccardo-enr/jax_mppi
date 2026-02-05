@@ -331,9 +331,9 @@ def _compute_noise_cost(
         return jnp.sum(jnp.abs(noise), axis=(1, 2))
     else:
         # Quadratic cost in control point space
-        costs_per_point = jax.vmap(jax.vmap(lambda n: n @ noise_sigma_inv @ n))(
-            noise
-        )
+        # Optimized: use dot product instead of nested vmap
+        term = jnp.dot(noise, noise_sigma_inv)
+        costs_per_point = jnp.sum(term * noise, axis=-1)
         return jnp.sum(costs_per_point, axis=1)
 
 
