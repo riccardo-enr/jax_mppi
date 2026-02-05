@@ -62,3 +62,11 @@ help-hover:
 # Show help for figure8 comparison
 help-figure8:
     uv run python examples/quadrotor_figure8_comparison.py --help
+
+# Documentation
+quarto-doc:
+    uv run quarto preview docs
+
+# Publish documentation to GitHub Pages manually
+publish-doc:
+    cd docs && quarto publish gh-pages --no-browser --no-prompt

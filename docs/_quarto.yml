@@ -1,0 +1,50 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "jax-mppi"
+  navbar:
+    left:
+      - text: "Home"
+        href: index.md
+      - text: "Theory"
+        href: theory.md
+      - text: "Autotuning"
+        href: autotuning.md
+      - text: "I-MPPI"
+        href: i_mppi.qmd
+      - text: "Plans"
+        href: plan/index.md
+  sidebar:
+    style: "docked"
+    search: true
+    contents:
+      - section: "Introduction"
+        contents:
+          - index.md
+          - theory.md
+      - section: "Algorithms"
+        contents:
+          - autotuning.md
+          - i_mppi.qmd
+      - section: "API Reference"
+        contents:
+          - api/mppi.md
+          - api/smppi.md
+          - api/kmppi.md
+          - api/autotune.md
+          - api/types.md
+      - section: "Examples"
+        contents:
+          - examples/pendulum.md
+      - section: "Development"
+        contents:
+          - testing.md
+          - releasing.md
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-copy: true

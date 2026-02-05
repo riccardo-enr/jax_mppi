@@ -11,3 +11,6 @@ uv.lock
 
 # Site
 site/
+_site/
+.quarto/
+**/*.quarto_ipynb
