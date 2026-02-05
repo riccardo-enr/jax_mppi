@@ -22,12 +22,14 @@ Originally, this example re-created the cost function at every time step to upda
 
 **Optimization Implemented:**
 The implementation has been refactored to:
-1.  Use `step_dependent_dynamics=True` to allow passing the time step `t` to the cost function.
-2.  Use **`jax.lax.scan`** to wrap the entire simulation loop into a single JIT-compiled kernel. This eliminates Python loop dispatch overhead completely.
-3.  Pass the entire reference trajectory to the scan function and use `jax.lax.dynamic_slice` inside the loop to extract the current horizon's reference. This allows the cost function to close over dynamic data efficiently without recompilation.
+
+1. Use `step_dependent_dynamics=True` to allow passing the time step `t` to the cost function.
+2. Use **`jax.lax.scan`** to wrap the entire simulation loop into a single JIT-compiled kernel. This eliminates Python loop dispatch overhead completely.
+3. Pass the entire reference trajectory to the scan function and use `jax.lax.dynamic_slice` inside the loop to extract the current horizon's reference. This allows the cost function to close over dynamic data efficiently without recompilation.
 
 **Parameter Tuning:**
 To improve tracking performance, the following parameters were tuned:
+
 - `num_samples`: Increased from 1000 to 2000.
 - `horizon`: Increased from 30 to 50.
 - `lambda`: Decreased from 1.0 to 0.1 (sharper selection).
@@ -46,7 +48,8 @@ Parameters were similarly tuned to handle the aggressive figure-8 trajectory (sa
 ## Recommendation (For Future Reference)
 
 When implementing tracking controllers with JAX MPPI:
-1.  **Use `jax.lax.scan`**: For simulation loops, wrapping the entire loop in `scan` provides the best performance by minimizing Python overhead.
-2.  **Parametrize the Cost Function**: Avoid capturing changing concrete values (like current target) in closures if they prevent JIT.
-3.  **Use Data Dependencies**: Pass changing targets as arguments (Tracers) to the JIT-compiled function.
-4.  **Step-Dependent Dynamics**: Use `step_dependent_dynamics=True` to utilize the relative time index `t` for looking up references in a passed trajectory slice.
+
+1. **Use `jax.lax.scan`**: For simulation loops, wrapping the entire loop in `scan` provides the best performance by minimizing Python overhead.
+2. **Parametrize the Cost Function**: Avoid capturing changing concrete values (like current target) in closures if they prevent JIT.
+3. **Use Data Dependencies**: Pass changing targets as arguments (Tracers) to the JIT-compiled function.
+4. **Step-Dependent Dynamics**: Use `step_dependent_dynamics=True` to utilize the relative time index `t` for looking up references in a passed trajectory slice.

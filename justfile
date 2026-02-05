@@ -13,8 +13,12 @@ hover:
 figure8:
     uv run python examples/quadrotor_figure8_comparison.py --visualize
 
+# Run I-MPPI simulation example
+run-i-mppi-sim:
+    PYTHONPATH=src uv run python examples/i_mppi_simulation.py
+
 # Run all quadrotor comparisons
-all: hover figure8
+all: hover figure8 run-i-mppi-sim
 
 # Run CUDA JIT pendulum example
 jit-pendulum:
@@ -46,6 +50,11 @@ test-cuda:
 # Run tests
 test:
     uv run pytest tests/
+
+# Run linting
+lint:
+    uv run ruff check .
+    uv run basedpyright .
 
 # Initialize and update git submodules (cuda-mppi)
 submodule-update:
