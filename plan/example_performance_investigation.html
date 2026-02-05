@@ -277,8 +277,19 @@ ul.task-list li input[type="checkbox"] {
 <section id="quadrotor_circle.py-slow---optimized" class="level3">
 <h3 class="anchored" data-anchor-id="quadrotor_circle.py-slow---optimized">2. <code>quadrotor_circle.py</code> (Slow -&gt; Optimized)</h3>
 <p>Originally, this example re-created the cost function at every time step to update the reference target. This prevented JIT compilation of the main MPPI loop, forcing it to run in eager execution mode (or incurring massive re-compilation costs).</p>
-<p><strong>Optimization Implemented:</strong> The implementation has been refactored to: 1. Use <code>step_dependent_dynamics=True</code> to allow passing the time step <code>t</code> to the cost function. 2. Use <strong><code>jax.lax.scan</code></strong> to wrap the entire simulation loop into a single JIT-compiled kernel. This eliminates Python loop dispatch overhead completely. 3. Pass the entire reference trajectory to the scan function and use <code>jax.lax.dynamic_slice</code> inside the loop to extract the current horizon’s reference. This allows the cost function to close over dynamic data efficiently without recompilation.</p>
-<p><strong>Parameter Tuning:</strong> To improve tracking performance, the following parameters were tuned: - <code>num_samples</code>: Increased from 1000 to 2000. - <code>horizon</code>: Increased from 30 to 50. - <code>lambda</code>: Decreased from 1.0 to 0.1 (sharper selection). - Cost weights: Significantly increased position and velocity weights.</p>
+<p><strong>Optimization Implemented:</strong> The implementation has been refactored to:</p>
+<ol type="1">
+<li>Use <code>step_dependent_dynamics=True</code> to allow passing the time step <code>t</code> to the cost function.</li>
+<li>Use <strong><code>jax.lax.scan</code></strong> to wrap the entire simulation loop into a single JIT-compiled kernel. This eliminates Python loop dispatch overhead completely.</li>
+<li>Pass the entire reference trajectory to the scan function and use <code>jax.lax.dynamic_slice</code> inside the loop to extract the current horizon’s reference. This allows the cost function to close over dynamic data efficiently without recompilation.</li>
+</ol>
+<p><strong>Parameter Tuning:</strong> To improve tracking performance, the following parameters were tuned:</p>
+<ul>
+<li><code>num_samples</code>: Increased from 1000 to 2000.</li>
+<li><code>horizon</code>: Increased from 30 to 50.</li>
+<li><code>lambda</code>: Decreased from 1.0 to 0.1 (sharper selection).</li>
+<li>Cost weights: Significantly increased position and velocity weights.</li>
+</ul>
 </section>
 <section id="quadrotor_figure8_comparison.py-slowest---optimized" class="level3">
 <h3 class="anchored" data-anchor-id="quadrotor_figure8_comparison.py-slowest---optimized">3. <code>quadrotor_figure8_comparison.py</code> (Slowest -&gt; Optimized)</h3>
@@ -289,7 +300,13 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="recommendation-for-future-reference" class="level2">
 <h2 class="anchored" data-anchor-id="recommendation-for-future-reference">Recommendation (For Future Reference)</h2>
-<p>When implementing tracking controllers with JAX MPPI: 1. <strong>Use <code>jax.lax.scan</code></strong>: For simulation loops, wrapping the entire loop in <code>scan</code> provides the best performance by minimizing Python overhead. 2. <strong>Parametrize the Cost Function</strong>: Avoid capturing changing concrete values (like current target) in closures if they prevent JIT. 3. <strong>Use Data Dependencies</strong>: Pass changing targets as arguments (Tracers) to the JIT-compiled function. 4. <strong>Step-Dependent Dynamics</strong>: Use <code>step_dependent_dynamics=True</code> to utilize the relative time index <code>t</code> for looking up references in a passed trajectory slice.</p>
+<p>When implementing tracking controllers with JAX MPPI:</p>
+<ol type="1">
+<li><strong>Use <code>jax.lax.scan</code></strong>: For simulation loops, wrapping the entire loop in <code>scan</code> provides the best performance by minimizing Python overhead.</li>
+<li><strong>Parametrize the Cost Function</strong>: Avoid capturing changing concrete values (like current target) in closures if they prevent JIT.</li>
+<li><strong>Use Data Dependencies</strong>: Pass changing targets as arguments (Tracers) to the JIT-compiled function.</li>
+<li><strong>Step-Dependent Dynamics</strong>: Use <code>step_dependent_dynamics=True</code> to utilize the relative time index <code>t</code> for looking up references in a passed trajectory slice.</li>
+</ol>
 
 
 </section>

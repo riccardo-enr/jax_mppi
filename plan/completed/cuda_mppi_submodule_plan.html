@@ -408,7 +408,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="rollback-plan" class="level2">
 <h2 class="anchored" data-anchor-id="rollback-plan">Rollback Plan</h2>
-<p>If issues arise, we can: 1. Remove submodule: <code>git submodule deinit -f third_party/cuda_mppi</code> 2. Delete from git: <code>git rm -f third_party/cuda_mppi</code> 3. Remove from .gitmodules 4. Restore original src/cuda_mppi from git history</p>
+<p>If issues arise, we can:</p>
+<ol type="1">
+<li>Remove submodule: <code>git submodule deinit -f third_party/cuda_mppi</code></li>
+<li>Delete from git: <code>git rm -f third_party/cuda_mppi</code></li>
+<li>Remove from .gitmodules</li>
+<li>Restore original src/cuda_mppi from git history</li>
+</ol>
 
 
 </section>

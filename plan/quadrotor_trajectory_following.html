@@ -391,7 +391,11 @@ window.Quarto = {
 <section id="theoretical-background" class="level2">
 <h2 class="anchored" data-anchor-id="theoretical-background">Theoretical Background</h2>
 <p>The quadrotor is modeled as a rigid body with 6 degrees of freedom. The state space is 13-dimensional, representing position, velocity, orientation (quaternion), and angular velocity.</p>
-<p><strong>Frame Conventions:</strong> - <strong>NED (North-East-Down)</strong>: Global/world frame where Z-axis points down (gravity is positive Z) - <strong>FRD (Forward-Right-Down)</strong>: Body frame where X-axis points forward, Y-axis points right, Z-axis points down</p>
+<p><strong>Frame Conventions:</strong></p>
+<ul>
+<li><strong>NED (North-East-Down)</strong>: Global/world frame where Z-axis points down (gravity is positive Z)</li>
+<li><strong>FRD (Forward-Right-Down)</strong>: Body frame where X-axis points forward, Y-axis points right, Z-axis points down</li>
+</ul>
 <section id="state-and-control" class="level3">
 <h3 class="anchored" data-anchor-id="state-and-control">State and Control</h3>
 <p>The state vector <span class="math inline">\(\mathbf{x} \in \mathbb{R}^{13}\)</span> is defined as:</p>
@@ -439,7 +443,7 @@ window.Quarto = {
 <section id="cost-function" class="level3">
 <h3 class="anchored" data-anchor-id="cost-function">Cost Function</h3>
 <p>The MPPI controller optimizes a cost function <span class="math inline">\(J\)</span> over a horizon <span class="math inline">\(H\)</span>. The instantaneous cost <span class="math inline">\(C(\mathbf{x}_t, \mathbf{u}_t)\)</span> is defined as</p>
-<p>[ C(<em>t, <em>t) = |<em>t - </em>{ref,t}|</em>{Q</em>{pos}}^2 + |<em>t - </em>{ref,t}|<em>{Q</em>{vel}}^2 + |<em>t|</em>{R}^2 ]</p>
+<p>[ C(<em>t, </em>t) = |<em>t - </em>{ref,t}|<em>{Q</em>{pos}}^2 + |<em>t - </em>{ref,t}|<em>{Q</em>{vel}}^2 + |<em>t|</em>{R}^2 ]</p>
 <p>where <span class="math inline">\(\|\mathbf{z}\|_W^2 = \mathbf{z}^T W \mathbf{z}\)</span>.</p>
 </section>
 </section>
@@ -1008,8 +1012,13 @@ window.Quarto = {
 </ul>
 <section id="frame-convention-summary" class="level3">
 <h3 class="anchored" data-anchor-id="frame-convention-summary">Frame Convention Summary</h3>
-<p><strong>NED-FRD Convention:</strong> - <strong>NED (North-East-Down)</strong>: World/global frame - X: North, Y: East, Z: Down (positive downward) - Gravity: g = [0, 0, +9.81] m/s² (positive Z direction)</p>
+<p><strong>NED-FRD Convention:</strong></p>
 <ul>
+<li><strong>NED (North-East-Down)</strong>: World/global frame
+<ul>
+<li>X: North, Y: East, Z: Down (positive downward)</li>
+<li>Gravity: g = [0, 0, +9.81] m/s² (positive Z direction)</li>
+</ul></li>
 <li><strong>FRD (Forward-Right-Down)</strong>: Body frame
 <ul>
 <li>X: Forward, Y: Right, Z: Down (positive downward)</li>
@@ -1017,7 +1026,12 @@ window.Quarto = {
 <li>Angular rates: [ωx, ωy, ωz] about [Forward, Right, Down] axes</li>
 </ul></li>
 </ul>
-<p><strong>Important Implementation Details:</strong> - Altitude: Negative values indicate height above ground (e.g., z = -5.0 means 5m altitude) - Thrust: Positive magnitude T, applied as [0, 0, -T] in body frame - Rotation matrix R(q): transforms from FRD body to NED world</p>
+<p><strong>Important Implementation Details:</strong></p>
+<ul>
+<li>Altitude: Negative values indicate height above ground (e.g., z = -5.0 means 5m altitude)</li>
+<li>Thrust: Positive magnitude T, applied as [0, 0, -T] in body frame</li>
+<li>Rotation matrix R(q): transforms from FRD body to NED world</li>
+</ul>
 <hr>
 </section>
 </section>
@@ -1025,8 +1039,16 @@ window.Quarto = {
 <h2 class="anchored" data-anchor-id="progress-log">Progress Log</h2>
 <section id="phase-1-complete" class="level3">
 <h3 class="anchored" data-anchor-id="phase-1-complete">2026-02-02: Phase 1 Complete ✓</h3>
-<p><strong>Completed:</strong> - Implemented <code>src/jax_mppi/dynamics/quadrotor.py</code> with full 6-DOF quadrotor dynamics - Quaternion utilities: rotation matrix conversion, normalization, multiplication - RK4 integration for accurate numerical integration - First-order angular velocity tracking model - NED-FRD frame conventions properly implemented - Control bounds enforcement</p>
+<p><strong>Completed:</strong></p>
 <ul>
+<li>Implemented <code>src/jax_mppi/dynamics/quadrotor.py</code> with full 6-DOF quadrotor dynamics
+<ul>
+<li>Quaternion utilities: rotation matrix conversion, normalization, multiplication</li>
+<li>RK4 integration for accurate numerical integration</li>
+<li>First-order angular velocity tracking model</li>
+<li>NED-FRD frame conventions properly implemented</li>
+<li>Control bounds enforcement</li>
+</ul></li>
 <li>Implemented <code>src/jax_mppi/costs/quadrotor.py</code> with comprehensive cost functions
 <ul>
 <li>Trajectory tracking cost (position + velocity)</li>
@@ -1042,13 +1064,31 @@ window.Quarto = {
 <li>Tests verify: quaternion math, dynamics correctness, JIT compatibility, gradients</li>
 </ul></li>
 </ul>
-<p><strong>Key Features:</strong> - All functions are JIT-compatible for high performance - Gradients work correctly through all dynamics and cost functions - Quaternion norm preservation verified during integration - Physical behaviors validated (gravity, thrust, angular tracking)</p>
-<p><strong>Next Steps:</strong> - Phase 2: Trajectory generators (circle, figure-8, hover setpoint)</p>
+<p><strong>Key Features:</strong></p>
+<ul>
+<li>All functions are JIT-compatible for high performance</li>
+<li>Gradients work correctly through all dynamics and cost functions</li>
+<li>Quaternion norm preservation verified during integration</li>
+<li>Physical behaviors validated (gravity, thrust, angular tracking)</li>
+</ul>
+<p><strong>Next Steps:</strong></p>
+<ul>
+<li>Phase 2: Trajectory generators (circle, figure-8, hover setpoint)</li>
+</ul>
 </section>
 <section id="phase-2-complete" class="level3">
 <h3 class="anchored" data-anchor-id="phase-2-complete">2026-02-02: Phase 2 Complete ✓</h3>
-<p><strong>Completed:</strong> - Implemented <code>examples/quadrotor/trajectories.py</code> with comprehensive trajectory generators - <code>generate_hover_setpoint()</code> - Constant position stabilization - <code>generate_circle_trajectory()</code> - Circular paths with configurable center and phase - <code>generate_lemniscate_trajectory()</code> - Figure-8 patterns (horizontal or vertical) - <code>generate_helix_trajectory()</code> - Spiral paths with vertical motion - <code>generate_waypoint_trajectory()</code> - Smooth cubic Hermite interpolation through waypoints - <code>compute_trajectory_metrics()</code> - Analyze distance, velocity, acceleration</p>
+<p><strong>Completed:</strong></p>
 <ul>
+<li>Implemented <code>examples/quadrotor/trajectories.py</code> with comprehensive trajectory generators
+<ul>
+<li><code>generate_hover_setpoint()</code> - Constant position stabilization</li>
+<li><code>generate_circle_trajectory()</code> - Circular paths with configurable center and phase</li>
+<li><code>generate_lemniscate_trajectory()</code> - Figure-8 patterns (horizontal or vertical)</li>
+<li><code>generate_helix_trajectory()</code> - Spiral paths with vertical motion</li>
+<li><code>generate_waypoint_trajectory()</code> - Smooth cubic Hermite interpolation through waypoints</li>
+<li><code>compute_trajectory_metrics()</code> - Analyze distance, velocity, acceleration</li>
+</ul></li>
 <li>Comprehensive test coverage (28 tests, all passing)
 <ul>
 <li>Tests verify: trajectory shapes, periodicity, continuity</li>
@@ -1056,13 +1096,29 @@ window.Quarto = {
 <li>Checks metric computation accuracy</li>
 </ul></li>
 </ul>
-<p><strong>Key Features:</strong> - All trajectories follow NED frame convention - Analytical derivatives for velocity (no numerical differentiation) - Configurable parameters (center, phase, duration, dt) - Support for both horizontal and vertical figure-8 patterns</p>
-<p><strong>Next Steps:</strong> - Phase 3: Basic examples (hover control, circle following)</p>
+<p><strong>Key Features:</strong></p>
+<ul>
+<li>All trajectories follow NED frame convention</li>
+<li>Analytical derivatives for velocity (no numerical differentiation)</li>
+<li>Configurable parameters (center, phase, duration, dt)</li>
+<li>Support for both horizontal and vertical figure-8 patterns</li>
+</ul>
+<p><strong>Next Steps:</strong></p>
+<ul>
+<li>Phase 3: Basic examples (hover control, circle following)</li>
+</ul>
 </section>
 <section id="phase-3-complete" class="level3">
 <h3 class="anchored" data-anchor-id="phase-3-complete">2026-02-02: Phase 3 Complete ✓</h3>
-<p><strong>Completed:</strong> - Implemented <code>examples/quadrotor_hover.py</code> - Hover control stabilization - MPPI-based hover controller with position and attitude tracking - Performance metrics (settling time, position/velocity error) - Comprehensive visualization (9 subplots: position, velocity, angular velocity, control inputs, errors, cost) - Command-line interface with configurable parameters</p>
+<p><strong>Completed:</strong></p>
 <ul>
+<li>Implemented <code>examples/quadrotor_hover.py</code> - Hover control stabilization
+<ul>
+<li>MPPI-based hover controller with position and attitude tracking</li>
+<li>Performance metrics (settling time, position/velocity error)</li>
+<li>Comprehensive visualization (9 subplots: position, velocity, angular velocity, control inputs, errors, cost)</li>
+<li>Command-line interface with configurable parameters</li>
+</ul></li>
 <li>Implemented <code>examples/quadrotor_circle.py</code> - Circular trajectory tracking
 <ul>
 <li>Time-varying reference tracking using trajectory generators</li>
@@ -1079,13 +1135,31 @@ window.Quarto = {
 <li>Cross-example compatibility checks</li>
 </ul></li>
 </ul>
-<p><strong>Key Features:</strong> - Both examples run at 50 Hz control rate (JIT-compiled) - Detailed visualizations saved to <code>docs/media/</code> - Proper NED frame convention throughout - Performance metrics automatically computed and reported</p>
-<p><strong>Next Steps:</strong> - Phase 4: Advanced examples (figure-8 comparison, custom trajectories)</p>
+<p><strong>Key Features:</strong></p>
+<ul>
+<li>Both examples run at 50 Hz control rate (JIT-compiled)</li>
+<li>Detailed visualizations saved to <code>docs/media/</code></li>
+<li>Proper NED frame convention throughout</li>
+<li>Performance metrics automatically computed and reported</li>
+</ul>
+<p><strong>Next Steps:</strong></p>
+<ul>
+<li>Phase 4: Advanced examples (figure-8 comparison, custom trajectories)</li>
+</ul>
 </section>
 <section id="phase-4-complete" class="level3">
 <h3 class="anchored" data-anchor-id="phase-4-complete">2026-02-02: Phase 4 Complete ✓</h3>
-<p><strong>Completed:</strong> - Implemented <code>examples/quadrotor_figure8_comparison.py</code> - MPPI variant comparison - Side-by-side comparison of MPPI, SMPPI, and KMPPI on aggressive figure-8 - Comprehensive metrics: tracking accuracy, control smoothness, energy consumption - Smoothness metrics: control rate (acceleration) and jerk analysis - 6-subplot visualization comparing all three variants - Performance comparison table with 7 key metrics - Demonstrates trade-offs between tracking accuracy and control smoothness</p>
+<p><strong>Completed:</strong></p>
 <ul>
+<li>Implemented <code>examples/quadrotor_figure8_comparison.py</code> - MPPI variant comparison
+<ul>
+<li>Side-by-side comparison of MPPI, SMPPI, and KMPPI on aggressive figure-8</li>
+<li>Comprehensive metrics: tracking accuracy, control smoothness, energy consumption</li>
+<li>Smoothness metrics: control rate (acceleration) and jerk analysis</li>
+<li>6-subplot visualization comparing all three variants</li>
+<li>Performance comparison table with 7 key metrics</li>
+<li>Demonstrates trade-offs between tracking accuracy and control smoothness</li>
+</ul></li>
 <li>Implemented <code>examples/quadrotor_custom_trajectory.py</code> - Waypoint following
 <ul>
 <li>User-defined waypoint trajectories with smooth interpolation</li>
@@ -1103,8 +1177,17 @@ window.Quarto = {
 <li>Finite value checks for all outputs</li>
 </ul></li>
 </ul>
-<p><strong>Key Features:</strong> - Figure-8 example shows SMPPI produces smoother control (lower jerk) - Custom trajectory allows arbitrary waypoint sequences - All examples maintain 50 Hz control rate - Publication-quality comparison visualizations</p>
-<p><strong>Next Steps:</strong> - Phase 5: Documentation and polish</p>
+<p><strong>Key Features:</strong></p>
+<ul>
+<li>Figure-8 example shows SMPPI produces smoother control (lower jerk)</li>
+<li>Custom trajectory allows arbitrary waypoint sequences</li>
+<li>All examples maintain 50 Hz control rate</li>
+<li>Publication-quality comparison visualizations</li>
+</ul>
+<p><strong>Next Steps:</strong></p>
+<ul>
+<li>Phase 5: Documentation and polish</li>
+</ul>
 <hr>
 <p><strong>Last Updated</strong>: 2026-02-02 <strong>Author</strong>: riccardo-enr</p>
 
