@@ -3,4 +3,10 @@ project(jax_mppi_project LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_subdirectory(third_party/cuda-mppi)
+find_package(CUDAToolkit QUIET)
+
+if(CUDAToolkit_FOUND)
+  add_subdirectory(third_party/cuda-mppi)
+else()
+  message(STATUS "CUDA Toolkit not found. Building without CUDA extensions.")
+endif()
