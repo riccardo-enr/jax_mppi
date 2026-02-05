@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>jax-mppi</title>
+<title>releasing – jax-mppi</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -155,7 +155,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./index.html">jax_mppi</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./testing.html">Development</a></li><li class="breadcrumb-item"><a href="./releasing.html">Releasing Guide</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -186,7 +186,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">jax_mppi</span></a>
   </div>
 </li>
@@ -255,7 +255,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./releasing.html" class="sidebar-item-text sidebar-link">
+  <a href="./releasing.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Releasing Guide</span></a>
   </div>
 </li>
@@ -271,146 +271,65 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#jax_mppi" id="toc-jax_mppi" class="nav-link active" data-scroll-target="#jax_mppi">jax_mppi</a>
+  <li><a href="#releasing-guide" id="toc-releasing-guide" class="nav-link active" data-scroll-target="#releasing-guide">Releasing Guide</a>
   <ul class="collapse">
-  <li><a href="#design-philosophy" id="toc-design-philosophy" class="nav-link" data-scroll-target="#design-philosophy">Design Philosophy</a></li>
-  <li><a href="#key-features" id="toc-key-features" class="nav-link" data-scroll-target="#key-features">Key Features</a></li>
-  <li><a href="#installation" id="toc-installation" class="nav-link" data-scroll-target="#installation">Installation</a></li>
-  <li><a href="#usage" id="toc-usage" class="nav-link" data-scroll-target="#usage">Usage</a></li>
-  <li><a href="#project-structure" id="toc-project-structure" class="nav-link" data-scroll-target="#project-structure">Project Structure</a></li>
-  <li><a href="#roadmap" id="toc-roadmap" class="nav-link" data-scroll-target="#roadmap">Roadmap</a></li>
-  <li><a href="#credits" id="toc-credits" class="nav-link" data-scroll-target="#credits">Credits</a></li>
-  <li><a href="#completed-plans" id="toc-completed-plans" class="nav-link" data-scroll-target="#completed-plans">Completed Plans</a></li>
+  <li><a href="#prerequisites" id="toc-prerequisites" class="nav-link" data-scroll-target="#prerequisites">Prerequisites</a>
+  <ul class="collapse">
+  <li><a href="#pypi-trusted-publisher-setup" id="toc-pypi-trusted-publisher-setup" class="nav-link" data-scroll-target="#pypi-trusted-publisher-setup">PyPI Trusted Publisher Setup</a></li>
+  </ul></li>
+  <li><a href="#release-process" id="toc-release-process" class="nav-link" data-scroll-target="#release-process">Release Process</a></li>
   </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./index.html">jax_mppi</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./testing.html">Development</a></li><li class="breadcrumb-item"><a href="./releasing.html">Releasing Guide</a></li></ol></nav></header>
 
 
 
 
-<section id="jax_mppi" class="level1">
-<h1>jax_mppi</h1>
-<p><img src="https://img.shields.io/badge/build-passing-brightgreen.png" class="img-fluid" alt="Build Status"> <img src="https://img.shields.io/badge/license-MIT-blue.png" class="img-fluid" alt="License"> <img src="https://img.shields.io/badge/backend-JAX-blue.png" class="img-fluid" alt="JAX"> <img src="https://img.shields.io/badge/status-planning-yellow.png" class="img-fluid" alt="Status"></p>
-<p><strong>jax_mppi</strong> is a functional, JIT-compilable port of the <a href="https://github.com/UM-ARM-Lab/pytorch_mppi">pytorch_mppi</a> library to JAX. It implements Model Predictive Path Integral (MPPI) control with a focus on performance and composability.</p>
-<section id="design-philosophy" class="level2">
-<h2 class="anchored" data-anchor-id="design-philosophy">Design Philosophy</h2>
-<p>This library embraces JAX’s functional paradigm:</p>
-<ul>
-<li><strong>Pure Functions</strong>: Core logic is implemented as pure functions <code>command(state, mppi_state) -&gt; (action, mppi_state)</code>.</li>
-<li><strong>Dataclass State</strong>: State is held in <code>jax.tree_util.register_dataclass</code> containers, allowing easy integration with <code>jit</code>, <code>vmap</code>, and <code>grad</code>.</li>
-<li><strong>No Side Effects</strong>: Unlike the PyTorch version, there is no mutable <code>self</code>. State transitions are explicit.</li>
-</ul>
-</section>
-<section id="key-features" class="level2">
-<h2 class="anchored" data-anchor-id="key-features">Key Features</h2>
-<ul>
-<li><strong>Core MPPI</strong>: Robust implementation of the standard MPPI algorithm.</li>
-<li><strong>Smooth MPPI (SMPPI)</strong>: Maintains action sequences and smoothness costs for better trajectory generation.</li>
-<li><strong>Kernel MPPI (KMPPI)</strong>: Uses kernel interpolation for control points, reducing the parameter space.</li>
-<li><strong>Autotuning</strong>: Built-in hyperparameter optimization using CMA-ES, Ray Tune, and Quality Diversity.</li>
-<li><strong>CUDA/C++ Backend</strong>: High-performance implementations of all controllers in CUDA/C++17, exposed to Python via `nanobind`.</li>
-<li><strong>JAX Integration</strong>:
-<ul>
-<li><code>jax.vmap</code> for efficient batch processing.</li>
-<li><code>jax.lax.scan</code> for fast horizon loops.</li>
-<li>Fully compatible with JIT compilation for high-performance control loops.</li>
-</ul></li>
-</ul>
-</section>
-<section id="installation" class="level2">
-<h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clone the repository</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/yourusername/jax_mppi.git</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> jax_mppi</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Install dependencies</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-e</span> .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="usage" class="level2">
-<h2 class="anchored" data-anchor-id="usage">Usage</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax.numpy <span class="im">as</span> jnp</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> jax_mppi <span class="im">import</span> mppi</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Define dynamics and cost functions</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> dynamics(state, action):</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Your dynamics model here</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> state <span class="op">+</span> action</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> running_cost(state, action):</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Your cost function here</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jnp.<span class="bu">sum</span>(state<span class="op">**</span><span class="dv">2</span>) <span class="op">+</span> jnp.<span class="bu">sum</span>(action<span class="op">**</span><span class="dv">2</span>)</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Create configuration and initial state</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>config, mppi_state <span class="op">=</span> mppi.create(</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    nx<span class="op">=</span><span class="dv">4</span>, nu<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    noise_sigma<span class="op">=</span>jnp.eye(<span class="dv">2</span>) <span class="op">*</span> <span class="fl">0.1</span>,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    horizon<span class="op">=</span><span class="dv">20</span>,</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    lambda_<span class="op">=</span><span class="fl">1.0</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Control loop</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>key <span class="op">=</span> jax.random.PRNGKey(<span class="dv">0</span>)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>current_obs <span class="op">=</span> jnp.zeros(<span class="dv">4</span>)</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># JIT compile the command function for performance</span></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>jitted_command <span class="op">=</span> jax.jit(mppi.command, static_argnames<span class="op">=</span>[<span class="st">'dynamics'</span>, <span class="st">'running_cost'</span>])</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">100</span>):</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    key, subkey <span class="op">=</span> jax.random.split(key)</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    action, mppi_state <span class="op">=</span> jitted_command(</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>        config,</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        mppi_state,</span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>        current_obs,</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        dynamics<span class="op">=</span>dynamics,</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>        running_cost<span class="op">=</span>running_cost</span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Apply action to environment...</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="project-structure" class="level2">
-<h2 class="anchored" data-anchor-id="project-structure">Project Structure</h2>
-<pre class="text"><code>jax_mppi/
-├── src/jax_mppi/
-│   ├── mppi.py              # Core MPPI implementation
-│   ├── smppi.py             # Smooth MPPI variant
-│   ├── kmppi.py             # Kernel MPPI variant
-│   ├── types.py             # Type definitions
-│   ├── autotune.py          # Autotuning core &amp; CMA-ES
-│   ├── autotune_global.py   # Ray Tune integration
-│   └── autotune_qd.py       # Quality Diversity optimization
-├── examples/
-│   ├── pendulum.py          # Pendulum environment example
-│   ├── autotune_basic.py    # Basic autotuning example
-│   ├── autotune_pendulum.py # Autotuning pendulum
-│   └── smooth_comparison.py # Comparison of MPPI variants
-└── tests/                   # Unit and integration tests</code></pre>
-</section>
-<section id="roadmap" class="level2">
-<h2 class="anchored" data-anchor-id="roadmap">Roadmap</h2>
-<p>The development is structured in phases:</p>
+<section id="releasing-guide" class="level1">
+<h1>Releasing Guide</h1>
+<p>This guide describes how to release a new version of <code>jax_mppi</code> to PyPI.</p>
+<section id="prerequisites" class="level2">
+<h2 class="anchored" data-anchor-id="prerequisites">Prerequisites</h2>
+<p>The release process is automated using GitHub Actions, but it requires the repository to be configured as a Trusted Publisher on PyPI.</p>
+<section id="pypi-trusted-publisher-setup" class="level3">
+<h3 class="anchored" data-anchor-id="pypi-trusted-publisher-setup">PyPI Trusted Publisher Setup</h3>
 <ol type="1">
-<li><strong>Core MPPI</strong>: Basic implementation with JAX parity.</li>
-<li><strong>Integration</strong>: Pendulum example and verification.</li>
-<li><strong>Smooth MPPI</strong>: Implementation of smoothness constraints.</li>
-<li><strong>Kernel MPPI</strong>: Kernel-based control parameterization.</li>
-<li><strong>Comparisons</strong>: Benchmarking and visual comparisons.</li>
-<li><strong>Autotuning</strong>: Parameter optimization using CMA-ES, Ray Tune, and QD.</li>
-</ol>
-</section>
-<section id="credits" class="level2">
-<h2 class="anchored" data-anchor-id="credits">Credits</h2>
-<p>This project is a direct port of <a href="https://github.com/UM-ARM-Lab/pytorch_mppi">pytorch_mppi</a>. We aim to maintain parity with the original implementation while leveraging JAX’s unique features for performance and flexibility.</p>
-</section>
-<section id="completed-plans" class="level2">
-<h2 class="anchored" data-anchor-id="completed-plans">Completed Plans</h2>
+<li>Log in to your <a href="https://pypi.org/">PyPI account</a>.</li>
+<li>Go to <strong>Publishing</strong> in your project settings (or create a new project if this is the first release).</li>
+<li>Add a new <strong>Trusted Publisher</strong>.</li>
+<li>Select <strong>GitHub</strong>.</li>
+<li>Enter the following details:
 <ul>
-<li><a href="./plan/completed/porting_pytorch_jax.html">Porting Plan</a></li>
-<li><a href="./plan/completed/evosax_integration.html">Evosax Integration Plan</a></li>
-<li><a href="plan/cuda_mppi_implementation.md">CUDA MPPI Implementation Plan</a></li>
-</ul>
+<li><strong>Owner</strong>: <code>riccardo-enr</code></li>
+<li><strong>Repository name</strong>: <code>jax_mppi</code></li>
+<li><strong>Workflow name</strong>: <code>publish.yml</code></li>
+<li><strong>Environment name</strong>: (Leave empty)</li>
+</ul></li>
+<li>Click <strong>Add</strong>.</li>
+</ol>
+<p>This allows the GitHub Action to authenticate with PyPI using OIDC tokens without needing a long-lived API token or password.</p>
+</section>
+</section>
+<section id="release-process" class="level2">
+<h2 class="anchored" data-anchor-id="release-process">Release Process</h2>
+<p>To release a new version:</p>
+<ol type="1">
+<li><p><strong>Update Version</strong>: Update the version number in <code>pyproject.toml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[project]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">version</span> <span class="op">=</span> <span class="st">"0.1.6"</span>  <span class="co"># Example version</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong>Commit and Push</strong>: Commit the version change and push to <code>main</code>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add pyproject.toml</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Bump version to 0.1.6"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> push origin main</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong>Create Tag</strong>: Create a git tag for the release. The tag must start with <code>v</code>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> tag v0.1.6</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> push origin v0.1.6</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong>Wait for Action</strong>: The <code>Publish to PyPI</code> GitHub Action will automatically run when the tag is pushed. It will build the package and upload it to PyPI.</p></li>
+<li><p><strong>Verify</strong>: Check the <a href="https://pypi.org/project/jax-mppi/">PyPI page</a> to confirm the new version is available.</p></li>
+</ol>
 
 
 </section>

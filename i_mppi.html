@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>jax-mppi</title>
+<title>I-MPPI: Informative Model Predictive Path Integral – jax-mppi</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,41 +19,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -103,7 +68,39 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -155,7 +152,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./index.html">jax_mppi</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./autotuning.html">Algorithms</a></li><li class="breadcrumb-item"><a href="./i_mppi.html">I-MPPI: Informative Model Predictive Path Integral</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -186,7 +183,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">jax_mppi</span></a>
   </div>
 </li>
@@ -215,7 +212,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./i_mppi.html" class="sidebar-item-text sidebar-link">
+  <a href="./i_mppi.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">I-MPPI: Informative Model Predictive Path Integral</span></a>
   </div>
 </li>
@@ -271,149 +268,208 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#jax_mppi" id="toc-jax_mppi" class="nav-link active" data-scroll-target="#jax_mppi">jax_mppi</a>
+  <li><a href="#introduction-the-evolution-of-autonomous-exploration" id="toc-introduction-the-evolution-of-autonomous-exploration" class="nav-link active" data-scroll-target="#introduction-the-evolution-of-autonomous-exploration">Introduction: The Evolution of Autonomous Exploration</a></li>
+  <li><a href="#theoretical-foundations-of-i-mppi" id="toc-theoretical-foundations-of-i-mppi" class="nav-link" data-scroll-target="#theoretical-foundations-of-i-mppi">Theoretical Foundations of I-MPPI</a>
   <ul class="collapse">
-  <li><a href="#design-philosophy" id="toc-design-philosophy" class="nav-link" data-scroll-target="#design-philosophy">Design Philosophy</a></li>
-  <li><a href="#key-features" id="toc-key-features" class="nav-link" data-scroll-target="#key-features">Key Features</a></li>
-  <li><a href="#installation" id="toc-installation" class="nav-link" data-scroll-target="#installation">Installation</a></li>
-  <li><a href="#usage" id="toc-usage" class="nav-link" data-scroll-target="#usage">Usage</a></li>
-  <li><a href="#project-structure" id="toc-project-structure" class="nav-link" data-scroll-target="#project-structure">Project Structure</a></li>
-  <li><a href="#roadmap" id="toc-roadmap" class="nav-link" data-scroll-target="#roadmap">Roadmap</a></li>
-  <li><a href="#credits" id="toc-credits" class="nav-link" data-scroll-target="#credits">Credits</a></li>
-  <li><a href="#completed-plans" id="toc-completed-plans" class="nav-link" data-scroll-target="#completed-plans">Completed Plans</a></li>
+  <li><a href="#optimal-control-duality-free-energy" id="toc-optimal-control-duality-free-energy" class="nav-link" data-scroll-target="#optimal-control-duality-free-energy">Optimal Control Duality &amp; Free Energy</a></li>
   </ul></li>
+  <li><a href="#information-metrics-fsmi" id="toc-information-metrics-fsmi" class="nav-link" data-scroll-target="#information-metrics-fsmi">Information Metrics: FSMI</a>
+  <ul class="collapse">
+  <li><a href="#shannon-mutual-information" id="toc-shannon-mutual-information" class="nav-link" data-scroll-target="#shannon-mutual-information">Shannon Mutual Information</a></li>
+  <li><a href="#fast-shannon-mutual-information-fsmi" id="toc-fast-shannon-mutual-information-fsmi" class="nav-link" data-scroll-target="#fast-shannon-mutual-information-fsmi">Fast Shannon Mutual Information (FSMI)</a></li>
+  </ul></li>
+  <li><a href="#hierarchical-architecture" id="toc-hierarchical-architecture" class="nav-link" data-scroll-target="#hierarchical-architecture">Hierarchical Architecture</a></li>
+  <li><a href="#feedback-mppi-sensitivity-analysis" id="toc-feedback-mppi-sensitivity-analysis" class="nav-link" data-scroll-target="#feedback-mppi-sensitivity-analysis">Feedback-MPPI &amp; Sensitivity Analysis</a></li>
+  <li><a href="#implementation-experimental-results" id="toc-implementation-experimental-results" class="nav-link" data-scroll-target="#implementation-experimental-results">Implementation &amp; Experimental Results</a>
+  <ul class="collapse">
+  <li><a href="#exploration-campaign" id="toc-exploration-campaign" class="nav-link" data-scroll-target="#exploration-campaign">Exploration Campaign</a>
+  <ul class="collapse">
+  <li><a href="#hierarchical-architecture-specification" id="toc-hierarchical-architecture-specification" class="nav-link" data-scroll-target="#hierarchical-architecture-specification">Hierarchical Architecture Specification</a></li>
+  <li><a href="#performance-comparison" id="toc-performance-comparison" class="nav-link" data-scroll-target="#performance-comparison">Performance Comparison</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#summary-information-as-energy" id="toc-summary-information-as-energy" class="nav-link" data-scroll-target="#summary-information-as-energy">Summary: Information as Energy</a></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./index.html">jax_mppi</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./autotuning.html">Algorithms</a></li><li class="breadcrumb-item"><a href="./i_mppi.html">I-MPPI: Informative Model Predictive Path Integral</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">I-MPPI: Informative Model Predictive Path Integral</h1>
+</div>
 
 
 
+<div class="quarto-title-meta">
 
-<section id="jax_mppi" class="level1">
-<h1>jax_mppi</h1>
-<p><img src="https://img.shields.io/badge/build-passing-brightgreen.png" class="img-fluid" alt="Build Status"> <img src="https://img.shields.io/badge/license-MIT-blue.png" class="img-fluid" alt="License"> <img src="https://img.shields.io/badge/backend-JAX-blue.png" class="img-fluid" alt="JAX"> <img src="https://img.shields.io/badge/status-planning-yellow.png" class="img-fluid" alt="Status"></p>
-<p><strong>jax_mppi</strong> is a functional, JIT-compilable port of the <a href="https://github.com/UM-ARM-Lab/pytorch_mppi">pytorch_mppi</a> library to JAX. It implements Model Predictive Path Integral (MPPI) control with a focus on performance and composability.</p>
-<section id="design-philosophy" class="level2">
-<h2 class="anchored" data-anchor-id="design-philosophy">Design Philosophy</h2>
-<p>This library embraces JAX’s functional paradigm:</p>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction-the-evolution-of-autonomous-exploration" class="level1">
+<h1>Introduction: The Evolution of Autonomous Exploration</h1>
+<p>The field of autonomous Unmanned Aerial Vehicle (UAV) exploration has transitioned from simple geometric coverage to complex, information-driven strategic maneuvers. In unstructured environments, a robot faces a fundamental duality: the global coverage problem (“where to go”) and the reactive control problem (“how to move safely”). Traditional approaches often decouple these modules, resulting in “myopic” local planners that fail to escape local minima of uncertainty, or deterministic global planners that produce coarse, “jagged” paths unsuitable for the high-speed, non-linear dynamics of agile flight.</p>
+<p>This document describes the <strong>Hierarchical Informative Model Predictive Path Integral (I-MPPI)</strong> framework. This architecture synthesizes global strategic planning, analytical viewpoint refinement via Fast Shannon Mutual Information (FSMI), and reactive Biased-MPPI control with sensitivity-based feedback.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Repository Scope
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The focus of this repository is the high-performance CUDA implementation of <strong>Layer 2 (Local Refinement)</strong> and <strong>Layer 3/4 (Reactive Control)</strong>. The <strong>Global Planner (Layer 1)</strong>, such as FUEL, is considered an external input that provides the mission context and global waypoints.</p>
+</div>
+</div>
+</section>
+<section id="theoretical-foundations-of-i-mppi" class="level1">
+<h1>Theoretical Foundations of I-MPPI</h1>
+<p>Model Predictive Path Integral (MPPI) control is a sampling-based stochastic optimal control method that optimizes control sequences without requiring explicit gradients of the dynamics. Formally, the MPPI algorithm can be derived as a solution to an optimal control problem that minimizes the Kullback-Leibler (KL) divergence between a controlled trajectory distribution and an optimal distribution defined by the cost function.</p>
+<section id="optimal-control-duality-free-energy" class="level2">
+<h2 class="anchored" data-anchor-id="optimal-control-duality-free-energy">Optimal Control Duality &amp; Free Energy</h2>
+<p>The mathematical derivation of the MPPI algorithm is rooted in the definition of the <strong>free energy</strong> of the dynamical system. The value function <span class="math inline">\(V(x, t)\)</span> of a stochastic system can be linearized through a logarithmic transformation, leading to the Path Integral formulation. The <strong>Free Energy</strong> (<span class="math inline">\(\mathcal{F}\)</span>) of the dynamical system is defined as:</p>
+<p><span class="math display">\[ \mathcal{F}(x_0) = -\lambda \log \mathbb{E}_{\mathbb{P}} \left[ \exp \left( -\frac{1}{\lambda} S(\tau) \right) \right] \]</span></p>
 <ul>
-<li><strong>Pure Functions</strong>: Core logic is implemented as pure functions <code>command(state, mppi_state) -&gt; (action, mppi_state)</code>.</li>
-<li><strong>Dataclass State</strong>: State is held in <code>jax.tree_util.register_dataclass</code> containers, allowing easy integration with <code>jit</code>, <code>vmap</code>, and <code>grad</code>.</li>
-<li><strong>No Side Effects</strong>: Unlike the PyTorch version, there is no mutable <code>self</code>. State transitions are explicit.</li>
+<li><span class="math inline">\(\tau\)</span>: The state-control trajectory <span class="math inline">\(\{x_0, u_0, x_1, u_1, \dots, x_T\}\)</span>.</li>
+<li><span class="math inline">\(\mathbb{P}\)</span>: The base distribution, representing the stochastic trajectories of the “passive” system.</li>
+<li><span class="math inline">\(S(\tau)\)</span>: The cumulative cost (Action) of a trajectory <span class="math inline">\(\tau\)</span>.</li>
+<li><span class="math inline">\(\lambda\)</span>: The temperature parameter, representing the noise variance.</li>
 </ul>
+<p>The “optimal trajectory” is the mean of the distribution <span class="math inline">\(\mathbb{Q}^*\)</span> that minimizes the KL-divergence to the distribution of “low-cost” paths, leading to the thermodynamic weight update rule:</p>
+<p><span class="math display">\[ \omega^k = \frac{\exp\left(-\frac{1}{\lambda}(J^k - \rho)\right)}{\sum_{j=1}^{K} \exp\left(-\frac{1}{\lambda}(J^j - \rho)\right)} \]</span></p>
 </section>
-<section id="key-features" class="level2">
-<h2 class="anchored" data-anchor-id="key-features">Key Features</h2>
-<ul>
-<li><strong>Core MPPI</strong>: Robust implementation of the standard MPPI algorithm.</li>
-<li><strong>Smooth MPPI (SMPPI)</strong>: Maintains action sequences and smoothness costs for better trajectory generation.</li>
-<li><strong>Kernel MPPI (KMPPI)</strong>: Uses kernel interpolation for control points, reducing the parameter space.</li>
-<li><strong>Autotuning</strong>: Built-in hyperparameter optimization using CMA-ES, Ray Tune, and Quality Diversity.</li>
-<li><strong>CUDA/C++ Backend</strong>: High-performance implementations of all controllers in CUDA/C++17, exposed to Python via `nanobind`.</li>
-<li><strong>JAX Integration</strong>:
-<ul>
-<li><code>jax.vmap</code> for efficient batch processing.</li>
-<li><code>jax.lax.scan</code> for fast horizon loops.</li>
-<li>Fully compatible with JIT compilation for high-performance control loops.</li>
-</ul></li>
-</ul>
 </section>
-<section id="installation" class="level2">
-<h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clone the repository</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/yourusername/jax_mppi.git</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> jax_mppi</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Install dependencies</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-e</span> .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="information-metrics-fsmi" class="level1">
+<h1>Information Metrics: FSMI</h1>
+<p>To quantify how future measurements will reduce map uncertainty, we define a Unified Cost Function <span class="math inline">\(J(\tau)\)</span> that balances dynamical effort with information reward:</p>
+<p><span class="math display">\[
+\begin{aligned}
+J(\tau) &amp;= \left[\phi(x_T) + \sum_{t=0}^{T-1} \mathcal{L}_{motion}(x_t, u_t)\right] - \lambda_{info} \sum_{t=0}^{T-1} I(M; \mathcal{Z}_t \mid x_t)
+\end{aligned}
+\]</span></p>
+<section id="shannon-mutual-information" class="level2">
+<h2 class="anchored" data-anchor-id="shannon-mutual-information">Shannon Mutual Information</h2>
+<p>The informative reward is the <strong>Shannon Mutual Information (MI)</strong> between the map <span class="math inline">\(M\)</span> and a future sensor measurement <span class="math inline">\(Z\)</span>: <span class="math display">\[ I(M; Z) = H(M) - H(M|Z) \]</span> where <span class="math inline">\(H(M)\)</span> is the map entropy. High MI indicates regions of unknown space or uncertain areas.</p>
 </section>
-<section id="usage" class="level2">
-<h2 class="anchored" data-anchor-id="usage">Usage</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax.numpy <span class="im">as</span> jnp</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> jax_mppi <span class="im">import</span> mppi</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Define dynamics and cost functions</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> dynamics(state, action):</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Your dynamics model here</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> state <span class="op">+</span> action</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> running_cost(state, action):</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Your cost function here</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jnp.<span class="bu">sum</span>(state<span class="op">**</span><span class="dv">2</span>) <span class="op">+</span> jnp.<span class="bu">sum</span>(action<span class="op">**</span><span class="dv">2</span>)</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Create configuration and initial state</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>config, mppi_state <span class="op">=</span> mppi.create(</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    nx<span class="op">=</span><span class="dv">4</span>, nu<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    noise_sigma<span class="op">=</span>jnp.eye(<span class="dv">2</span>) <span class="op">*</span> <span class="fl">0.1</span>,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    horizon<span class="op">=</span><span class="dv">20</span>,</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    lambda_<span class="op">=</span><span class="fl">1.0</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Control loop</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>key <span class="op">=</span> jax.random.PRNGKey(<span class="dv">0</span>)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>current_obs <span class="op">=</span> jnp.zeros(<span class="dv">4</span>)</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># JIT compile the command function for performance</span></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>jitted_command <span class="op">=</span> jax.jit(mppi.command, static_argnames<span class="op">=</span>[<span class="st">'dynamics'</span>, <span class="st">'running_cost'</span>])</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">100</span>):</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    key, subkey <span class="op">=</span> jax.random.split(key)</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    action, mppi_state <span class="op">=</span> jitted_command(</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>        config,</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        mppi_state,</span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>        current_obs,</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        dynamics<span class="op">=</span>dynamics,</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>        running_cost<span class="op">=</span>running_cost</span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Apply action to environment...</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="project-structure" class="level2">
-<h2 class="anchored" data-anchor-id="project-structure">Project Structure</h2>
-<pre class="text"><code>jax_mppi/
-├── src/jax_mppi/
-│   ├── mppi.py              # Core MPPI implementation
-│   ├── smppi.py             # Smooth MPPI variant
-│   ├── kmppi.py             # Kernel MPPI variant
-│   ├── types.py             # Type definitions
-│   ├── autotune.py          # Autotuning core &amp; CMA-ES
-│   ├── autotune_global.py   # Ray Tune integration
-│   └── autotune_qd.py       # Quality Diversity optimization
-├── examples/
-│   ├── pendulum.py          # Pendulum environment example
-│   ├── autotune_basic.py    # Basic autotuning example
-│   ├── autotune_pendulum.py # Autotuning pendulum
-│   └── smooth_comparison.py # Comparison of MPPI variants
-└── tests/                   # Unit and integration tests</code></pre>
-</section>
-<section id="roadmap" class="level2">
-<h2 class="anchored" data-anchor-id="roadmap">Roadmap</h2>
-<p>The development is structured in phases:</p>
+<section id="fast-shannon-mutual-information-fsmi" class="level2">
+<h2 class="anchored" data-anchor-id="fast-shannon-mutual-information-fsmi">Fast Shannon Mutual Information (FSMI)</h2>
+<p>Computing Shannon MI analytically for a sensor beam involves:</p>
 <ol type="1">
-<li><strong>Core MPPI</strong>: Basic implementation with JAX parity.</li>
-<li><strong>Integration</strong>: Pendulum example and verification.</li>
-<li><strong>Smooth MPPI</strong>: Implementation of smoothness constraints.</li>
-<li><strong>Kernel MPPI</strong>: Kernel-based control parameterization.</li>
-<li><strong>Comparisons</strong>: Benchmarking and visual comparisons.</li>
-<li><strong>Autotuning</strong>: Parameter optimization using CMA-ES, Ray Tune, and QD.</li>
+<li><strong>Raycasting</strong>: Cast a ray intersecting <span class="math inline">\(n\)</span> cells with occupancy <span class="math inline">\(o_i\)</span>.</li>
+<li><strong>Visibility (<span class="math inline">\(P(e_j)\)</span>)</strong>: Probability that the beam reaches cell <span class="math inline">\(j\)</span>: <span class="math display">\[ P(e_j) = o_j \prod_{k=1}^{j-1} (1 - o_k) \]</span></li>
+<li><strong>Information Density (<span class="math inline">\(C_k\)</span>)</strong>: Cumulative info gain based on inverse sensor model.</li>
+<li><strong>Analytic Summation</strong>: <span class="math display">\[ I_{FSMI} = \sum_{j=0}^{n} \sum_{k=1}^{n} P(e_j) C_k G_{k,j} \]</span></li>
+</ol>
+<p>The <strong>Uniform-FSMI</strong> variant simplifies this to <span class="math inline">\(O(n)\)</span> complexity: <span class="math display">\[ I \approx \sum_{j=0}^{n} P(e_j) \frac{D_{j+H} - D_{j-H-1}}{2H + 1} \]</span></p>
+</section>
+</section>
+<section id="hierarchical-architecture" class="level1">
+<h1>Hierarchical Architecture</h1>
+<p>I-MPPI employs a three-layer GNC stack:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph TD
+    subgraph L1 [Layer 1: Global Guidance - FUEL ~1 Hz]
+        FIS[Frontier Information Structure] --&gt; TSP[TSP Solver]
+        TSP --&gt; Waypoints[Global Waypoints]
+    end
+
+    subgraph L2 [Layer 2: Local Refinement ~5-10 Hz]
+        Waypoints --&gt; VO[Viewpoint Optimization]
+        VO --&gt; FSMI_Metric[FSMI Reward]
+        FSMI_Metric --&gt; RefTraj[Informed Reference Trajectory τ_ref]
+    end
+
+    subgraph L3 [Layer 3: Reactive Control - Biased-MPPI ~50 Hz]
+        RefTraj --&gt; Mixture[Mixture Sampling Distribution]
+        Mixture --&gt; MPPI_Opt[Parallel CUDA Rollouts]
+        MPPI_Opt --&gt; NomControl[Optimal Control u*]
+    end
+
+    subgraph L4 [Feedback Layer: Feedback-MPPI ≥ 200 Hz]
+        MPPI_Opt --&gt; Sens[Sensitivity Analysis ∂u*/∂x₀]
+        Sens --&gt; Gains[Feedback Gains F]
+        Gains --&gt; FinalControl[Control Law: u* + FΔx]
+    end
+
+    %% Data Flow &amp; Environment
+    Map[(Occupancy Grid)] -.-&gt; FIS
+    Map -.-&gt; FSMI_Metric
+    State[UAV State x₀] --&gt; L3
+    State --&gt; L4
+    FinalControl --&gt; Actuators[/Motor Commands/]
+
+    %% Styling
+    style L1 fill:#e1f5fe,stroke:#01579b
+    style L2 fill:#e8f5e9,stroke:#1b5e20
+    style L3 fill:#fff3e0,stroke:#e65100
+    style L4 fill:#fce4ec,stroke:#880e4f
+    style Map fill:#f3e5f5,stroke:#4a148c
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<ol type="1">
+<li><strong>Layer 1: Global Guidance (FUEL)</strong>: Maintains a Frontier Information Structure (FIS) and generates global waypoints via TSP.</li>
+<li><strong>Layer 2: Local Refinement</strong>: Refines global paths into an Informed Reference Trajectory <span class="math inline">\((\tau_{ref})\)</span> maximizing info gain.</li>
+<li><strong>Layer 3: Reactive Control (Biased-MPPI)</strong>: Uses a mixture distribution: <span class="math display">\[ \mathbb{Q}_s = (1-\alpha)\mathcal{N}(\bar{u}, \Sigma) + \alpha \mathbb{Q}_{biased} \]</span> where <span class="math inline">\(\mathbb{Q}_{biased}\)</span> is centered on <span class="math inline">\(\tau_{ref}\)</span>.</li>
 </ol>
 </section>
-<section id="credits" class="level2">
-<h2 class="anchored" data-anchor-id="credits">Credits</h2>
-<p>This project is a direct port of <a href="https://github.com/UM-ARM-Lab/pytorch_mppi">pytorch_mppi</a>. We aim to maintain parity with the original implementation while leveraging JAX’s unique features for performance and flexibility.</p>
+<section id="feedback-mppi-sensitivity-analysis" class="level1">
+<h1>Feedback-MPPI &amp; Sensitivity Analysis</h1>
+<p>To support agile maneuvers, F-MPPI computes local linear feedback gains <span class="math inline">\(F\)</span> derived from sensitivity analysis:</p>
+<p><span class="math display">\[ F = \frac{\partial u^*}{\partial x_0} = \sum_{k=0}^{K} \frac{\partial \pi}{\partial \theta} \Delta \theta^k \frac{\omega^k}{\lambda} \left(\frac{\partial J^k}{\partial x_0} - \sum_{j=1}^{K} \omega^j \frac{\partial J^j}{\partial x_0}\right) + \frac{\partial \pi}{\partial x_0} \]</span></p>
+<p>The control law becomes <span class="math inline">\(u = u^* + F(\hat{x} - x_{sp})\)</span>, allowing for high-bandwidth corrections (<span class="math inline">\(\ge 200\)</span> Hz).</p>
 </section>
-<section id="completed-plans" class="level2">
-<h2 class="anchored" data-anchor-id="completed-plans">Completed Plans</h2>
+<section id="implementation-experimental-results" class="level1">
+<h1>Implementation &amp; Experimental Results</h1>
+<p>The I-MPPI controller is implemented in CUDA, leveraging parallel rollouts to evaluate hundreds of trajectories simultaneously. The <code>FSMICost</code> functor performs real-time raycasting against a GPU-resident occupancy grid.</p>
+<section id="exploration-campaign" class="level2">
+<h2 class="anchored" data-anchor-id="exploration-campaign">Exploration Campaign</h2>
+<p>To verify the effectiveness of the informative reward, we conducted a simulation campaign in a “corridor with a hole” scenario. Both controllers are tasked with reaching a common goal at <span class="math inline">\((9, 5)\)</span>. The map contains two high-entropy “unknown” zones located away from the direct path.</p>
+<section id="hierarchical-architecture-specification" class="level3">
+<h3 class="anchored" data-anchor-id="hierarchical-architecture-specification">Hierarchical Architecture Specification</h3>
+<p>The goal for the I-MPPI simulation is to verify the effectiveness of the implementation of layer 2 and layer 3 of the hierarchical architecture.</p>
+<p>A higher-level <strong>FSMI-driven trajectory generator</strong> should precede the I-MPPI module. - <strong>Frequency</strong>: Runs at a lower rate (1-5 Hz). - <strong>Logic</strong>: 1. <strong>Explore Area 1</strong>: Prioritize regions with high information interest and lower dynamical cost. 2. <strong>Transition</strong>: As Area 1 is explored, its information value drops to zero. 3. <strong>Explore Area 2</strong>: Move to the next area of interest. 4. <strong>Drive to Goal</strong>: When information cost is depleted, drive to the goal minimizing only the dynamical cost.</p>
 <ul>
-<li><a href="./plan/completed/porting_pytorch_jax.html">Porting Plan</a></li>
-<li><a href="./plan/completed/evosax_integration.html">Evosax Integration Plan</a></li>
-<li><a href="plan/cuda_mppi_implementation.md">CUDA MPPI Implementation Plan</a></li>
+<li><p><strong>Standard MPPI</strong>: Simply moves towards the target, ignoring the high-entropy regions.</p></li>
+<li><p><strong>Informative MPPI</strong>: Proactively deviates from the shortest path to explore the unknown areas, gathering information before proceeding to the goal.</p></li>
+<li><p>The two zones are marked with <strong>Yellow Rectangles</strong>. They should have a high importance in the cost function. But after they get explored, their importance should decrease, thus the I-MPPI is free to move towards the goal. This should simulate the behaviour of the FSMI only trajectory refiner which gives a goal taking into account the uncertainty of the map.</p></li>
 </ul>
-
-
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../_media/imppi_campaign.png" class="img-fluid figure-img"></p>
+<figcaption>I-MPPI Exploration Campaign. The heatmap shows the cost field (darker is better). The <strong>Gold Star</strong> is the common goal. <strong>Yellow Rectangles</strong> denote high-interest (unknown) zones. The <strong>Cyan Lines</strong> represent walls. Standard MPPI (black dashed) goes direct, while Informative MPPI (white solid) deviates to explore both blobs before reaching the goal.</figcaption>
+</figure>
+</div>
 </section>
+<section id="performance-comparison" class="level3">
+<h3 class="anchored" data-anchor-id="performance-comparison">Performance Comparison</h3>
+<p>The Informative MPPI demonstrates a clear bias towards high-entropy regions of the map. By minimizing the Unified Cost Function, the controller naturally seeks out viewpoints that maximize sensor coverage of unknown space, effectively “falling” into informative gravity wells as predicted by the theory.</p>
+</section>
+</section>
+</section>
+<section id="summary-information-as-energy" class="level1">
+<h1>Summary: Information as Energy</h1>
+<p>In <strong>I-MPPI</strong>, map uncertainty is treated as a <strong>High Potential Energy</strong> region. The solver naturally seeks to minimize free energy, causing the vehicle to “fall” into informative gravity wells. Calling it <strong>Informative MPPI</strong> separates the exploration objective from the underlying mathematical solver framework.</p>
+
+
+
 </section>
 
 </main> <!-- /main -->

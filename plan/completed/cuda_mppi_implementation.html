@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>cuda_mppi_implementation – jax-mppi</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-0b802d246790ecd80511443f8ae76f95.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar docked nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">jax-mppi</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="../../index.html" aria-current="page"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../theory.html"> 
+<span class="menu-text">Theory</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../autotuning.html"> 
+<span class="menu-text">Autotuning</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../i_mppi.html"> 
+<span class="menu-text">I-MPPI</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../plan/index.html"> 
+<span class="menu-text">Plans</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Introduction</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">jax_mppi</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../theory.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Theoretical Background</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Algorithms</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../autotuning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autotuning Guide</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../i_mppi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I-MPPI: Informative Model Predictive Path Integral</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Examples</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../examples/pendulum.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Pendulum Swing-Up</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Development</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Testing Guide</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../releasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Releasing Guide</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#cudac-mppi-implementation-plan" id="toc-cudac-mppi-implementation-plan" class="nav-link active" data-scroll-target="#cudac-mppi-implementation-plan">CUDA/C++ MPPI Implementation Plan</a>
+  <ul class="collapse">
+  <li><a href="#objective" id="toc-objective" class="nav-link" data-scroll-target="#objective">Objective</a></li>
+  <li><a href="#goals" id="toc-goals" class="nav-link" data-scroll-target="#goals">Goals</a></li>
+  <li><a href="#directory-structure" id="toc-directory-structure" class="nav-link" data-scroll-target="#directory-structure">Directory Structure</a></li>
+  <li><a href="#implementation-details" id="toc-implementation-details" class="nav-link" data-scroll-target="#implementation-details">Implementation Details</a>
+  <ul class="collapse">
+  <li><a href="#core-components-includemppicore" id="toc-core-components-includemppicore" class="nav-link" data-scroll-target="#core-components-includemppicore">1. Core Components (<code>include/mppi/core/</code>)</a></li>
+  <li><a href="#dynamics-costs-interfaces-includemppidynamics-includemppicosts" id="toc-dynamics-costs-interfaces-includemppidynamics-includemppicosts" class="nav-link" data-scroll-target="#dynamics-costs-interfaces-includemppidynamics-includemppicosts">2. Dynamics &amp; Costs Interfaces (<code>include/mppi/dynamics/</code>, <code>include/mppi/costs/</code>)</a></li>
+  <li><a href="#controllers" id="toc-controllers" class="nav-link" data-scroll-target="#controllers">3. Controllers</a></li>
+  </ul></li>
+  <li><a href="#execution-plan" id="toc-execution-plan" class="nav-link" data-scroll-target="#execution-plan">Execution Plan</a></li>
+  <li><a href="#python-integration-phase-2" id="toc-python-integration-phase-2" class="nav-link" data-scroll-target="#python-integration-phase-2">Python Integration (Phase 2)</a>
+  <ul class="collapse">
+  <li><a href="#objective-1" id="toc-objective-1" class="nav-link" data-scroll-target="#objective-1">Objective</a></li>
+  <li><a href="#strategy" id="toc-strategy" class="nav-link" data-scroll-target="#strategy">Strategy</a></li>
+  <li><a href="#implementation-steps" id="toc-implementation-steps" class="nav-link" data-scroll-target="#implementation-steps">Implementation Steps</a></li>
+  </ul></li>
+  <li><a href="#phase-3-runtime-dynamics-compilation-nvrtc" id="toc-phase-3-runtime-dynamics-compilation-nvrtc" class="nav-link" data-scroll-target="#phase-3-runtime-dynamics-compilation-nvrtc">Phase 3: Runtime Dynamics Compilation (NVRTC) ✅</a>
+  <ul class="collapse">
+  <li><a href="#objective-2" id="toc-objective-2" class="nav-link" data-scroll-target="#objective-2">Objective</a></li>
+  <li><a href="#strategy-1" id="toc-strategy-1" class="nav-link" data-scroll-target="#strategy-1">Strategy</a></li>
+  <li><a href="#implementation-steps-1" id="toc-implementation-steps-1" class="nav-link" data-scroll-target="#implementation-steps-1">Implementation Steps</a></li>
+  <li><a href="#files-createdmodified" id="toc-files-createdmodified" class="nav-link" data-scroll-target="#files-createdmodified">Files Created/Modified</a></li>
+  <li><a href="#usage-example" id="toc-usage-example" class="nav-link" data-scroll-target="#usage-example">Usage Example</a></li>
+  </ul></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="cudac-mppi-implementation-plan" class="level1">
+<h1>CUDA/C++ MPPI Implementation Plan</h1>
+<section id="objective" class="level2">
+<h2 class="anchored" data-anchor-id="objective">Objective</h2>
+<p>Implement CUDA/C++ versions of MPPI, SMPPI, and KMPPI controllers within the <code>src/cuda_mppi</code> directory, using <code>../MPPI-Generic</code> as a reference for high-performance CUDA implementation patterns.</p>
+</section>
+<section id="goals" class="level2">
+<h2 class="anchored" data-anchor-id="goals">Goals</h2>
+<ol type="1">
+<li>Create a C++/CUDA project structure within <code>src/cuda_mppi</code>.</li>
+<li>Implement the standard MPPI algorithm (mirroring <code>src/jax_mppi/mppi.py</code>).</li>
+<li>Implement the Smooth MPPI (SMPPI) algorithm (mirroring <code>src/jax_mppi/smppi.py</code>).</li>
+<li>Implement the Kernel MPPI (KMPPI) algorithm (mirroring <code>src/jax_mppi/kmppi.py</code>).</li>
+<li>Ensure the implementations are self-contained or have clear interfaces (even if not fully hooked up to Python yet).</li>
+</ol>
+</section>
+<section id="directory-structure" class="level2">
+<h2 class="anchored" data-anchor-id="directory-structure">Directory Structure</h2>
+<p>We will create <code>src/cuda_mppi</code> with the following structure:</p>
+<pre><code>src/cuda_mppi/
+├── CMakeLists.txt              # Build configuration
+├── include/
+│   └── mppi/
+│       ├── controllers/
+│       │   ├── mppi.cuh        # Standard MPPI header
+│       │   ├── smppi.cuh       # Smooth MPPI header
+│       │   └── kmppi.cuh       # Kernel MPPI header
+│       ├── core/
+│       │   ├── mppi_common.cuh # Common structures and utilities
+│       │   └── kernels.cuh     # Shared CUDA kernels (rollout, cost, etc.)
+│       ├── dynamics/
+│       │   └── dynamics.cuh    # Dynamics interface and base classes
+│       ├── costs/
+│       │   └── costs.cuh       # Cost function interface
+│       └── utils/
+│           └── cuda_utils.cuh  # CUDA helper functions
+└── src/
+    ├── controllers/
+    │   ├── mppi.cu             # Standard MPPI implementation
+    │   ├── smppi.cu            # Smooth MPPI implementation
+    │   └── kmppi.cu            # Kernel MPPI implementation
+    ├── core/
+    │   └── kernels.cu          # Kernel implementations
+    └── utils/
+        └── cuda_utils.cu       # Utility implementations</code></pre>
+</section>
+<section id="implementation-details" class="level2">
+<h2 class="anchored" data-anchor-id="implementation-details">Implementation Details</h2>
+<section id="core-components-includemppicore" class="level3">
+<h3 class="anchored" data-anchor-id="core-components-includemppicore">1. Core Components (<code>include/mppi/core/</code>)</h3>
+<ul>
+<li><strong><code>mppi_common.cuh</code></strong>: Define data structures for state, configuration, and control sequences.</li>
+<li><strong><code>kernels.cuh</code></strong>:
+<ul>
+<li><code>rollout_kernel</code>: Generic kernel to propagate dynamics and compute costs for <span class="math inline">\(K\)</span> samples over <span class="math inline">\(T\)</span> timesteps.</li>
+<li><code>reduce_cost_kernel</code>: Kernel to compute weighted averages of trajectories.</li>
+</ul></li>
+</ul>
+</section>
+<section id="dynamics-costs-interfaces-includemppidynamics-includemppicosts" class="level3">
+<h3 class="anchored" data-anchor-id="dynamics-costs-interfaces-includemppidynamics-includemppicosts">2. Dynamics &amp; Costs Interfaces (<code>include/mppi/dynamics/</code>, <code>include/mppi/costs/</code>)</h3>
+<ul>
+<li>Define template interfaces or base classes for <code>Dynamics</code> and <code>RunningCost</code> so that specific system models (like Quadrotor) can be plugged in.</li>
+<li><em>Note</em>: Since we are focusing on the <em>controllers</em>, we will provide a simple example dynamics (e.g., Double Integrator or simple Quadrotor) to verify compilation, but the main focus is the controller logic.</li>
+</ul>
+</section>
+<section id="controllers" class="level3">
+<h3 class="anchored" data-anchor-id="controllers">3. Controllers</h3>
+<section id="standard-mppi-mppi.cucuh" class="level4">
+<h4 class="anchored" data-anchor-id="standard-mppi-mppi.cucuh">Standard MPPI (<code>mppi.cu/cuh</code>)</h4>
+<ul>
+<li><strong>Logic</strong>:
+<ul>
+<li>Sample noise <span class="math inline">\(\epsilon \sim \mathcal{N}(0, \Sigma)\)</span>.</li>
+<li>Compute <span class="math inline">\(u_{per} = u_{nom} + \epsilon\)</span>.</li>
+<li>Rollout dynamics using <span class="math inline">\(u_{per}\)</span>.</li>
+<li>Compute costs <span class="math inline">\(J(\tau)\)</span>.</li>
+<li>Compute weights <span class="math inline">\(w \propto \exp(-J/\lambda)\)</span>.</li>
+<li>Update <span class="math inline">\(u_{nom} \leftarrow u_{nom} + \sum w \epsilon\)</span>.</li>
+</ul></li>
+<li><strong>CUDA</strong>: Use block-per-sample or thread-per-sample approach depending on horizon/state size. <code>MPPI-Generic</code> often uses block-y striding.</li>
+</ul>
+</section>
+<section id="smooth-mppi-smppi.cucuh" class="level4">
+<h4 class="anchored" data-anchor-id="smooth-mppi-smppi.cucuh">Smooth MPPI (<code>smppi.cu/cuh</code>)</h4>
+<ul>
+<li><strong>Logic</strong>:
+<ul>
+<li>Sample noise in velocity space <span class="math inline">\(\delta v\)</span>.</li>
+<li>Integrate to get actions <span class="math inline">\(u\)</span>.</li>
+<li>Add smoothness cost <span class="math inline">\(\sum (\Delta u)^2\)</span>.</li>
+<li>Update velocity sequence <span class="math inline">\(v_{nom}\)</span>.</li>
+</ul></li>
+<li><strong>CUDA</strong>: Needs a kernel that handles the integration step (velocity -&gt; action) before the rollout.</li>
+</ul>
+</section>
+<section id="kernel-mppi-kmppi.cucuh" class="level4">
+<h4 class="anchored" data-anchor-id="kernel-mppi-kmppi.cucuh">Kernel MPPI (<code>kmppi.cu/cuh</code>)</h4>
+<ul>
+<li><strong>Logic</strong>:
+<ul>
+<li>Control trajectory parameterized by control points <span class="math inline">\(\theta\)</span> and kernel <span class="math inline">\(K(\cdot, \cdot)\)</span>.</li>
+<li>Sample noise on <span class="math inline">\(\theta\)</span>.</li>
+<li>Interpolate <span class="math inline">\(\theta \to u(t)\)</span>.</li>
+<li>Rollout.</li>
+<li>Update <span class="math inline">\(\theta\)</span>.</li>
+</ul></li>
+<li><strong>CUDA</strong>: Needs a kernel multiplication/interpolation step before rollout.</li>
+</ul>
+</section>
+</section>
+</section>
+<section id="execution-plan" class="level2">
+<h2 class="anchored" data-anchor-id="execution-plan">Execution Plan</h2>
+<ol type="1">
+<li><label><input type="checkbox" checked=""><strong>Setup</strong>: Create directory structure and <code>CMakeLists.txt</code>.</label></li>
+<li><label><input type="checkbox" checked=""><strong>Common</strong>: Implement <code>mppi_common.cuh</code> and basic <code>cuda_utils.cuh</code>.</label></li>
+<li><label><input type="checkbox" checked=""><strong>Dynamics/Cost</strong>: Define minimal interfaces.</label></li>
+<li><label><input type="checkbox" checked=""><strong>MPPI</strong>: Implement <code>mppi.cuh</code> and <code>mppi.cu</code>.</label></li>
+<li><label><input type="checkbox" checked=""><strong>SMPPI</strong>: Implement <code>smppi.cuh</code> and <code>smppi.cu</code>.</label></li>
+<li><label><input type="checkbox" checked=""><strong>KMPPI</strong>: Implement <code>kmppi.cuh</code> and <code>kmppi.cu</code>.</label></li>
+<li><label><input type="checkbox" checked=""><strong>Verification</strong>: Create a dummy <code>main.cu</code> to instantiate these controllers and verify they compile.</label></li>
+</ol>
+</section>
+<section id="python-integration-phase-2" class="level2">
+<h2 class="anchored" data-anchor-id="python-integration-phase-2">Python Integration (Phase 2)</h2>
+<section id="objective-1" class="level3">
+<h3 class="anchored" data-anchor-id="objective-1">Objective</h3>
+<p>Expose the C++ MPPI controllers to Python to allow direct usage from the <code>jax_mppi</code> package, potentially replacing the JAX implementation for performance-critical sections.</p>
+</section>
+<section id="strategy" class="level3">
+<h3 class="anchored" data-anchor-id="strategy">Strategy</h3>
+<ol type="1">
+<li><strong>Binding Library</strong>: Use <code>nanobind</code> (efficient, small footprint) to create Python bindings for the C++ classes.</li>
+<li><strong>Data Transfer</strong>:
+<ul>
+<li><strong>Basic</strong>: Accept NumPy arrays (CPU) and copy to GPU in C++.</li>
+<li><strong>Advanced (Zero-Copy)</strong>: Accept <code>DLPack</code> capsules (from <code>jax.Array</code> or <code>torch.Tensor</code>) to pass GPU pointers directly to the C++ controllers, avoiding CPU-GPU transfers.</li>
+</ul></li>
+</ol>
+</section>
+<section id="implementation-steps" class="level3">
+<h3 class="anchored" data-anchor-id="implementation-steps">Implementation Steps</h3>
+<ol type="1">
+<li><label><input type="checkbox" checked=""><strong>Project Config</strong>:</label>
+<ul>
+<li>Update <code>pyproject.toml</code> to support C++ extensions (e.g., using <code>scikit-build-core</code>).</li>
+<li>Add dependencies: <code>nanobind</code>, <code>scikit-build-core</code>.</li>
+</ul></li>
+<li><label><input type="checkbox" checked=""><strong>Bindings Code</strong>:</label>
+<ul>
+<li>Create <code>src/cuda_mppi/bindings/bindings.cpp</code>.</li>
+<li>Expose <code>MPPIConfig</code> struct as a Python class.</li>
+<li><label><input type="checkbox" checked="">Expose <code>MPPIController</code>, <code>SMPPIController</code>, <code>KMPPIController</code> classes.</label></li>
+<li><label><input type="checkbox" checked="">Bind methods like <code>compute(state)</code> and <code>get_action()</code>.</label></li>
+<li><label><input type="checkbox" checked="">Implement type casters for <code>Eigen::VectorXf</code> &lt;-&gt; <code>numpy.ndarray</code> (using <code>nanobind/eigen/dense.h</code>).</label></li>
+</ul></li>
+<li><label><input type="checkbox" checked=""><strong>CMake Update</strong>:</label>
+<ul>
+<li>Add <code>nanobind_add_module</code> target.</li>
+<li>Link against <code>cuda_mppi</code> and CUDA libraries.</li>
+</ul></li>
+<li><label><input type="checkbox" checked=""><strong>Integration</strong>:</label>
+<ul>
+<li>Create a Python wrapper module (e.g., <code>jax_mppi.cuda</code>) that imports the extension.</li>
+<li>Add tests in <code>tests/</code> to verify correctness against the JAX implementation.</li>
+</ul></li>
+</ol>
+</section>
+</section>
+<section id="phase-3-runtime-dynamics-compilation-nvrtc" class="level2">
+<h2 class="anchored" data-anchor-id="phase-3-runtime-dynamics-compilation-nvrtc">Phase 3: Runtime Dynamics Compilation (NVRTC) ✅</h2>
+<section id="objective-2" class="level3">
+<h3 class="anchored" data-anchor-id="objective-2">Objective</h3>
+<p>Allow users to define dynamics and cost functions in Python (initially as C++ code strings, or eventually transpiled from JAX) and compile the specialized MPPI controller at runtime. This avoids the need to recompile the shared library for every new system.</p>
+</section>
+<section id="strategy-1" class="level3">
+<h3 class="anchored" data-anchor-id="strategy-1">Strategy</h3>
+<ol type="1">
+<li><strong>NVRTC (NVIDIA Runtime Compilation)</strong>: Use NVRTC to compile CUDA C++ code strings into PTX at runtime.</li>
+<li><strong>CUDA Driver API</strong>: Use the Driver API (<code>cuModuleLoadData</code>, <code>cuLaunchKernel</code>) to load the compiled PTX and launch the <code>rollout_kernel</code>.</li>
+<li><strong>Warm Start</strong>: The compilation happens once during the “warm start” phase (controller initialization), enabling high-performance rollouts thereafter.</li>
+</ol>
+</section>
+<section id="implementation-steps-1" class="level3">
+<h3 class="anchored" data-anchor-id="implementation-steps-1">Implementation Steps</h3>
+<ol type="1">
+<li><label><input type="checkbox" checked=""><strong>Build Config</strong>: Link against <code>nvrtc</code> and <code>cuda</code> (Driver API).</label></li>
+<li><label><input type="checkbox" checked=""><strong>JIT Compiler Class (<code>src/cuda_mppi/include/mppi/jit/jit_compiler.hpp</code>)</strong>:</label>
+<ul>
+<li>Inputs: Strings for <code>dynamics_struct_code</code> and <code>cost_struct_code</code>.</li>
+<li>Action: Constructs the full <code>.cu</code> source code (headers + user structs + template instantiation).</li>
+<li>Output: Compiles to PTX using <code>nvrtcProgramCompile</code>.</li>
+<li>Updated wrapper generation to work with Driver API.</li>
+</ul></li>
+<li><label><input type="checkbox" checked=""><strong>JIT Controller (<code>JITMPPIController</code>)</strong>:</label>
+<ul>
+<li>A generic controller class that holds <code>CUfunction</code> handles instead of hardcoded kernels.</li>
+<li><code>compute()</code> method launches the generated kernel via <code>cuLaunchKernel</code>.</li>
+<li>Implemented in <code>include/mppi/controllers/jit_mppi.hpp</code> and <code>src/jit/jit_mppi_controller.cpp</code>.</li>
+</ul></li>
+<li><label><input type="checkbox" checked=""><strong>Python Interface</strong>:</label>
+<ul>
+<li>Expose <code>JITMPPIController</code> to Python via nanobind.</li>
+<li>Example usage: <code>python     dynamics_code = """     struct UserDynamics {         __device__ void step(...) { ... }     };     """     cost_code = """     struct UserCost {         __device__ float compute(...) { ... }         __device__ float terminal_cost(...) { ... }     };     """     controller = cuda_mppi.JITMPPIController(config, dynamics_code, cost_code, include_paths)</code></li>
+</ul></li>
+<li><label><input type="checkbox" checked=""><strong>Verification &amp; Examples</strong>:</label>
+<ul>
+<li>Implemented <code>examples/cuda_pendulum_jit.py</code> - complete pendulum swing-up example with matplotlib plotting.</li>
+<li>Created <code>include/mppi/jit/examples.hpp</code> with example templates for common systems:
+<ul>
+<li>Pendulum dynamics and cost</li>
+<li>Double integrator dynamics and cost</li>
+<li>Cart-pole dynamics and cost</li>
+</ul></li>
+<li>Created <code>examples/JIT_EXAMPLES_README.md</code> with comprehensive documentation.</li>
+<li>Note: Interactive pygame visualization can be added in future enhancement.</li>
+</ul></li>
+</ol>
+</section>
+<section id="files-createdmodified" class="level3">
+<h3 class="anchored" data-anchor-id="files-createdmodified">Files Created/Modified</h3>
+<ul>
+<li><strong>New Files</strong>:
+<ul>
+<li><code>include/mppi/controllers/jit_mppi.hpp</code> - JIT controller header</li>
+<li><code>src/jit/jit_mppi_controller.cpp</code> - JIT controller implementation</li>
+<li><code>include/mppi/jit/examples.hpp</code> - Example code templates</li>
+<li><code>examples/cuda_pendulum_jit.py</code> - Pendulum swing-up example</li>
+<li><code>examples/JIT_EXAMPLES_README.md</code> - JIT examples documentation</li>
+</ul></li>
+<li><strong>Modified Files</strong>:
+<ul>
+<li><code>src/jit/jit_compiler.cpp</code> - Updated wrapper generation for Driver API compatibility</li>
+<li><code>CMakeLists.txt</code> - Added JIT sources to build</li>
+<li><code>bindings/bindings.cu</code> - Added Python bindings for JITMPPIController</li>
+</ul></li>
+</ul>
+</section>
+<section id="usage-example" class="level3">
+<h3 class="anchored" data-anchor-id="usage-example">Usage Example</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> jax_mppi <span class="im">import</span> cuda_mppi</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Set include path</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>os.environ[<span class="st">'CUDA_MPPI_INCLUDE_DIR'</span>] <span class="op">=</span> <span class="st">'/path/to/src/cuda_mppi/include'</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Configure MPPI</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> cuda_mppi.MPPIConfig(</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    num_samples<span class="op">=</span><span class="dv">1000</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    horizon<span class="op">=</span><span class="dv">50</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    nx<span class="op">=</span><span class="dv">2</span>, nu<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    lambda_<span class="op">=</span><span class="fl">1.0</span>,</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    dt<span class="op">=</span><span class="fl">0.02</span>,</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    u_scale<span class="op">=</span><span class="fl">5.0</span>,</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    w_action_seq_cost<span class="op">=</span><span class="fl">0.0</span>,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    num_support_pts<span class="op">=</span><span class="dv">10</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Define custom dynamics and cost</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>dynamics_code <span class="op">=</span> <span class="st">"""..."""</span>  <span class="co"># See examples.hpp for templates</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>cost_code <span class="op">=</span> <span class="st">"""..."""</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Create JIT controller (compilation happens here, ~1-5 seconds)</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>controller <span class="op">=</span> cuda_mppi.JITMPPIController(</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    config, dynamics_code, cost_code,</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    [os.environ[<span class="st">'CUDA_MPPI_INCLUDE_DIR'</span>]]</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Use controller</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>state <span class="op">=</span> np.array([<span class="fl">1.0</span>, <span class="fl">0.0</span>], dtype<span class="op">=</span>np.float32)</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>controller.compute(state)</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>action <span class="op">=</span> controller.get_action()</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>controller.shift()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<ul>
+<li><code>src/jax_mppi/*.py</code> (Main reference for the MPPI Implementation)</li>
+<li><code>../MPPI-Generic</code> (Reference for CUDA patterns)</li>
+<li>NVRTC Documentation</li>
+</ul>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/riccardo-enr\.github\.io\/jax_mppi\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

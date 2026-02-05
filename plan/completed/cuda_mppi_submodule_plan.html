@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>jax-mppi</title>
+<title>cuda_mppi_submodule_plan – jax-mppi</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -58,24 +58,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-0b802d246790ecd80511443f8ae76f95.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-0b802d246790ecd80511443f8ae76f95.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -114,7 +114,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">jax-mppi</span>
     </a>
   </div>
@@ -125,23 +125,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link active" href="../../index.html" aria-current="page"> 
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./theory.html"> 
+    <a class="nav-link" href="../../theory.html"> 
 <span class="menu-text">Theory</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./autotuning.html"> 
+    <a class="nav-link" href="../../autotuning.html"> 
 <span class="menu-text">Autotuning</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./i_mppi.html"> 
+    <a class="nav-link" href="../../i_mppi.html"> 
 <span class="menu-text">I-MPPI</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./plan/index.html"> 
+    <a class="nav-link" href="../../plan/index.html"> 
 <span class="menu-text">Plans</span></a>
   </li>  
 </ul>
@@ -155,7 +155,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./index.html">jax_mppi</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -186,13 +186,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+  <a href="../../index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">jax_mppi</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./theory.html" class="sidebar-item-text sidebar-link">
+  <a href="../../theory.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Theoretical Background</span></a>
   </div>
 </li>
@@ -209,13 +209,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./autotuning.html" class="sidebar-item-text sidebar-link">
+  <a href="../../autotuning.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Autotuning Guide</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./i_mppi.html" class="sidebar-item-text sidebar-link">
+  <a href="../../i_mppi.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">I-MPPI: Informative Model Predictive Path Integral</span></a>
   </div>
 </li>
@@ -232,7 +232,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./examples/pendulum.html" class="sidebar-item-text sidebar-link">
+  <a href="../../examples/pendulum.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Pendulum Swing-Up</span></a>
   </div>
 </li>
@@ -249,13 +249,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./testing.html" class="sidebar-item-text sidebar-link">
+  <a href="../../testing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Testing Guide</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./releasing.html" class="sidebar-item-text sidebar-link">
+  <a href="../../releasing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Releasing Guide</span></a>
   </div>
 </li>
@@ -271,146 +271,144 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#jax_mppi" id="toc-jax_mppi" class="nav-link active" data-scroll-target="#jax_mppi">jax_mppi</a>
+  <li><a href="#plan-add-cuda_mppi-as-git-submodule" id="toc-plan-add-cuda_mppi-as-git-submodule" class="nav-link active" data-scroll-target="#plan-add-cuda_mppi-as-git-submodule">Plan: Add cuda_mppi as git submodule</a>
   <ul class="collapse">
-  <li><a href="#design-philosophy" id="toc-design-philosophy" class="nav-link" data-scroll-target="#design-philosophy">Design Philosophy</a></li>
-  <li><a href="#key-features" id="toc-key-features" class="nav-link" data-scroll-target="#key-features">Key Features</a></li>
-  <li><a href="#installation" id="toc-installation" class="nav-link" data-scroll-target="#installation">Installation</a></li>
-  <li><a href="#usage" id="toc-usage" class="nav-link" data-scroll-target="#usage">Usage</a></li>
-  <li><a href="#project-structure" id="toc-project-structure" class="nav-link" data-scroll-target="#project-structure">Project Structure</a></li>
-  <li><a href="#roadmap" id="toc-roadmap" class="nav-link" data-scroll-target="#roadmap">Roadmap</a></li>
-  <li><a href="#credits" id="toc-credits" class="nav-link" data-scroll-target="#credits">Credits</a></li>
-  <li><a href="#completed-plans" id="toc-completed-plans" class="nav-link" data-scroll-target="#completed-plans">Completed Plans</a></li>
+  <li><a href="#status-completed" id="toc-status-completed" class="nav-link" data-scroll-target="#status-completed">Status: Completed</a></li>
+  <li><a href="#overview" id="toc-overview" class="nav-link" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#decisions-made" id="toc-decisions-made" class="nav-link" data-scroll-target="#decisions-made">Decisions Made</a></li>
+  <li><a href="#implementation-steps" id="toc-implementation-steps" class="nav-link" data-scroll-target="#implementation-steps">Implementation Steps</a>
+  <ul class="collapse">
+  <li><a href="#create-new-cuda_mppi-repository" id="toc-create-new-cuda_mppi-repository" class="nav-link" data-scroll-target="#create-new-cuda_mppi-repository">1. Create New cuda_mppi Repository</a></li>
+  <li><a href="#initialize-cuda_mppi-repository" id="toc-initialize-cuda_mppi-repository" class="nav-link" data-scroll-target="#initialize-cuda_mppi-repository">2. Initialize cuda_mppi Repository</a></li>
+  <li><a href="#create-feature-branch-in-jax_mppi" id="toc-create-feature-branch-in-jax_mppi" class="nav-link" data-scroll-target="#create-feature-branch-in-jax_mppi">3. Create Feature Branch in jax_mppi</a></li>
+  <li><a href="#add-submodule-to-jax_mppi" id="toc-add-submodule-to-jax_mppi" class="nav-link" data-scroll-target="#add-submodule-to-jax_mppi">4. Add Submodule to jax_mppi</a></li>
+  <li><a href="#update-build-system" id="toc-update-build-system" class="nav-link" data-scroll-target="#update-build-system">5. Update Build System</a></li>
+  <li><a href="#test-build" id="toc-test-build" class="nav-link" data-scroll-target="#test-build">6. Test Build</a></li>
+  <li><a href="#update-documentation" id="toc-update-documentation" class="nav-link" data-scroll-target="#update-documentation">7. Update Documentation</a></li>
+  <li><a href="#create-pull-request" id="toc-create-pull-request" class="nav-link" data-scroll-target="#create-pull-request">8. Create Pull Request</a></li>
+  </ul></li>
+  <li><a href="#rollback-plan" id="toc-rollback-plan" class="nav-link" data-scroll-target="#rollback-plan">Rollback Plan</a></li>
   </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./index.html">jax_mppi</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
 
-<section id="jax_mppi" class="level1">
-<h1>jax_mppi</h1>
-<p><img src="https://img.shields.io/badge/build-passing-brightgreen.png" class="img-fluid" alt="Build Status"> <img src="https://img.shields.io/badge/license-MIT-blue.png" class="img-fluid" alt="License"> <img src="https://img.shields.io/badge/backend-JAX-blue.png" class="img-fluid" alt="JAX"> <img src="https://img.shields.io/badge/status-planning-yellow.png" class="img-fluid" alt="Status"></p>
-<p><strong>jax_mppi</strong> is a functional, JIT-compilable port of the <a href="https://github.com/UM-ARM-Lab/pytorch_mppi">pytorch_mppi</a> library to JAX. It implements Model Predictive Path Integral (MPPI) control with a focus on performance and composability.</p>
-<section id="design-philosophy" class="level2">
-<h2 class="anchored" data-anchor-id="design-philosophy">Design Philosophy</h2>
-<p>This library embraces JAX’s functional paradigm:</p>
+<section id="plan-add-cuda_mppi-as-git-submodule" class="level1">
+<h1>Plan: Add cuda_mppi as git submodule</h1>
+<section id="status-completed" class="level2">
+<h2 class="anchored" data-anchor-id="status-completed">Status: Completed</h2>
+</section>
+<section id="overview" class="level2">
+<h2 class="anchored" data-anchor-id="overview">Overview</h2>
+<p>Extract the CUDA MPPI implementation from <code>src/cuda_mppi/</code> into a separate git repository and integrate it as a submodule at <code>third_party/cuda_mppi</code>.</p>
+</section>
+<section id="decisions-made" class="level2">
+<h2 class="anchored" data-anchor-id="decisions-made">Decisions Made</h2>
 <ul>
-<li><strong>Pure Functions</strong>: Core logic is implemented as pure functions <code>command(state, mppi_state) -&gt; (action, mppi_state)</code>.</li>
-<li><strong>Dataclass State</strong>: State is held in <code>jax.tree_util.register_dataclass</code> containers, allowing easy integration with <code>jit</code>, <code>vmap</code>, and <code>grad</code>.</li>
-<li><strong>No Side Effects</strong>: Unlike the PyTorch version, there is no mutable <code>self</code>. State transitions are explicit.</li>
+<li>New repository: <code>riccardo-enr/cuda_mppi</code></li>
+<li>Submodule path: <code>third_party/cuda_mppi</code></li>
+<li>Feature branch: <code>feat/cuda-mppi-submodule</code></li>
+<li>Track branch: <code>main</code> (in submodule)</li>
 </ul>
 </section>
-<section id="key-features" class="level2">
-<h2 class="anchored" data-anchor-id="key-features">Key Features</h2>
+<section id="implementation-steps" class="level2">
+<h2 class="anchored" data-anchor-id="implementation-steps">Implementation Steps</h2>
+<section id="create-new-cuda_mppi-repository" class="level3">
+<h3 class="anchored" data-anchor-id="create-new-cuda_mppi-repository">1. Create New cuda_mppi Repository</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">Use <code>gh repo create</code> to create <code>riccardo-enr/cuda_mppi</code></label></li>
+<li><label><input type="checkbox" checked="">Set appropriate description and visibility</label></li>
+<li><label><input type="checkbox" checked="">Initialize with README.md</label></li>
+</ul>
+</section>
+<section id="initialize-cuda_mppi-repository" class="level3">
+<h3 class="anchored" data-anchor-id="initialize-cuda_mppi-repository">2. Initialize cuda_mppi Repository</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">Clone the new repository locally</label></li>
+<li><label><input type="checkbox" checked="">Copy contents from <code>src/cuda_mppi/</code> to repository root</label></li>
+<li><label><input type="checkbox" checked="">Create proper repository structure:</label>
 <ul>
-<li><strong>Core MPPI</strong>: Robust implementation of the standard MPPI algorithm.</li>
-<li><strong>Smooth MPPI (SMPPI)</strong>: Maintains action sequences and smoothness costs for better trajectory generation.</li>
-<li><strong>Kernel MPPI (KMPPI)</strong>: Uses kernel interpolation for control points, reducing the parameter space.</li>
-<li><strong>Autotuning</strong>: Built-in hyperparameter optimization using CMA-ES, Ray Tune, and Quality Diversity.</li>
-<li><strong>CUDA/C++ Backend</strong>: High-performance implementations of all controllers in CUDA/C++17, exposed to Python via `nanobind`.</li>
-<li><strong>JAX Integration</strong>:
+<li>CMakeLists.txt (standalone build)</li>
+<li>README.md (usage and build instructions)</li>
+<li>LICENSE (MIT, matching main project)</li>
+<li>.gitignore</li>
+</ul></li>
+<li><label><input type="checkbox" checked="">Commit and push initial code</label></li>
+</ul>
+</section>
+<section id="create-feature-branch-in-jax_mppi" class="level3">
+<h3 class="anchored" data-anchor-id="create-feature-branch-in-jax_mppi">3. Create Feature Branch in jax_mppi</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">Create branch: <code>feat/cuda-mppi-submodule</code></label></li>
+<li><label><input type="checkbox" checked="">Checkout the new branch</label></li>
+</ul>
+</section>
+<section id="add-submodule-to-jax_mppi" class="level3">
+<h3 class="anchored" data-anchor-id="add-submodule-to-jax_mppi">4. Add Submodule to jax_mppi</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">Create <code>third_party/</code> directory</label></li>
+<li><label><input type="checkbox" checked="">Run: <code>git submodule add https://github.com/riccardo-enr/cuda_mppi.git third_party/cuda_mppi</code></label></li>
+<li><label><input type="checkbox" checked="">Remove old <code>src/cuda_mppi/</code> directory</label></li>
+<li><label><input type="checkbox" checked="">Commit submodule addition</label></li>
+</ul>
+</section>
+<section id="update-build-system" class="level3">
+<h3 class="anchored" data-anchor-id="update-build-system">5. Update Build System</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">Update root <code>CMakeLists.txt</code>:</label>
 <ul>
-<li><code>jax.vmap</code> for efficient batch processing.</li>
-<li><code>jax.lax.scan</code> for fast horizon loops.</li>
-<li>Fully compatible with JIT compilation for high-performance control loops.</li>
+<li>Change <code>add_subdirectory(src/cuda_mppi)</code> to <code>add_subdirectory(third_party/cuda_mppi)</code></li>
+</ul></li>
+<li><label><input type="checkbox" checked="">Verify <code>pyproject.toml</code> (should work via scikit-build-core automatically)</label></li>
+<li><label><input type="checkbox" checked="">Check for any hardcoded paths in:</label>
+<ul>
+<li>Python source files</li>
+<li>CMake files</li>
+<li>Documentation</li>
 </ul></li>
 </ul>
 </section>
-<section id="installation" class="level2">
-<h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clone the repository</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/yourusername/jax_mppi.git</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> jax_mppi</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Install dependencies</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-e</span> .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="usage" class="level2">
-<h2 class="anchored" data-anchor-id="usage">Usage</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax.numpy <span class="im">as</span> jnp</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> jax_mppi <span class="im">import</span> mppi</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Define dynamics and cost functions</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> dynamics(state, action):</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Your dynamics model here</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> state <span class="op">+</span> action</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> running_cost(state, action):</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Your cost function here</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jnp.<span class="bu">sum</span>(state<span class="op">**</span><span class="dv">2</span>) <span class="op">+</span> jnp.<span class="bu">sum</span>(action<span class="op">**</span><span class="dv">2</span>)</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Create configuration and initial state</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>config, mppi_state <span class="op">=</span> mppi.create(</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    nx<span class="op">=</span><span class="dv">4</span>, nu<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    noise_sigma<span class="op">=</span>jnp.eye(<span class="dv">2</span>) <span class="op">*</span> <span class="fl">0.1</span>,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    horizon<span class="op">=</span><span class="dv">20</span>,</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    lambda_<span class="op">=</span><span class="fl">1.0</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Control loop</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>key <span class="op">=</span> jax.random.PRNGKey(<span class="dv">0</span>)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>current_obs <span class="op">=</span> jnp.zeros(<span class="dv">4</span>)</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># JIT compile the command function for performance</span></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>jitted_command <span class="op">=</span> jax.jit(mppi.command, static_argnames<span class="op">=</span>[<span class="st">'dynamics'</span>, <span class="st">'running_cost'</span>])</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">100</span>):</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    key, subkey <span class="op">=</span> jax.random.split(key)</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    action, mppi_state <span class="op">=</span> jitted_command(</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>        config,</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        mppi_state,</span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>        current_obs,</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        dynamics<span class="op">=</span>dynamics,</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>        running_cost<span class="op">=</span>running_cost</span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Apply action to environment...</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="project-structure" class="level2">
-<h2 class="anchored" data-anchor-id="project-structure">Project Structure</h2>
-<pre class="text"><code>jax_mppi/
-├── src/jax_mppi/
-│   ├── mppi.py              # Core MPPI implementation
-│   ├── smppi.py             # Smooth MPPI variant
-│   ├── kmppi.py             # Kernel MPPI variant
-│   ├── types.py             # Type definitions
-│   ├── autotune.py          # Autotuning core &amp; CMA-ES
-│   ├── autotune_global.py   # Ray Tune integration
-│   └── autotune_qd.py       # Quality Diversity optimization
-├── examples/
-│   ├── pendulum.py          # Pendulum environment example
-│   ├── autotune_basic.py    # Basic autotuning example
-│   ├── autotune_pendulum.py # Autotuning pendulum
-│   └── smooth_comparison.py # Comparison of MPPI variants
-└── tests/                   # Unit and integration tests</code></pre>
-</section>
-<section id="roadmap" class="level2">
-<h2 class="anchored" data-anchor-id="roadmap">Roadmap</h2>
-<p>The development is structured in phases:</p>
-<ol type="1">
-<li><strong>Core MPPI</strong>: Basic implementation with JAX parity.</li>
-<li><strong>Integration</strong>: Pendulum example and verification.</li>
-<li><strong>Smooth MPPI</strong>: Implementation of smoothness constraints.</li>
-<li><strong>Kernel MPPI</strong>: Kernel-based control parameterization.</li>
-<li><strong>Comparisons</strong>: Benchmarking and visual comparisons.</li>
-<li><strong>Autotuning</strong>: Parameter optimization using CMA-ES, Ray Tune, and QD.</li>
-</ol>
-</section>
-<section id="credits" class="level2">
-<h2 class="anchored" data-anchor-id="credits">Credits</h2>
-<p>This project is a direct port of <a href="https://github.com/UM-ARM-Lab/pytorch_mppi">pytorch_mppi</a>. We aim to maintain parity with the original implementation while leveraging JAX’s unique features for performance and flexibility.</p>
-</section>
-<section id="completed-plans" class="level2">
-<h2 class="anchored" data-anchor-id="completed-plans">Completed Plans</h2>
-<ul>
-<li><a href="./plan/completed/porting_pytorch_jax.html">Porting Plan</a></li>
-<li><a href="./plan/completed/evosax_integration.html">Evosax Integration Plan</a></li>
-<li><a href="plan/cuda_mppi_implementation.md">CUDA MPPI Implementation Plan</a></li>
+<section id="test-build" class="level3">
+<h3 class="anchored" data-anchor-id="test-build">6. Test Build</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">Clean build: <code>rm -rf build/ _skbuild/</code></label></li>
+<li><label><input type="checkbox" checked="">Test clone from scratch with submodules</label></li>
+<li><label><input type="checkbox" checked="">Build and install package: <code>uv pip install -e .</code></label></li>
+<li><label><input type="checkbox" checked="">Run test: <code>python examples/test_cuda_mppi.py</code></label></li>
+<li><label><input type="checkbox" checked="">Verify JIT examples work</label></li>
 </ul>
+</section>
+<section id="update-documentation" class="level3">
+<h3 class="anchored" data-anchor-id="update-documentation">7. Update Documentation</h3>
+<ul class="task-list">
+<li><p><label><input type="checkbox" checked="">Add submodule instructions to README.md:</label></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clone with submodules</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone <span class="at">--recursive</span> https://github.com/riccardo-enr/jax_mppi.git</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Or if already cloned</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> submodule update <span class="at">--init</span> <span class="at">--recursive</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><label><input type="checkbox" checked="">Document build requirements in both repositories</label></p></li>
+<li><p><label><input type="checkbox" checked="">Update any relevant documentation links</label></p></li>
+</ul>
+</section>
+<section id="create-pull-request" class="level3">
+<h3 class="anchored" data-anchor-id="create-pull-request">8. Create Pull Request</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">Commit all changes with conventional commits</label></li>
+<li><label><input type="checkbox" checked="">Push feature branch</label></li>
+<li><label><input type="checkbox" checked="">Create PR referencing issue #23</label></li>
+<li><label><input type="checkbox" checked="">Move this plan to <code>completed/</code> directory</label></li>
+</ul>
+</section>
+</section>
+<section id="rollback-plan" class="level2">
+<h2 class="anchored" data-anchor-id="rollback-plan">Rollback Plan</h2>
+<p>If issues arise, we can: 1. Remove submodule: <code>git submodule deinit -f third_party/cuda_mppi</code> 2. Delete from git: <code>git rm -f third_party/cuda_mppi</code> 3. Remove from .gitmodules 4. Restore original src/cuda_mppi from git history</p>
 
 
 </section>

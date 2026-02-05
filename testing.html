@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>jax-mppi</title>
+<title>testing – jax-mppi</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -155,7 +155,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./index.html">jax_mppi</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./testing.html">Development</a></li><li class="breadcrumb-item"><a href="./testing.html">Testing Guide</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -186,7 +186,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">jax_mppi</span></a>
   </div>
 </li>
@@ -249,7 +249,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./testing.html" class="sidebar-item-text sidebar-link">
+  <a href="./testing.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Testing Guide</span></a>
   </div>
 </li>
@@ -271,148 +271,135 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#jax_mppi" id="toc-jax_mppi" class="nav-link active" data-scroll-target="#jax_mppi">jax_mppi</a>
+  <li><a href="#testing-guide" id="toc-testing-guide" class="nav-link active" data-scroll-target="#testing-guide">Testing Guide</a>
   <ul class="collapse">
-  <li><a href="#design-philosophy" id="toc-design-philosophy" class="nav-link" data-scroll-target="#design-philosophy">Design Philosophy</a></li>
-  <li><a href="#key-features" id="toc-key-features" class="nav-link" data-scroll-target="#key-features">Key Features</a></li>
-  <li><a href="#installation" id="toc-installation" class="nav-link" data-scroll-target="#installation">Installation</a></li>
-  <li><a href="#usage" id="toc-usage" class="nav-link" data-scroll-target="#usage">Usage</a></li>
-  <li><a href="#project-structure" id="toc-project-structure" class="nav-link" data-scroll-target="#project-structure">Project Structure</a></li>
-  <li><a href="#roadmap" id="toc-roadmap" class="nav-link" data-scroll-target="#roadmap">Roadmap</a></li>
-  <li><a href="#credits" id="toc-credits" class="nav-link" data-scroll-target="#credits">Credits</a></li>
-  <li><a href="#completed-plans" id="toc-completed-plans" class="nav-link" data-scroll-target="#completed-plans">Completed Plans</a></li>
+  <li><a href="#running-tests" id="toc-running-tests" class="nav-link" data-scroll-target="#running-tests">Running Tests</a></li>
+  <li><a href="#test-suite-structure" id="toc-test-suite-structure" class="nav-link" data-scroll-target="#test-suite-structure">Test Suite Structure</a>
+  <ul class="collapse">
+  <li><a href="#core-mppi-flavors" id="toc-core-mppi-flavors" class="nav-link" data-scroll-target="#core-mppi-flavors">Core MPPI Flavors</a></li>
+  <li><a href="#integration-examples" id="toc-integration-examples" class="nav-link" data-scroll-target="#integration-examples">Integration &amp; Examples</a></li>
+  <li><a href="#autotuning" id="toc-autotuning" class="nav-link" data-scroll-target="#autotuning">Autotuning</a></li>
+  </ul></li>
+  <li><a href="#writing-new-tests" id="toc-writing-new-tests" class="nav-link" data-scroll-target="#writing-new-tests">Writing New Tests</a>
+  <ul class="collapse">
+  <li><a href="#example-test-case" id="toc-example-test-case" class="nav-link" data-scroll-target="#example-test-case">Example Test Case</a></li>
+  </ul></li>
   </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./index.html">jax_mppi</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./testing.html">Development</a></li><li class="breadcrumb-item"><a href="./testing.html">Testing Guide</a></li></ol></nav></header>
 
 
 
 
-<section id="jax_mppi" class="level1">
-<h1>jax_mppi</h1>
-<p><img src="https://img.shields.io/badge/build-passing-brightgreen.png" class="img-fluid" alt="Build Status"> <img src="https://img.shields.io/badge/license-MIT-blue.png" class="img-fluid" alt="License"> <img src="https://img.shields.io/badge/backend-JAX-blue.png" class="img-fluid" alt="JAX"> <img src="https://img.shields.io/badge/status-planning-yellow.png" class="img-fluid" alt="Status"></p>
-<p><strong>jax_mppi</strong> is a functional, JIT-compilable port of the <a href="https://github.com/UM-ARM-Lab/pytorch_mppi">pytorch_mppi</a> library to JAX. It implements Model Predictive Path Integral (MPPI) control with a focus on performance and composability.</p>
-<section id="design-philosophy" class="level2">
-<h2 class="anchored" data-anchor-id="design-philosophy">Design Philosophy</h2>
-<p>This library embraces JAX’s functional paradigm:</p>
-<ul>
-<li><strong>Pure Functions</strong>: Core logic is implemented as pure functions <code>command(state, mppi_state) -&gt; (action, mppi_state)</code>.</li>
-<li><strong>Dataclass State</strong>: State is held in <code>jax.tree_util.register_dataclass</code> containers, allowing easy integration with <code>jit</code>, <code>vmap</code>, and <code>grad</code>.</li>
-<li><strong>No Side Effects</strong>: Unlike the PyTorch version, there is no mutable <code>self</code>. State transitions are explicit.</li>
-</ul>
+<section id="testing-guide" class="level1">
+<h1>Testing Guide</h1>
+<p>This guide explains the testing stack for <code>jax_mppi</code> and provides instructions on how to run and write tests.</p>
+<section id="running-tests" class="level2">
+<h2 class="anchored" data-anchor-id="running-tests">Running Tests</h2>
+<p>The project uses <code>pytest</code> for running tests. You can run all tests using <code>uv</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> run pytest</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>To run a specific test file:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> run pytest tests/test_mppi.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>To run a specific test case:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> run pytest tests/test_mppi.py::TestMPPICommand::test_command_returns_correct_shapes</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="key-features" class="level2">
-<h2 class="anchored" data-anchor-id="key-features">Key Features</h2>
+<section id="test-suite-structure" class="level2">
+<h2 class="anchored" data-anchor-id="test-suite-structure">Test Suite Structure</h2>
+<p>The tests are located in the <code>tests/</code> directory and mirror the source code structure where appropriate. The test suite is divided into several files, each covering a specific flavor or aspect of the library.</p>
+<section id="core-mppi-flavors" class="level3">
+<h3 class="anchored" data-anchor-id="core-mppi-flavors">Core MPPI Flavors</h3>
 <ul>
-<li><strong>Core MPPI</strong>: Robust implementation of the standard MPPI algorithm.</li>
-<li><strong>Smooth MPPI (SMPPI)</strong>: Maintains action sequences and smoothness costs for better trajectory generation.</li>
-<li><strong>Kernel MPPI (KMPPI)</strong>: Uses kernel interpolation for control points, reducing the parameter space.</li>
-<li><strong>Autotuning</strong>: Built-in hyperparameter optimization using CMA-ES, Ray Tune, and Quality Diversity.</li>
-<li><strong>CUDA/C++ Backend</strong>: High-performance implementations of all controllers in CUDA/C++17, exposed to Python via `nanobind`.</li>
-<li><strong>JAX Integration</strong>:
+<li><strong><code>tests/test_mppi.py</code></strong>: Tests for the base MPPI implementation (<code>jax_mppi.mppi</code>).
 <ul>
-<li><code>jax.vmap</code> for efficient batch processing.</li>
-<li><code>jax.lax.scan</code> for fast horizon loops.</li>
-<li>Fully compatible with JIT compilation for high-performance control loops.</li>
+<li><strong>Goal</strong>: Ensure the correctness of the core algorithm, state management, and configuration options.</li>
+<li><strong>Scope</strong>:
+<ul>
+<li><strong>Initialization</strong>: Verifies that <code>create()</code> returns correct shapes and types for <code>config</code> and <code>state</code>.</li>
+<li><strong>Command Generation</strong>: Tests the <code>command()</code> function to ensure it generates valid actions within bounds and correctly updates the state.</li>
+<li><strong>Configuration Options</strong>: Validates various settings like <code>u_per_command</code> (multi-step control), <code>step_dependent_dynamics</code> (time-varying systems), <code>sample_null_action</code> (ensuring baseline inclusion), and <code>u_scale</code> (control authority scaling).</li>
+<li><strong>Integration</strong>: Includes basic convergence tests to verify that the cost decreases over iterations (e.g., <code>TestMPPIIntegration</code>).</li>
+</ul></li>
+</ul></li>
+<li><strong><code>tests/test_smppi.py</code></strong>: Tests for Smooth MPPI (<code>jax_mppi.smppi</code>).
+<ul>
+<li><strong>Goal</strong>: Verify that the “smooth” variant correctly operates in the lifted velocity control space and produces continuous action sequences.</li>
+<li><strong>Scope</strong>:
+<ul>
+<li><strong>Lifted Space</strong>: Checks that the internal state (<code>U</code>) represents control velocity/acceleration, while <code>action_sequence</code> represents the integrated actions.</li>
+<li><strong>Smoothness</strong>: Verifies that the smoothness cost penalty (<code>w_action_seq_cost</code>) effectively reduces action variance.</li>
+<li><strong>Bounds</strong>: Tests that bounds are respected for both the control velocity (<code>u_min</code>/<code>u_max</code>) and the final action (<code>action_min</code>/<code>action_max</code>).</li>
+<li><strong>Continuity</strong>: checks that the <code>shift</code> operation maintains continuity in the action space, preventing jumps during receding horizon updates.</li>
+</ul></li>
+</ul></li>
+<li><strong><code>tests/test_kmppi.py</code></strong>: Tests for Kernel MPPI (<code>jax_mppi.kmppi</code>).
+<ul>
+<li><strong>Goal</strong>: Ensure that kernel-based interpolation works correctly and that optimization occurs effectively in the reduced control point space.</li>
+<li><strong>Scope</strong>:
+<ul>
+<li><strong>Kernels</strong>: Tests the properties of time-domain kernels (e.g., <code>RBFKernel</code>), such as shape and distance decay.</li>
+<li><strong>Interpolation</strong>: Verifies that control points (<code>theta</code>) are correctly mapped to full trajectories (<code>U</code>) via <code>_kernel_interpolate</code>, preserving values at control points.</li>
+<li><strong>Optimization</strong>: Checks that the MPPI update rule is applied to the control points (<code>theta</code>) rather than the full trajectory.</li>
+<li><strong>Smoothness</strong>: Confirms that the resulting trajectories are smooth due to the kernel properties (e.g., by checking second derivatives).</li>
+</ul></li>
 </ul></li>
 </ul>
 </section>
-<section id="installation" class="level2">
-<h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clone the repository</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/yourusername/jax_mppi.git</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> jax_mppi</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Install dependencies</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-e</span> .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="usage" class="level2">
-<h2 class="anchored" data-anchor-id="usage">Usage</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax.numpy <span class="im">as</span> jnp</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> jax_mppi <span class="im">import</span> mppi</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Define dynamics and cost functions</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> dynamics(state, action):</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Your dynamics model here</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> state <span class="op">+</span> action</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> running_cost(state, action):</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Your cost function here</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jnp.<span class="bu">sum</span>(state<span class="op">**</span><span class="dv">2</span>) <span class="op">+</span> jnp.<span class="bu">sum</span>(action<span class="op">**</span><span class="dv">2</span>)</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Create configuration and initial state</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>config, mppi_state <span class="op">=</span> mppi.create(</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    nx<span class="op">=</span><span class="dv">4</span>, nu<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    noise_sigma<span class="op">=</span>jnp.eye(<span class="dv">2</span>) <span class="op">*</span> <span class="fl">0.1</span>,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    horizon<span class="op">=</span><span class="dv">20</span>,</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    lambda_<span class="op">=</span><span class="fl">1.0</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Control loop</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>key <span class="op">=</span> jax.random.PRNGKey(<span class="dv">0</span>)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>current_obs <span class="op">=</span> jnp.zeros(<span class="dv">4</span>)</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># JIT compile the command function for performance</span></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>jitted_command <span class="op">=</span> jax.jit(mppi.command, static_argnames<span class="op">=</span>[<span class="st">'dynamics'</span>, <span class="st">'running_cost'</span>])</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">100</span>):</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    key, subkey <span class="op">=</span> jax.random.split(key)</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    action, mppi_state <span class="op">=</span> jitted_command(</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>        config,</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        mppi_state,</span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>        current_obs,</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        dynamics<span class="op">=</span>dynamics,</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>        running_cost<span class="op">=</span>running_cost</span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Apply action to environment...</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="project-structure" class="level2">
-<h2 class="anchored" data-anchor-id="project-structure">Project Structure</h2>
-<pre class="text"><code>jax_mppi/
-├── src/jax_mppi/
-│   ├── mppi.py              # Core MPPI implementation
-│   ├── smppi.py             # Smooth MPPI variant
-│   ├── kmppi.py             # Kernel MPPI variant
-│   ├── types.py             # Type definitions
-│   ├── autotune.py          # Autotuning core &amp; CMA-ES
-│   ├── autotune_global.py   # Ray Tune integration
-│   └── autotune_qd.py       # Quality Diversity optimization
-├── examples/
-│   ├── pendulum.py          # Pendulum environment example
-│   ├── autotune_basic.py    # Basic autotuning example
-│   ├── autotune_pendulum.py # Autotuning pendulum
-│   └── smooth_comparison.py # Comparison of MPPI variants
-└── tests/                   # Unit and integration tests</code></pre>
-</section>
-<section id="roadmap" class="level2">
-<h2 class="anchored" data-anchor-id="roadmap">Roadmap</h2>
-<p>The development is structured in phases:</p>
-<ol type="1">
-<li><strong>Core MPPI</strong>: Basic implementation with JAX parity.</li>
-<li><strong>Integration</strong>: Pendulum example and verification.</li>
-<li><strong>Smooth MPPI</strong>: Implementation of smoothness constraints.</li>
-<li><strong>Kernel MPPI</strong>: Kernel-based control parameterization.</li>
-<li><strong>Comparisons</strong>: Benchmarking and visual comparisons.</li>
-<li><strong>Autotuning</strong>: Parameter optimization using CMA-ES, Ray Tune, and QD.</li>
-</ol>
-</section>
-<section id="credits" class="level2">
-<h2 class="anchored" data-anchor-id="credits">Credits</h2>
-<p>This project is a direct port of <a href="https://github.com/UM-ARM-Lab/pytorch_mppi">pytorch_mppi</a>. We aim to maintain parity with the original implementation while leveraging JAX’s unique features for performance and flexibility.</p>
-</section>
-<section id="completed-plans" class="level2">
-<h2 class="anchored" data-anchor-id="completed-plans">Completed Plans</h2>
+<section id="integration-examples" class="level3">
+<h3 class="anchored" data-anchor-id="integration-examples">Integration &amp; Examples</h3>
 <ul>
-<li><a href="./plan/completed/porting_pytorch_jax.html">Porting Plan</a></li>
-<li><a href="./plan/completed/evosax_integration.html">Evosax Integration Plan</a></li>
-<li><a href="plan/cuda_mppi_implementation.md">CUDA MPPI Implementation Plan</a></li>
+<li><strong><code>tests/test_pendulum.py</code></strong>: End-to-end integration tests using a Pendulum environment.
+<ul>
+<li><strong>Goal</strong>: Validate that the algorithms can solve a concrete, non-linear control task.</li>
+<li><strong>Scope</strong>:
+<ul>
+<li><strong>Stabilization</strong>: Tests if MPPI can stabilize the pendulum at the upright position.</li>
+<li><strong>Swing-up</strong>: Tests the more difficult task of swinging up from a hanging position.</li>
+<li><strong>Physics</strong>: Sanity checks the pendulum dynamics and cost functions.</li>
+</ul></li>
+</ul></li>
 </ul>
+</section>
+<section id="autotuning" class="level3">
+<h3 class="anchored" data-anchor-id="autotuning">Autotuning</h3>
+<ul>
+<li><strong><code>tests/test_autotune.py</code></strong>: Unit tests for the autotuning framework (<code>jax_mppi.autotune</code>).
+<ul>
+<li><strong>Goal</strong>: Verify the components of the hyperparameter optimization system.</li>
+</ul></li>
+<li><strong><code>tests/test_autotune_integration.py</code></strong>: Integration tests for autotuning.
+<ul>
+<li><strong>Goal</strong>: Ensure that the autotuner can successfully improve performance on a benchmark task (finding better parameters than the default).</li>
+</ul></li>
+</ul>
+</section>
+</section>
+<section id="writing-new-tests" class="level2">
+<h2 class="anchored" data-anchor-id="writing-new-tests">Writing New Tests</h2>
+<p>When adding new features or fixing bugs, please add corresponding tests.</p>
+<ol type="1">
+<li><strong>Locate the appropriate test file</strong>: If you are modifying <code>mppi.py</code>, add tests to <code>tests/test_mppi.py</code>.</li>
+<li><strong>Use Class-Based Structure</strong>: Group related tests into classes (e.g., <code>TestMPPIBasics</code>, <code>TestMPPICommand</code>).</li>
+<li><strong>Property-Based Testing</strong>: Where possible, test properties (e.g., “output shape depends on input shape in this way”) rather than just hardcoded values.</li>
+<li><strong>Integration Tests</strong>: For significant algorithmic changes, ensure that <code>tests/test_pendulum.py</code> still passes or add a similar simple control task to verify efficacy.</li>
+<li><strong>JAX Compatibility</strong>: Ensure tests check that functions can be JIT-compiled if they are intended to be used within <code>jax.jit</code>.</li>
+</ol>
+<section id="example-test-case" class="level3">
+<h3 class="anchored" data-anchor-id="example-test-case">Example Test Case</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_new_feature(<span class="va">self</span>):</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    nx, nu <span class="op">=</span> <span class="dv">2</span>, <span class="dv">1</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    config, state <span class="op">=</span> mppi.create(nx<span class="op">=</span>nx, nu<span class="op">=</span>nu, noise_sigma<span class="op">=</span>jnp.eye(nu))</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ... perform action ...</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    action, new_state <span class="op">=</span> mppi.command(config, state, ...)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ... assert expected behavior ...</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> action.shape <span class="op">==</span> (nu,)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
+</section>
 </section>
 </section>
 

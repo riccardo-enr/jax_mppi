@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>jax-mppi</title>
+<title>theory – jax-mppi</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,41 +19,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -104,6 +69,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -155,7 +149,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./index.html">jax_mppi</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./theory.html">Theoretical Background</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -186,13 +180,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">jax_mppi</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./theory.html" class="sidebar-item-text sidebar-link">
+  <a href="./theory.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Theoretical Background</span></a>
   </div>
 </li>
@@ -271,148 +265,104 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#jax_mppi" id="toc-jax_mppi" class="nav-link active" data-scroll-target="#jax_mppi">jax_mppi</a>
+  <li><a href="#theoretical-background" id="toc-theoretical-background" class="nav-link active" data-scroll-target="#theoretical-background">Theoretical Background</a>
   <ul class="collapse">
-  <li><a href="#design-philosophy" id="toc-design-philosophy" class="nav-link" data-scroll-target="#design-philosophy">Design Philosophy</a></li>
-  <li><a href="#key-features" id="toc-key-features" class="nav-link" data-scroll-target="#key-features">Key Features</a></li>
-  <li><a href="#installation" id="toc-installation" class="nav-link" data-scroll-target="#installation">Installation</a></li>
-  <li><a href="#usage" id="toc-usage" class="nav-link" data-scroll-target="#usage">Usage</a></li>
-  <li><a href="#project-structure" id="toc-project-structure" class="nav-link" data-scroll-target="#project-structure">Project Structure</a></li>
-  <li><a href="#roadmap" id="toc-roadmap" class="nav-link" data-scroll-target="#roadmap">Roadmap</a></li>
-  <li><a href="#credits" id="toc-credits" class="nav-link" data-scroll-target="#credits">Credits</a></li>
-  <li><a href="#completed-plans" id="toc-completed-plans" class="nav-link" data-scroll-target="#completed-plans">Completed Plans</a></li>
+  <li><a href="#standard-mppi" id="toc-standard-mppi" class="nav-link" data-scroll-target="#standard-mppi">Standard MPPI</a>
+  <ul class="collapse">
+  <li><a href="#stochastic-optimal-control-problem" id="toc-stochastic-optimal-control-problem" class="nav-link" data-scroll-target="#stochastic-optimal-control-problem">Stochastic Optimal Control Problem</a></li>
+  <li><a href="#information-theoretic-derivation" id="toc-information-theoretic-derivation" class="nav-link" data-scroll-target="#information-theoretic-derivation">Information Theoretic Derivation</a></li>
+  <li><a href="#update-law" id="toc-update-law" class="nav-link" data-scroll-target="#update-law">Update Law</a></li>
+  </ul></li>
+  <li><a href="#smooth-mppi-smppi" id="toc-smooth-mppi-smppi" class="nav-link" data-scroll-target="#smooth-mppi-smppi">Smooth MPPI (SMPPI)</a>
+  <ul class="collapse">
+  <li><a href="#state-augmentation" id="toc-state-augmentation" class="nav-link" data-scroll-target="#state-augmentation">State Augmentation</a></li>
+  <li><a href="#smoothness-cost" id="toc-smoothness-cost" class="nav-link" data-scroll-target="#smoothness-cost">Smoothness Cost</a></li>
+  </ul></li>
+  <li><a href="#kernel-mppi-kmppi" id="toc-kernel-mppi-kmppi" class="nav-link" data-scroll-target="#kernel-mppi-kmppi">Kernel MPPI (KMPPI)</a>
+  <ul class="collapse">
+  <li><a href="#rkhs-formulation" id="toc-rkhs-formulation" class="nav-link" data-scroll-target="#rkhs-formulation">RKHS Formulation</a></li>
+  <li><a href="#optimization" id="toc-optimization" class="nav-link" data-scroll-target="#optimization">Optimization</a></li>
+  </ul></li>
   </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./index.html">jax_mppi</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./theory.html">Theoretical Background</a></li></ol></nav></header>
 
 
 
 
-<section id="jax_mppi" class="level1">
-<h1>jax_mppi</h1>
-<p><img src="https://img.shields.io/badge/build-passing-brightgreen.png" class="img-fluid" alt="Build Status"> <img src="https://img.shields.io/badge/license-MIT-blue.png" class="img-fluid" alt="License"> <img src="https://img.shields.io/badge/backend-JAX-blue.png" class="img-fluid" alt="JAX"> <img src="https://img.shields.io/badge/status-planning-yellow.png" class="img-fluid" alt="Status"></p>
-<p><strong>jax_mppi</strong> is a functional, JIT-compilable port of the <a href="https://github.com/UM-ARM-Lab/pytorch_mppi">pytorch_mppi</a> library to JAX. It implements Model Predictive Path Integral (MPPI) control with a focus on performance and composability.</p>
-<section id="design-philosophy" class="level2">
-<h2 class="anchored" data-anchor-id="design-philosophy">Design Philosophy</h2>
-<p>This library embraces JAX’s functional paradigm:</p>
-<ul>
-<li><strong>Pure Functions</strong>: Core logic is implemented as pure functions <code>command(state, mppi_state) -&gt; (action, mppi_state)</code>.</li>
-<li><strong>Dataclass State</strong>: State is held in <code>jax.tree_util.register_dataclass</code> containers, allowing easy integration with <code>jit</code>, <code>vmap</code>, and <code>grad</code>.</li>
-<li><strong>No Side Effects</strong>: Unlike the PyTorch version, there is no mutable <code>self</code>. State transitions are explicit.</li>
-</ul>
+<section id="theoretical-background" class="level1">
+<h1>Theoretical Background</h1>
+<p>This section provides the mathematical foundations for the Model Predictive Path Integral (MPPI) control algorithm and its variants implemented in <code>jax_mppi</code>.</p>
+<section id="standard-mppi" class="level2">
+<h2 class="anchored" data-anchor-id="standard-mppi">Standard MPPI</h2>
+<p>Model Predictive Path Integral (MPPI) control is a sampling-based model predictive control algorithm derived from information-theoretic principles. It solves the stochastic optimal control problem by simulating multiple trajectories and updating the control policy based on their costs.</p>
+<section id="stochastic-optimal-control-problem" class="level3">
+<h3 class="anchored" data-anchor-id="stochastic-optimal-control-problem">Stochastic Optimal Control Problem</h3>
+<p>We consider a discrete-time dynamical system with dynamics:</p>
+<p>[ _{t+1} = f(_t, _t) + _t ]</p>
+<p>where <span class="math inline">\(\mathbf{x}_t \in \mathbb{R}^{n_x}\)</span> is the state, <span class="math inline">\(\mathbf{u}_t \in \mathbb{R}^{n_u}\)</span> is the control input, and <span class="math inline">\(\mathbf{v}_t \sim \mathcal{N}(0, \Sigma)\)</span> is Gaussian noise.</p>
+<p>The objective is to find the control sequence <span class="math inline">\(U = \{\mathbf{u}_0, \dots, \mathbf{u}_{T-1}\}\)</span> that minimizes the expected cost:</p>
+<p>[ J(U) = ]</p>
+<p>where <span class="math inline">\(\phi(\mathbf{x}_T)\)</span> is the terminal cost and <span class="math inline">\(q(\mathbf{x}_t)\)</span> is the state-dependent running cost. The term <span class="math inline">\(\frac{1}{2} \mathbf{u}_t^T \Sigma^{-1} \mathbf{u}_t\)</span> represents the control effort cost.</p>
 </section>
-<section id="key-features" class="level2">
-<h2 class="anchored" data-anchor-id="key-features">Key Features</h2>
-<ul>
-<li><strong>Core MPPI</strong>: Robust implementation of the standard MPPI algorithm.</li>
-<li><strong>Smooth MPPI (SMPPI)</strong>: Maintains action sequences and smoothness costs for better trajectory generation.</li>
-<li><strong>Kernel MPPI (KMPPI)</strong>: Uses kernel interpolation for control points, reducing the parameter space.</li>
-<li><strong>Autotuning</strong>: Built-in hyperparameter optimization using CMA-ES, Ray Tune, and Quality Diversity.</li>
-<li><strong>CUDA/C++ Backend</strong>: High-performance implementations of all controllers in CUDA/C++17, exposed to Python via `nanobind`.</li>
-<li><strong>JAX Integration</strong>:
-<ul>
-<li><code>jax.vmap</code> for efficient batch processing.</li>
-<li><code>jax.lax.scan</code> for fast horizon loops.</li>
-<li>Fully compatible with JIT compilation for high-performance control loops.</li>
-</ul></li>
-</ul>
+<section id="information-theoretic-derivation" class="level3">
+<h3 class="anchored" data-anchor-id="information-theoretic-derivation">Information Theoretic Derivation</h3>
+<p>MPPI relies on the duality between free energy and relative entropy (KL divergence). The optimal control distribution <span class="math inline">\(p^*\)</span> is proportional to the exponential of the trajectory cost:</p>
+<p>[ p^*() (- S()) ]</p>
+<p>where <span class="math inline">\(S(\tau)\)</span> is the cost of a trajectory <span class="math inline">\(\tau\)</span> and <span class="math inline">\(\lambda\)</span> is a temperature parameter.</p>
 </section>
-<section id="installation" class="level2">
-<h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clone the repository</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/yourusername/jax_mppi.git</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> jax_mppi</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Install dependencies</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-e</span> .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="update-law" class="level3">
+<h3 class="anchored" data-anchor-id="update-law">Update Law</h3>
+<p>In practice, we approximate the optimal control by sampling <span class="math inline">\(K\)</span> trajectories around a nominal control sequence <span class="math inline">\(\mathbf{u}_{nom}\)</span>. For each sample <span class="math inline">\(k\)</span>, we apply a perturbation <span class="math inline">\(\epsilon_k \sim \mathcal{N}(0, \Sigma)\)</span>:</p>
+<p>[ <em>{t, k} = </em>{nom, t} + _{t, k} ]</p>
+<p>The cost for the <span class="math inline">\(k\)</span>-th trajectory is computed as:</p>
+<p>[ S_k = (<em>{T, k}) + </em>{t=0}^{T-1} ( q(<em>{t, k}) + </em>{nom, t}^T ^{-1} _{t, k} ) ]</p>
+<p>The weights for each trajectory are computed using the softmax function:</p>
+<p>[ w_k = ]</p>
+<p>where <span class="math inline">\(\beta = \min_k S_k\)</span> for numerical stability.</p>
+<p>The control sequence is then updated by computing the weighted average of the perturbations:</p>
+<p>[ <em>{new, t} = </em>{nom, t} + <em>{k=1}^K w_k </em>{t, k} ]</p>
 </section>
-<section id="usage" class="level2">
-<h2 class="anchored" data-anchor-id="usage">Usage</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax.numpy <span class="im">as</span> jnp</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> jax_mppi <span class="im">import</span> mppi</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Define dynamics and cost functions</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> dynamics(state, action):</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Your dynamics model here</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> state <span class="op">+</span> action</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> running_cost(state, action):</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Your cost function here</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jnp.<span class="bu">sum</span>(state<span class="op">**</span><span class="dv">2</span>) <span class="op">+</span> jnp.<span class="bu">sum</span>(action<span class="op">**</span><span class="dv">2</span>)</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Create configuration and initial state</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>config, mppi_state <span class="op">=</span> mppi.create(</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    nx<span class="op">=</span><span class="dv">4</span>, nu<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    noise_sigma<span class="op">=</span>jnp.eye(<span class="dv">2</span>) <span class="op">*</span> <span class="fl">0.1</span>,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    horizon<span class="op">=</span><span class="dv">20</span>,</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    lambda_<span class="op">=</span><span class="fl">1.0</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Control loop</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>key <span class="op">=</span> jax.random.PRNGKey(<span class="dv">0</span>)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>current_obs <span class="op">=</span> jnp.zeros(<span class="dv">4</span>)</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># JIT compile the command function for performance</span></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>jitted_command <span class="op">=</span> jax.jit(mppi.command, static_argnames<span class="op">=</span>[<span class="st">'dynamics'</span>, <span class="st">'running_cost'</span>])</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">100</span>):</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    key, subkey <span class="op">=</span> jax.random.split(key)</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    action, mppi_state <span class="op">=</span> jitted_command(</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>        config,</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        mppi_state,</span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>        current_obs,</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        dynamics<span class="op">=</span>dynamics,</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>        running_cost<span class="op">=</span>running_cost</span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Apply action to environment...</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="project-structure" class="level2">
-<h2 class="anchored" data-anchor-id="project-structure">Project Structure</h2>
-<pre class="text"><code>jax_mppi/
-├── src/jax_mppi/
-│   ├── mppi.py              # Core MPPI implementation
-│   ├── smppi.py             # Smooth MPPI variant
-│   ├── kmppi.py             # Kernel MPPI variant
-│   ├── types.py             # Type definitions
-│   ├── autotune.py          # Autotuning core &amp; CMA-ES
-│   ├── autotune_global.py   # Ray Tune integration
-│   └── autotune_qd.py       # Quality Diversity optimization
-├── examples/
-│   ├── pendulum.py          # Pendulum environment example
-│   ├── autotune_basic.py    # Basic autotuning example
-│   ├── autotune_pendulum.py # Autotuning pendulum
-│   └── smooth_comparison.py # Comparison of MPPI variants
-└── tests/                   # Unit and integration tests</code></pre>
+<section id="smooth-mppi-smppi" class="level2">
+<h2 class="anchored" data-anchor-id="smooth-mppi-smppi">Smooth MPPI (SMPPI)</h2>
+<p>Standard MPPI assumes the control inputs are independent across time steps, which can lead to jerky or non-smooth control signals. Smooth MPPI (SMPPI) addresses this by lifting the control problem to a higher-order space (e.g., controlling acceleration instead of velocity).</p>
+<section id="state-augmentation" class="level3">
+<h3 class="anchored" data-anchor-id="state-augmentation">State Augmentation</h3>
+<p>In SMPPI, the nominal trajectory <span class="math inline">\(U\)</span> represents the derivative of the actual action (e.g., acceleration). The actual action <span class="math inline">\(\mathbf{a}_t\)</span> is part of the state or computed by integrating <span class="math inline">\(U\)</span>.</p>
+<p>Let <span class="math inline">\(\mathbf{u}_t\)</span> be the command at time <span class="math inline">\(t\)</span> (from the optimizer). The action applied to the system is <span class="math inline">\(\mathbf{a}_t\)</span>, updated as:</p>
+<p>[ _{t+1} = _t + _t t ]</p>
 </section>
-<section id="roadmap" class="level2">
-<h2 class="anchored" data-anchor-id="roadmap">Roadmap</h2>
-<p>The development is structured in phases:</p>
-<ol type="1">
-<li><strong>Core MPPI</strong>: Basic implementation with JAX parity.</li>
-<li><strong>Integration</strong>: Pendulum example and verification.</li>
-<li><strong>Smooth MPPI</strong>: Implementation of smoothness constraints.</li>
-<li><strong>Kernel MPPI</strong>: Kernel-based control parameterization.</li>
-<li><strong>Comparisons</strong>: Benchmarking and visual comparisons.</li>
-<li><strong>Autotuning</strong>: Parameter optimization using CMA-ES, Ray Tune, and QD.</li>
-</ol>
+<section id="smoothness-cost" class="level3">
+<h3 class="anchored" data-anchor-id="smoothness-cost">Smoothness Cost</h3>
+<p>SMPPI explicitly penalizes changes in the action sequence to encourage smoothness. The cost function includes a term for the magnitude of the command <span class="math inline">\(\mathbf{u}_t\)</span> (which corresponds to the change in action):</p>
+<p>[ J_{smooth} = _{t=0}^{T-1} ||<em>t||^2 = </em>{t=0}^{T-1} ||||^2 ]</p>
+<p>This formulation ensures that the generated trajectories are smooth and feasible for systems with actuation limits or bandwidth constraints.</p>
 </section>
-<section id="credits" class="level2">
-<h2 class="anchored" data-anchor-id="credits">Credits</h2>
-<p>This project is a direct port of <a href="https://github.com/UM-ARM-Lab/pytorch_mppi">pytorch_mppi</a>. We aim to maintain parity with the original implementation while leveraging JAX’s unique features for performance and flexibility.</p>
 </section>
-<section id="completed-plans" class="level2">
-<h2 class="anchored" data-anchor-id="completed-plans">Completed Plans</h2>
-<ul>
-<li><a href="./plan/completed/porting_pytorch_jax.html">Porting Plan</a></li>
-<li><a href="./plan/completed/evosax_integration.html">Evosax Integration Plan</a></li>
-<li><a href="plan/cuda_mppi_implementation.md">CUDA MPPI Implementation Plan</a></li>
-</ul>
+<section id="kernel-mppi-kmppi" class="level2">
+<h2 class="anchored" data-anchor-id="kernel-mppi-kmppi">Kernel MPPI (KMPPI)</h2>
+<p>Kernel MPPI (KMPPI) parameterizes the control trajectory using a set of basis functions or kernels, rather than optimizing the control input at every time step independently. This reduces the dimensionality of the optimization problem and implicitly enforces smoothness.</p>
+<section id="rkhs-formulation" class="level3">
+<h3 class="anchored" data-anchor-id="rkhs-formulation">RKHS Formulation</h3>
+<p>We assume the control trajectory <span class="math inline">\(\mathbf{u}(t)\)</span> lies in a Reproducing Kernel Hilbert Space (RKHS) defined by a kernel <span class="math inline">\(k(t, t')\)</span>. The control is represented as a linear combination of basis functions centered at support points <span class="math inline">\(t_i\)</span>:</p>
+<p>[ (t) = _{i=1}^{M} _i k(t, t_i) ]</p>
+<p>where <span class="math inline">\(M\)</span> is the number of support points (often <span class="math inline">\(M &lt; T\)</span>), and <span class="math inline">\(\alpha_i\)</span> are the weights (parameters) to be optimized.</p>
+</section>
+<section id="optimization" class="level3">
+<h3 class="anchored" data-anchor-id="optimization">Optimization</h3>
+<p>Instead of perturbing the control inputs <span class="math inline">\(\mathbf{u}_t\)</span> directly, KMPPI perturbs the parameters <span class="math inline">\(\alpha_i\)</span> (or equivalent control points).</p>
+<p>Let <span class="math inline">\(\theta\)</span> represent the parameters. We sample perturbations <span class="math inline">\(\delta \theta_k \sim \mathcal{N}(0, \Sigma_\theta)\)</span>. The corresponding control trajectory is:</p>
+<p>[ _k(t) = (+ _k) ]</p>
+<p>The update rule is applied to <span class="math inline">\(\theta\)</span>:</p>
+<p>[ <em>{new} = </em>{nom} + _{k=1}^K w_k _k ]</p>
+<p>By choosing an appropriate kernel (e.g., RBF kernel), we can control the smoothness and frequency content of the resulting trajectories.</p>
 
 
+</section>
 </section>
 </section>
 
