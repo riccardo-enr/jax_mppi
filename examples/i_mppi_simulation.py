@@ -21,6 +21,7 @@ from jax_mppi.i_mppi.environment import (
     running_cost,
 )
 from jax_mppi.i_mppi.fsmi import FSMIConfig, FSMITrajectoryGenerator
+from jax_mppi.i_mppi.map import rasterize_environment
 from jax_mppi.i_mppi.planner import biased_mppi_command
 from jax_mppi.mppi import create
 
@@ -66,8 +67,23 @@ def main():
     )
 
     # Layer 2 Setup
-    fsmi_config = FSMIConfig(info_threshold=20.0, goal_pos=GOAL_POS)
-    fsmi_planner = FSMITrajectoryGenerator(fsmi_config, INFO_ZONES)
+    # Create Map
+    map_origin = jnp.array([-2.0, -2.0])
+    map_width, map_height = 40, 40
+    map_res = 0.5  # 20m x 20m cover
+
+    grid_map = rasterize_environment(
+        WALLS, INFO_ZONES, map_origin, map_width, map_height, map_res
+    )
+
+    fsmi_config = FSMIConfig(
+        info_threshold=20.0,
+        goal_pos=GOAL_POS,
+        gain_weight=2.0,  # Stronger exploration bias
+        dist_weight=0.5,
+    )
+
+    fsmi_planner = FSMITrajectoryGenerator(fsmi_config, INFO_ZONES, grid_map)
 
     # Run loop
     sim_steps = 300  # 15 seconds
@@ -77,20 +93,45 @@ def main():
     # U_ref = Hover
     U_ref = jnp.tile(mppi_state.u_init, (horizon, 1))
 
-    # We need to lift FSMI logic into the scan loop.
-    # FSMI state is technically stateless in get_target() as it just maps info->target.
-    # So we can just call it inside the scan function.
+    # Initial target
+    current_target = GOAL_POS  # Will be updated immediately
+    last_update_t = -100  # Force update
+
+    # 5Hz if dt=0.05. Total 20Hz MPPI.
+    # The doc says MPPI 50Hz. Let's assume dt=0.02? No, code says dt=0.05.
+    # So MPPI runs at 20Hz.
+    # FSMI should run at 5Hz -> Every 4 steps.
+    update_period_steps = 4
 
     def step_fn(carry, t):
-        current_state, current_mppi_state = carry
+        current_state, current_mppi_state, planner, target, last_upd = carry
+
+        current_info = current_state[13:]
+        current_pos = current_state[:3]
 
         # --- Layer 2: FSMI Logic ---
-        current_info = current_state[13:]
-        target_pos, target_mode = fsmi_planner.get_target(current_info)
+        # 1. Update Map Belief
+        updated_planner = planner.update_map(current_info)
+
+        # 2. Check Schedule
+        should_update = (t - last_upd) >= update_period_steps
+
+        # 3. Select Target (if needed)
+        def update_target_fn(_):
+            new_tgt, mode = updated_planner.select_target(current_pos)
+            return new_tgt, mode, t
+
+        def keep_target_fn(_):
+            # We don't have mode in carry, just assume we keep target
+            return target, 0, last_upd  # mode 0 dummy
+
+        new_target, _, new_last_upd = jax.lax.cond(
+            should_update, update_target_fn, keep_target_fn, None
+        )
 
         # --- Layer 3: Biased MPPI ---
         # Bind target to cost function
-        cost_fn = partial(running_cost, target=target_pos)
+        cost_fn = partial(running_cost, target=new_target)
 
         action, next_mppi_state = biased_mppi_command(
             config,
@@ -105,32 +146,38 @@ def main():
         # Step Dynamics
         next_state = augmented_dynamics(current_state, action, dt=dt)
 
-        # Output for history
-        # We also return target_pos for visualization
-        # and target_mode (as integer/enum if possible, but FSMI returns str currently)
-        # FSMI returns a string, which cannot be JIT-ed.
-        # We will just trace target_pos for now.
+        # Output
+        # We output new_target to visualize
 
-        return (next_state, next_mppi_state), (
+        next_carry = (
             next_state,
-            current_info,
-            target_pos,
+            next_mppi_state,
+            updated_planner,
+            new_target,
+            new_last_upd,
         )
 
-    # Compile and run
-    # Note: biased_mppi_command is JIT compatible.
-    # augmented_dynamics is JIT compatible.
-    # fsmi_planner.get_target() uses jax.lax.cond so it is JIT compatible.
+        return next_carry, (
+            next_state,
+            current_info,
+            new_target,
+        )
 
-    init_carry = (state, mppi_state)
-    (final_state, final_mppi_state), (history_x, history_info, targets) = (
-        jax.lax.scan(step_fn, init_carry, jnp.arange(sim_steps))
+    init_carry = (
+        state,
+        mppi_state,
+        fsmi_planner,
+        current_target,
+        last_update_t,
     )
+
+    (
+        (final_state, _, final_planner, _, _),
+        (history_x, history_info, targets),
+    ) = jax.lax.scan(step_fn, init_carry, jnp.arange(sim_steps))
 
     # Print final status
-    print(
-        f"Final Step: Pos={final_state[:2]}, Info={final_state[13:]}"
-    )
+    print(f"Final Step: Pos={final_state[:2]}, Info={final_state[13:]}")
 
     fig = plt.figure(figsize=(16, 8))
     ax = fig.add_subplot(1, 2, 1)
@@ -168,6 +215,11 @@ def main():
         history_x[:, 0], history_x[:, 1], "b-", linewidth=2, label="Trajectory"
     )
 
+    # Plot Targets (decimated)
+    ax.plot(
+        targets[::10, 0], targets[::10, 1], "rx", markersize=5, label="Targets"
+    )
+
     ax.set_xlim(-1, 14)
     ax.set_ylim(-1, 12)
     ax.set_aspect("equal")
@@ -184,9 +236,9 @@ def main():
         label="Trajectory",
     )
     ax3d.plot(
-        targets[:, 0],
-        targets[:, 1],
-        targets[:, 2],
+        targets[::10, 0],
+        targets[::10, 1],
+        targets[::10, 2],
         "k--",
         linewidth=1.5,
         alpha=0.7,
