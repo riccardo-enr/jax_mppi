@@ -19,10 +19,15 @@ WALLS = jnp.array([
 ])
 
 # Info sources: [cx, cy, width, height, initial_value]
-# Rectangles 3x3 centered at (6,2) and (6,8)
+# These should match the unknown regions in the occupancy grid
+# The grid has unknown rooms at:
+#   - Bottom-left room: x=1-4m, y=4-8m (center ~2.5, 6)
+#   - Bottom-right room: x=10-13m, y=4-8m (center ~11.5, 6)
+#   - Top-right room: x=10-13m, y=1-3m (center ~11.5, 2)
 INFO_ZONES = jnp.array([
-    [6.0, 2.0, 3.0, 3.0, 100.0],  # Bottom info zone
-    [6.0, 8.0, 3.0, 3.0, 100.0],  # Top info zone
+    [2.5, 6.0, 3.0, 4.0, 100.0],   # Bottom-left room (high info)
+    [11.5, 6.0, 3.0, 4.0, 100.0],  # Bottom-right room (high info)
+    [11.5, 2.0, 3.0, 2.0, 100.0],  # Top-right room (high info)
 ])
 
 GOAL_POS = jnp.array([9.0, 5.0, -2.0])  # x, y, z (z is neg altitude)
@@ -141,7 +146,11 @@ def running_cost(
     info_cost = -10.0 * info_gain
 
     # Target Attraction
-    dist_target = jnp.linalg.norm(pos - target)
+    if target.ndim == 2:
+        target_pos = target[t]
+    else:
+        target_pos = target
+    dist_target = jnp.linalg.norm(pos - target_pos)
     target_cost = 1.0 * dist_target
 
     # Stay within bounds
@@ -160,5 +169,102 @@ def running_cost(
         + bounds_cost
         + height_cost
         + target_cost
+        + 0.01 * jnp.sum(action**2)
+    )
+
+
+def informative_running_cost(
+    state: jax.Array,
+    action: jax.Array,
+    t: int,
+    target: jax.Array,
+    grid_map: jax.Array,
+    uniform_fsmi_fn,
+    info_weight: float = 5.0,
+) -> jax.Array:
+    """
+    Running cost with Layer 3 Uniform-FSMI informative term.
+
+    This implements the I-MPPI cost function:
+        J = tracking_cost + obstacles - λ * Uniform_FSMI(local)
+
+    The Uniform-FSMI term ensures the controller maintains informative
+    viewpoints even when tracking the Layer 2 reference trajectory.
+
+    Args:
+        state: Full state [pos(3), vel(3), quat(4), omega(3), info(N)]
+        action: Control input [thrust, omega_x, omega_y, omega_z]
+        t: Time step index
+        target: Reference trajectory from Layer 2 (horizon, 3) or (3,)
+        grid_map: (H, W) occupancy probability grid
+        uniform_fsmi_fn: Callable computing local information gain
+        info_weight: Weight for informative term (default 5.0)
+
+    Returns:
+        Scalar cost value
+    """
+    pos = state[:3]
+    vel = state[3:6]
+
+    # Obstacle Cost (same as running_cost)
+    def wall_cost_fn(p):
+        x, y = p[0], p[1]
+        cost = 0.0
+        for w in WALLS:
+            min_x, max_x = jnp.minimum(w[0], w[2]), jnp.maximum(w[0], w[2])
+            min_y, max_y = jnp.minimum(w[1], w[3]), jnp.maximum(w[1], w[3])
+            margin = 0.3
+            in_x = jnp.logical_and(x >= min_x - margin, x <= max_x + margin)
+            in_y = jnp.logical_and(y >= min_y - margin, y <= max_y + margin)
+            in_wall = jnp.logical_and(in_x, in_y)
+            cost += jnp.where(in_wall, 1000.0, 0.0)
+        return cost
+
+    coll_cost = wall_cost_fn(pos)
+
+    # Target Attraction (tracking Layer 2 reference)
+    if target.ndim == 2:
+        target_pos = target[t]
+    else:
+        target_pos = target
+    dist_target = jnp.linalg.norm(pos - target_pos)
+    target_cost = 1.0 * dist_target
+
+    # Bounds cost
+    bounds_cost = 0.0
+    bounds_cost += jnp.where(pos[0] < -1.0, 1000.0, 0.0)
+    bounds_cost += jnp.where(pos[0] > 14.0, 1000.0, 0.0)
+    bounds_cost += jnp.where(pos[1] < -1.0, 1000.0, 0.0)
+    bounds_cost += jnp.where(pos[1] > 11.0, 1000.0, 0.0)
+
+    # Height cost
+    height_cost = 10.0 * (pos[2] - (-2.0)) ** 2
+
+    # === Uniform-FSMI Information Term (Layer 3) ===
+    # Compute yaw from velocity direction or target direction
+    vel_xy = vel[:2]
+    vel_norm = jnp.linalg.norm(vel_xy)
+    dir_xy = target_pos[:2] - pos[:2]
+    dir_norm = jnp.linalg.norm(dir_xy)
+
+    # Use velocity direction if moving, else target direction
+    yaw = jnp.where(
+        vel_norm > 0.1,
+        jnp.arctan2(vel_xy[1], vel_xy[0]),
+        jnp.arctan2(dir_xy[1], dir_xy[0]),
+    )
+
+    # Compute local information gain using Uniform-FSMI
+    info_gain = uniform_fsmi_fn(grid_map, pos[:2], yaw)
+
+    # Cost = tracking + obstacles - λ * info_gain
+    info_cost = -info_weight * info_gain
+
+    return (
+        coll_cost
+        + target_cost
+        + bounds_cost
+        + height_cost
+        + info_cost
         + 0.01 * jnp.sum(action**2)
     )
