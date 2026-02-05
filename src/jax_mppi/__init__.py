@@ -1,4 +1,4 @@
-from . import autotune, kmppi, mppi, smppi
+from . import autotune, i_mppi, kmppi, mppi, smppi
 
 # Optional imports (if dependencies available)
 try:
@@ -28,6 +28,7 @@ __all__ = [
     "mppi",
     "smppi",
     "kmppi",
+    "i_mppi",
     "autotune",
     "autotune_global",
     "autotune_qd",

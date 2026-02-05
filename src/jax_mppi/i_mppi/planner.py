@@ -1,9 +1,20 @@
+from dataclasses import replace
+from typing import Callable, Optional, Tuple
+
 import jax
 import jax.numpy as jnp
-from typing import Tuple, Optional, Callable
-from dataclasses import replace
 
-from jax_mppi.mppi import MPPIConfig, MPPIState, _shift_nominal, _bound_action, _scaled_bounds, _compute_noise_cost, _compute_weights, _compute_rollout_costs
+from jax_mppi.mppi import (
+    MPPIConfig,
+    MPPIState,
+    _bound_action,
+    _compute_noise_cost,
+    _compute_rollout_costs,
+    _compute_weights,
+    _scaled_bounds,
+    _shift_nominal,
+)
+
 
 def biased_mppi_command(
     config: MPPIConfig,
@@ -11,8 +22,8 @@ def biased_mppi_command(
     current_obs: jax.Array,
     dynamics: Callable,
     running_cost: Callable,
-    U_ref: jax.Array, # The reference trajectory to bias towards (T, nu)
-    bias_alpha: float = 0.5, # Mixture weight for biased samples
+    U_ref: jax.Array,  # The reference trajectory to bias towards (T, nu)
+    bias_alpha: float = 0.5,  # Mixture weight for biased samples
     terminal_cost: Optional[Callable] = None,
     shift: bool = True,
 ) -> Tuple[jax.Array, MPPIState]:
