@@ -29,6 +29,7 @@ A quadrotor trajectory following example will:
 The quadrotor is modeled as a rigid body with 6 degrees of freedom. The state space is 13-dimensional, representing position, velocity, orientation (quaternion), and angular velocity.
 
 **Frame Conventions:**
+
 - **NED (North-East-Down)**: Global/world frame where Z-axis points down (gravity is positive Z)
 - **FRD (Forward-Right-Down)**: Body frame where X-axis points forward, Y-axis points right, Z-axis points down
 
@@ -100,7 +101,7 @@ where $\tau_\omega$ is the time constant for the angular velocity tracking.
 The MPPI controller optimizes a cost function $J$ over a horizon $H$. The instantaneous cost $C(\mathbf{x}_t, \mathbf{u}_t)$ is defined as
 
 \[
-C(\mathbf{x}_t, \mathbf{u}_t) = \|\mathbf{p}_t - \mathbf{p}_{ref,t}\|_{Q_{pos}}^2 + \|\mathbf{v}_t - \mathbf{v}_{ref,t}\|_{Q_{vel}}^2 + \|\mathbf{u}_t\|_{R}^2
+C(\mathbf{x}*t, \mathbf{u}*t) = \|\mathbf{p}*t - \mathbf{p}*{ref,t}\|*{Q*{pos}}^2 + \|\mathbf{v}*t - \mathbf{v}*{ref,t}\|*{Q*{vel}}^2 + \|\mathbf{u}*t\|*{R}^2
 \]
 
 where $\|\mathbf{z}\|_W^2 = \mathbf{z}^T W \mathbf{z}$.
@@ -590,6 +591,7 @@ jax_mppi/
 ### Frame Convention Summary
 
 **NED-FRD Convention:**
+
 - **NED (North-East-Down)**: World/global frame
   - X: North, Y: East, Z: Down (positive downward)
   - Gravity: g = [0, 0, +9.81] m/s² (positive Z direction)
@@ -600,6 +602,7 @@ jax_mppi/
   - Angular rates: [ωx, ωy, ωz] about [Forward, Right, Down] axes
 
 **Important Implementation Details:**
+
 - Altitude: Negative values indicate height above ground (e.g., z = -5.0 means 5m altitude)
 - Thrust: Positive magnitude T, applied as [0, 0, -T] in body frame
 - Rotation matrix R(q): transforms from FRD body to NED world
@@ -611,6 +614,7 @@ jax_mppi/
 ### 2026-02-02: Phase 1 Complete ✓
 
 **Completed:**
+
 - Implemented `src/jax_mppi/dynamics/quadrotor.py` with full 6-DOF quadrotor dynamics
   - Quaternion utilities: rotation matrix conversion, normalization, multiplication
   - RK4 integration for accurate numerical integration
@@ -631,17 +635,20 @@ jax_mppi/
   - Tests verify: quaternion math, dynamics correctness, JIT compatibility, gradients
 
 **Key Features:**
+
 - All functions are JIT-compatible for high performance
 - Gradients work correctly through all dynamics and cost functions
 - Quaternion norm preservation verified during integration
 - Physical behaviors validated (gravity, thrust, angular tracking)
 
 **Next Steps:**
+
 - Phase 2: Trajectory generators (circle, figure-8, hover setpoint)
 
 ### 2026-02-02: Phase 2 Complete ✓
 
 **Completed:**
+
 - Implemented `examples/quadrotor/trajectories.py` with comprehensive trajectory generators
   - `generate_hover_setpoint()` - Constant position stabilization
   - `generate_circle_trajectory()` - Circular paths with configurable center and phase
@@ -656,17 +663,20 @@ jax_mppi/
   - Checks metric computation accuracy
 
 **Key Features:**
+
 - All trajectories follow NED frame convention
 - Analytical derivatives for velocity (no numerical differentiation)
 - Configurable parameters (center, phase, duration, dt)
 - Support for both horizontal and vertical figure-8 patterns
 
 **Next Steps:**
+
 - Phase 3: Basic examples (hover control, circle following)
 
 ### 2026-02-02: Phase 3 Complete ✓
 
 **Completed:**
+
 - Implemented `examples/quadrotor_hover.py` - Hover control stabilization
   - MPPI-based hover controller with position and attitude tracking
   - Performance metrics (settling time, position/velocity error)
@@ -687,17 +697,20 @@ jax_mppi/
   - Cross-example compatibility checks
 
 **Key Features:**
+
 - Both examples run at 50 Hz control rate (JIT-compiled)
 - Detailed visualizations saved to `docs/media/`
 - Proper NED frame convention throughout
 - Performance metrics automatically computed and reported
 
 **Next Steps:**
+
 - Phase 4: Advanced examples (figure-8 comparison, custom trajectories)
 
 ### 2026-02-02: Phase 4 Complete ✓
 
 **Completed:**
+
 - Implemented `examples/quadrotor_figure8_comparison.py` - MPPI variant comparison
   - Side-by-side comparison of MPPI, SMPPI, and KMPPI on aggressive figure-8
   - Comprehensive metrics: tracking accuracy, control smoothness, energy consumption
@@ -721,12 +734,14 @@ jax_mppi/
   - Finite value checks for all outputs
 
 **Key Features:**
+
 - Figure-8 example shows SMPPI produces smoother control (lower jerk)
 - Custom trajectory allows arbitrary waypoint sequences
 - All examples maintain 50 Hz control rate
 - Publication-quality comparison visualizations
 
 **Next Steps:**
+
 - Phase 5: Documentation and polish
 
 ---
