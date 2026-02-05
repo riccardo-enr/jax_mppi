@@ -18,13 +18,23 @@ WALLS = jnp.array([
     [12.0, 0.0, 12.0, 10.0],  # End wall (Vertical)
 ])
 
-# Info sources: [x, y, radius, initial_value]
+# Info sources: [cx, cy, width, height, initial_value]
+# Rectangles 3x3 centered at (6,2) and (6,8)
 INFO_ZONES = jnp.array([
-    [6.0, 2.0, 1.5, 100.0],  # Bottom info zone
-    [6.0, 8.0, 1.5, 100.0],  # Top info zone
+    [6.0, 2.0, 3.0, 3.0, 100.0],  # Bottom info zone
+    [6.0, 8.0, 3.0, 3.0, 100.0],  # Top info zone
 ])
 
 GOAL_POS = jnp.array([9.0, 5.0, -2.0])  # x, y, z (z is neg altitude)
+
+
+def dist_rect(p, center, size):
+    """Calculate distance to a rectangle (0 if inside)."""
+    # p: [x, y], center: [cx, cy], size: [w, h]
+    half_size = size / 2.0
+    d = jnp.abs(p - center) - half_size
+    # exterior distance
+    return jnp.linalg.norm(jnp.maximum(d, 0.0))
 
 
 @partial(jax.jit, static_argnames=["dt"])
@@ -59,13 +69,16 @@ def augmented_dynamics(
     pos = quad_state[:3]
 
     def update_info(info_val, zone_idx):
-        zone_pos = INFO_ZONES[zone_idx, :2]  # x, y
-        radius = INFO_ZONES[zone_idx, 2]
-        dist = jnp.linalg.norm(pos[:2] - zone_pos)
-        # Simple depletion: if inside radius, reduce by rate * dt
-        # Smooth depletion: rate * exp(-dist^2 / radius^2)
+        zone_center = INFO_ZONES[zone_idx, :2]  # cx, cy
+        zone_size = INFO_ZONES[zone_idx, 2:4]  # w, h
+
+        dist = dist_rect(pos[:2], zone_center, zone_size)
+
+        # Simple depletion: if inside or close
+        # Use smooth falloff outside, constant max inside
         rate = 20.0  # info per second
-        depletion = rate * dt * jnp.exp(-(dist**2) / (0.5 * radius) ** 2)
+        # Falloff scale 1.0
+        depletion = rate * dt * jnp.exp(-(dist**2) / (0.5 * 1.0) ** 2)
         return jnp.maximum(0.0, info_val - depletion)
 
     next_info_levels = jax.vmap(update_info)(
@@ -111,11 +124,13 @@ def running_cost(
     def get_info_rate(p, inf):
         rate_sum = 0.0
         for i in range(len(INFO_ZONES)):
-            zone_pos = INFO_ZONES[i, :2]
-            radius = INFO_ZONES[i, 2]
-            dist = jnp.linalg.norm(p[:2] - zone_pos)
+            zone_center = INFO_ZONES[i, :2]
+            zone_size = INFO_ZONES[i, 2:4]
+
+            dist = dist_rect(p[:2], zone_center, zone_size)
+
             # Depletion rate (matches dynamics)
-            dr = 20.0 * jnp.exp(-(dist**2) / (0.5 * radius) ** 2)
+            dr = 20.0 * jnp.exp(-(dist**2) / (0.5 * 1.0) ** 2)
             # Soft check if info exists
             has_info = jnp.tanh(inf[i])
             rate_sum += has_info * dr

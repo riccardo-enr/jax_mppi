@@ -145,14 +145,17 @@ def main():
 
     # Plot Info Zones
     for i in range(len(INFO_ZONES)):
-        circle = plt.Circle(
-            (INFO_ZONES[i, 0], INFO_ZONES[i, 1]),
-            INFO_ZONES[i, 2],
+        cx, cy = INFO_ZONES[i, 0], INFO_ZONES[i, 1]
+        w, h = INFO_ZONES[i, 2], INFO_ZONES[i, 3]
+        rect = plt.Rectangle(
+            (cx - w / 2, cy - h / 2),
+            w,
+            h,
             color="yellow",
             alpha=0.3,
             label="Info Zone" if i == 0 else "",
         )
-        ax.add_patch(circle)
+        ax.add_patch(rect)
 
     # Plot Goal
     ax.plot(GOAL_POS[0], GOAL_POS[1], "r*", markersize=15, label="Goal")
