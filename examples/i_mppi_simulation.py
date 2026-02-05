@@ -55,7 +55,7 @@ def main():
         nx=nx,
         nu=nu,
         noise_sigma=noise_sigma,
-        num_samples=200,  # reduced for speed
+        num_samples=1000,  # reduced for speed
         horizon=horizon,
         lambda_=0.1,
         u_min=jnp.array([0.0, -5.0, -5.0, -5.0]),
@@ -117,7 +117,9 @@ def main():
     history_x = jnp.stack(history_x)
     targets = jnp.stack(targets)
 
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig = plt.figure(figsize=(16, 8))
+    ax = fig.add_subplot(1, 2, 1)
+    ax3d = fig.add_subplot(1, 2, 2, projection="3d")
 
     # Plot Walls
     for w in WALLS:
@@ -152,9 +154,55 @@ def main():
     ax.set_ylim(-1, 12)
     ax.set_aspect("equal")
     ax.legend()
-    ax.set_title(f"I-MPPI Simulation\nFinal Info: {history_info[-1]}")
+    ax.set_title(f"I-MPPI Simulation (2D)\nFinal Info: {history_info[-1]}")
+
+    # --- 3D View ---
+    ax3d.plot(
+        history_x[:, 0],
+        history_x[:, 1],
+        history_x[:, 2],
+        "b-",
+        linewidth=2,
+        label="Trajectory",
+    )
+    ax3d.plot(
+        targets[:, 0],
+        targets[:, 1],
+        targets[:, 2],
+        "k--",
+        linewidth=1.5,
+        alpha=0.7,
+        label="Targets",
+    )
+    ax3d.scatter(
+        start_pos[0],
+        start_pos[1],
+        start_pos[2],
+        c="g",
+        marker="o",
+        s=60,
+        label="Start",
+    )
+    ax3d.scatter(
+        GOAL_POS[0],
+        GOAL_POS[1],
+        GOAL_POS[2],
+        c="r",
+        marker="*",
+        s=160,
+        label="Goal",
+    )
+    ax3d.set_xlim(-1, 14)
+    ax3d.set_ylim(-1, 12)
+    ax3d.set_zlim(-4, 1)
+    ax3d.set_xlabel("X")
+    ax3d.set_ylabel("Y")
+    ax3d.set_zlabel("Z")
+    ax3d.set_title("I-MPPI Simulation (3D)")
+    ax3d.legend()
 
     output_path = "i_mppi_simulation.png"
+    plt.tight_layout()
     plt.savefig(output_path)
     print(f"Simulation complete. Plot saved to {output_path}")
 
