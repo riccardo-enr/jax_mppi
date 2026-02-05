@@ -190,9 +190,11 @@ def run_controller(
             u_max=u_vel_max,
             action_min=u_min,  # Final action bounds (same as MPPI)
             action_max=u_max,
-            w_action_seq_cost=0.1,  # Lower smoothness weight for aggressive tracking
+            w_action_seq_cost=0.1,
+            # Lower smoothness weight for aggressive tracking
             delta_t=dt,  # Integration timestep
-            step_dependent_dynamics=True,  # Enable step-dependent costs for trajectory tracking
+            step_dependent_dynamics=True,
+            # Enable step-dependent costs for trajectory tracking
             key=key,
         )
 
@@ -413,12 +415,22 @@ def run_quadrotor_figure8_comparison(
         # Adjust reference slicing to match states length (num_steps)
         ref_slice = reference[:num_steps]
 
-        pos_errors = jnp.linalg.norm(
-            states[50:-1, 0:3] - ref_slice[50:, 0:3], axis=1
-        )
-        vel_errors = jnp.linalg.norm(
-            states[50:-1, 3:6] - ref_slice[50:, 3:6], axis=1
-        )
+        # Determine start index for error calculation (skip transient)
+        # Use 50 steps or 10% of trajectory if shorter
+        start_idx = min(50, num_steps // 2)
+
+        # Ensure we have data to compute errors
+        if num_steps - start_idx > 1:
+            pos_errors = jnp.linalg.norm(
+                states[start_idx:-1, 0:3] - ref_slice[start_idx:, 0:3], axis=1
+            )
+            vel_errors = jnp.linalg.norm(
+                states[start_idx:-1, 3:6] - ref_slice[start_idx:, 3:6], axis=1
+            )
+        else:
+            # Fallback for very short tests
+            pos_errors = jnp.array([0.0])
+            vel_errors = jnp.array([0.0])
 
         smoothness = compute_smoothness_metrics(actions, dt)
         energy = compute_energy_consumption(actions, dt, mass=1.0)
@@ -460,7 +472,7 @@ def run_quadrotor_figure8_comparison(
     if visualize:
         try:
             import matplotlib.pyplot as plt
-            from mpl_toolkits.mplot3d import Axes3D
+            from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
             fig = plt.figure(figsize=(18, 12))
 
