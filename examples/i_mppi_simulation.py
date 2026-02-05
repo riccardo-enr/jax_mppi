@@ -9,6 +9,7 @@ It features:
 
 from functools import partial
 
+import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
@@ -70,29 +71,31 @@ def main():
 
     # Run loop
     sim_steps = 300  # 15 seconds
-    history_x = []
-    history_info = []
-    targets = []
 
-    print("Starting simulation loop...")
+    print("Starting simulation loop (JIT-compiled scan)...")
 
-    for t in range(sim_steps):
+    # U_ref = Hover
+    U_ref = jnp.tile(mppi_state.u_init, (horizon, 1))
+
+    # We need to lift FSMI logic into the scan loop.
+    # FSMI state is technically stateless in get_target() as it just maps info->target.
+    # So we can just call it inside the scan function.
+
+    def step_fn(carry, t):
+        current_state, current_mppi_state = carry
+
         # --- Layer 2: FSMI Logic ---
-        current_info = state[13:]
+        current_info = current_state[13:]
         target_pos, target_mode = fsmi_planner.get_target(current_info)
-        targets.append(target_pos)
-
-        # U_ref = Hover
-        U_ref = jnp.tile(mppi_state.u_init, (horizon, 1))
 
         # --- Layer 3: Biased MPPI ---
         # Bind target to cost function
         cost_fn = partial(running_cost, target=target_pos)
 
-        action, mppi_state = biased_mppi_command(
+        action, next_mppi_state = biased_mppi_command(
             config,
-            mppi_state,
-            state,
+            current_mppi_state,
+            current_state,
             augmented_dynamics,
             cost_fn,
             U_ref,
@@ -100,22 +103,34 @@ def main():
         )
 
         # Step Dynamics
-        state = augmented_dynamics(state, action, dt=dt)
+        next_state = augmented_dynamics(current_state, action, dt=dt)
 
-        history_x.append(state)
-        history_info.append(state[13:])
+        # Output for history
+        # We also return target_pos for visualization
+        # and target_mode (as integer/enum if possible, but FSMI returns str currently)
+        # FSMI returns a string, which cannot be JIT-ed.
+        # We will just trace target_pos for now.
 
-        if t % 20 == 0:
-            pos_xy = state[:2]
-            info_levels = state[13:]
-            print(
-                f"Step {t}: Pos={pos_xy}, Info={info_levels}, "
-                f"Mode={target_mode}"
-            )
+        return (next_state, next_mppi_state), (
+            next_state,
+            current_info,
+            target_pos,
+        )
 
-    # --- Visualization ---
-    history_x = jnp.stack(history_x)
-    targets = jnp.stack(targets)
+    # Compile and run
+    # Note: biased_mppi_command is JIT compatible.
+    # augmented_dynamics is JIT compatible.
+    # fsmi_planner.get_target() uses jax.lax.cond so it is JIT compatible.
+
+    init_carry = (state, mppi_state)
+    (final_state, final_mppi_state), (history_x, history_info, targets) = (
+        jax.lax.scan(step_fn, init_carry, jnp.arange(sim_steps))
+    )
+
+    # Print final status
+    print(
+        f"Final Step: Pos={final_state[:2]}, Info={final_state[13:]}"
+    )
 
     fig = plt.figure(figsize=(16, 8))
     ax = fig.add_subplot(1, 2, 1)
