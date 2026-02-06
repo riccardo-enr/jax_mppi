@@ -413,11 +413,17 @@ def run_quadrotor_figure8_comparison(
         # Adjust reference slicing to match states length (num_steps)
         ref_slice = reference[:num_steps]
 
+        # Use safe slicing index to avoid empty array errors on short trajectories
+        # If num_steps is small (< 50), start evaluation from index 0
+        eval_start_idx = 50 if num_steps > 50 else 0
+
         pos_errors = jnp.linalg.norm(
-            states[50:-1, 0:3] - ref_slice[50:, 0:3], axis=1
+            states[eval_start_idx:-1, 0:3] - ref_slice[eval_start_idx:, 0:3],
+            axis=1,
         )
         vel_errors = jnp.linalg.norm(
-            states[50:-1, 3:6] - ref_slice[50:, 3:6], axis=1
+            states[eval_start_idx:-1, 3:6] - ref_slice[eval_start_idx:, 3:6],
+            axis=1,
         )
 
         smoothness = compute_smoothness_metrics(actions, dt)
