@@ -31,6 +31,7 @@ dev = [
   "pytest",
   "gymnasium[classic_control]",
   "matplotlib",
+  "ipywidgets",
   "basedpyright",
   "ruff>=0.14.14",
 ]
