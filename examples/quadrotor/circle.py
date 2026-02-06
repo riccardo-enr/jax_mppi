@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 # Add parent directory to path for imports when running directly
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import jax
 import jax.numpy as jnp

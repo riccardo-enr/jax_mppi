@@ -21,6 +21,9 @@ _site/
 .quarto/
 **/*.quarto_ipynb
 
+# AIs
+.claude/
+
 # IDEs
 .vscode/
 .zed/

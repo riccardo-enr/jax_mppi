@@ -43,7 +43,7 @@ best_result = tuner.optimize_all(iterations=30)
 print(f"Best parameters: {best_result.params}")
 ```
 
-See `examples/autotune_basic.py` and `examples/autotune_pendulum.py` for complete running examples.
+See `examples/autotuning/basic.py` and `examples/autotuning/pendulum.py` for complete running examples.
 
 ## Advanced Usage
 

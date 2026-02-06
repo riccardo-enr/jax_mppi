@@ -4,7 +4,7 @@ This example demonstrates how to use `jax_mppi` to control an inverted pendulum.
 
 ## Code
 
-The full example code is available in `examples/pendulum.py`.
+The full example code is available in `examples/basic/pendulum.py`.
 
 ## Dynamics
 
@@ -70,5 +70,5 @@ def pendulum_cost(state: jax.Array, action: jax.Array) -> jax.Array:
 You can run the example using:
 
 ```bash
-python examples/pendulum.py --visualize
+python examples/basic/pendulum.py --visualize
 ```

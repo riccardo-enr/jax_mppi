@@ -189,7 +189,7 @@ optimizer = CMAESOpt(population=10, sigma=0.1)
 - 🎯 **JAX-native** - seamless integration with JAX code
 - 📦 **Pure Python** - no external C++ dependencies
 
-See `examples/autotune_evosax_comparison.py` for a detailed performance comparison.
+See `examples/autotuning/evosax_comparison.py` for a detailed performance comparison.
 
 ## Project Structure
 
@@ -205,11 +205,12 @@ jax_mppi/
 │   ├── autotune_global.py   # Ray Tune integration
 │   └── autotune_qd.py       # Quality Diversity optimization
 ├── examples/
-│   ├── pendulum.py                    # Pendulum environment example
-│   ├── autotune_basic.py              # Basic autotuning example
-│   ├── autotune_pendulum.py           # Autotuning pendulum
-│   ├── autotune_evosax_comparison.py  # Evosax vs cma performance
-│   └── smooth_comparison.py           # Comparison of MPPI variants
+│   ├── basic/               # Introductory examples (pendulum)
+│   ├── quadrotor/           # Quadrotor control & comparisons
+│   ├── i_mppi/              # Informative MPPI simulation
+│   ├── autotuning/          # Hyperparameter optimization
+│   ├── cuda/                # CUDA acceleration examples
+│   └── benchmarks/          # Performance comparisons
 └── tests/                   # Unit and integration tests
 ```
 

@@ -8,7 +8,7 @@ class TestQuadrotorHoverExample:
 
     def test_hover_example_runs(self):
         """Test that hover example runs without errors."""
-        from examples.quadrotor_hover import run_quadrotor_hover
+        from examples.quadrotor.hover import run_quadrotor_hover
 
         states, actions, costs = run_quadrotor_hover(
             num_steps=50,
@@ -25,7 +25,7 @@ class TestQuadrotorHoverExample:
 
     def test_hover_converges_to_setpoint(self):
         """Test that hover controller converges to setpoint."""
-        from examples.quadrotor_hover import run_quadrotor_hover
+        from examples.quadrotor.hover import run_quadrotor_hover
 
         states, actions, costs = run_quadrotor_hover(
             num_steps=300,
@@ -54,7 +54,7 @@ class TestQuadrotorHoverExample:
 
     def test_hover_quaternion_remains_normalized(self):
         """Test that quaternion stays normalized during hover."""
-        from examples.quadrotor_hover import run_quadrotor_hover
+        from examples.quadrotor.hover import run_quadrotor_hover
 
         states, _, _ = run_quadrotor_hover(
             num_steps=100,
@@ -73,7 +73,7 @@ class TestQuadrotorHoverExample:
 
     def test_hover_cost_decreases(self):
         """Test that cost generally decreases over time."""
-        from examples.quadrotor_hover import run_quadrotor_hover
+        from examples.quadrotor.hover import run_quadrotor_hover
 
         _, _, costs = run_quadrotor_hover(
             num_steps=200,
@@ -95,7 +95,7 @@ class TestQuadrotorCircleExample:
 
     def test_circle_example_runs(self):
         """Test that circle example runs without errors."""
-        from examples.quadrotor_circle import run_quadrotor_circle
+        from examples.quadrotor.circle import run_quadrotor_circle
 
         states, actions, costs, reference = run_quadrotor_circle(
             num_steps=50,
@@ -113,7 +113,7 @@ class TestQuadrotorCircleExample:
 
     def test_circle_tracks_reference(self):
         """Test that circle controller tracks reference trajectory."""
-        from examples.quadrotor_circle import run_quadrotor_circle
+        from examples.quadrotor.circle import run_quadrotor_circle
 
         # Increased samples and horizon for better tracking in test
         states, _, _, reference = run_quadrotor_circle(
@@ -139,7 +139,7 @@ class TestQuadrotorCircleExample:
 
     def test_circle_maintains_altitude(self):
         """Test that circle tracking maintains constant altitude."""
-        from examples.quadrotor_circle import run_quadrotor_circle
+        from examples.quadrotor.circle import run_quadrotor_circle
 
         states, _, _, reference = run_quadrotor_circle(
             num_steps=300,
@@ -158,7 +158,7 @@ class TestQuadrotorCircleExample:
 
     def test_circle_quaternion_normalized(self):
         """Test that quaternion stays normalized during circle tracking."""
-        from examples.quadrotor_circle import run_quadrotor_circle
+        from examples.quadrotor.circle import run_quadrotor_circle
 
         states, _, _, _ = run_quadrotor_circle(
             num_steps=100,
@@ -177,7 +177,7 @@ class TestQuadrotorCircleExample:
 
     def test_circle_different_parameters(self):
         """Test that circle example works with different parameters."""
-        from examples.quadrotor_circle import run_quadrotor_circle
+        from examples.quadrotor.circle import run_quadrotor_circle
 
         # Test with smaller radius and faster period
         states, actions, costs, reference = run_quadrotor_circle(
@@ -201,8 +201,8 @@ class TestQuadrotorExamplesCompatibility:
 
     def test_examples_use_same_state_format(self):
         """Test that both examples use consistent state format."""
-        from examples.quadrotor_circle import run_quadrotor_circle
-        from examples.quadrotor_hover import run_quadrotor_hover
+        from examples.quadrotor.circle import run_quadrotor_circle
+        from examples.quadrotor.hover import run_quadrotor_hover
 
         states_hover, _, _ = run_quadrotor_hover(
             num_steps=10, num_samples=50, horizon=5, visualize=False, seed=42
@@ -217,8 +217,8 @@ class TestQuadrotorExamplesCompatibility:
 
     def test_examples_produce_finite_values(self):
         """Test that examples don't produce NaN or Inf values."""
-        from examples.quadrotor_circle import run_quadrotor_circle
-        from examples.quadrotor_hover import run_quadrotor_hover
+        from examples.quadrotor.circle import run_quadrotor_circle
+        from examples.quadrotor.hover import run_quadrotor_hover
 
         states_hover, actions_hover, costs_hover = run_quadrotor_hover(
             num_steps=50, num_samples=100, horizon=10, visualize=False, seed=42
