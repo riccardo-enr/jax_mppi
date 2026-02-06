@@ -279,13 +279,10 @@ def run_quadrotor_circle(
     print(f"  Mean velocity error: {jnp.mean(vel_errors):.4f}m/s")
     print(f"  Total cost: {jnp.sum(costs_history):.2f}")
 
-    # Return sliced reference matching num_steps for consistency
-    reference = reference[:num_steps]
-
     if visualize:
         try:
             import matplotlib.pyplot as plt
-            from mpl_toolkits.mplot3d import Axes3D
+            from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
             time_axis = jnp.arange(len(states)) * dt
 
@@ -437,7 +434,7 @@ def run_quadrotor_circle(
         except ImportError:
             print("\nMatplotlib not available for visualization")
 
-    return states, actions_taken, costs_history, reference
+    return states, actions_taken, costs_history, ref_match
 
 
 if __name__ == "__main__":
