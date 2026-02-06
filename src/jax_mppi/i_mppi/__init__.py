@@ -29,11 +29,7 @@ from .fsmi import (
     UniformFSMI,
     UniformFSMIConfig,
 )
-from .planner import (
-    biased_kmppi_command,
-    biased_mppi_command,
-    biased_smppi_command,
-)
+from .planner import biased_mppi_command
 
 __all__ = [
     # Layer 2: Full FSMI for reference trajectory
@@ -52,6 +48,4 @@ __all__ = [
     "running_cost",
     # Biased MPPI commands
     "biased_mppi_command",
-    "biased_smppi_command",
-    "biased_kmppi_command",
 ]

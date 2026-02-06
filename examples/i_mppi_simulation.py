@@ -40,8 +40,8 @@ def main():
     # Initial State
     # Quad: [0, 5, -2, ...] (Start at left middle)
     start_pos = jnp.array([1.0, 5.0, -2.0])
-    # info levels = max
-    info_init = jnp.array([100.0, 100.0])
+    # info levels = max (one per INFO_ZONE)
+    info_init = jnp.array([100.0, 100.0, 100.0])
 
     x0 = jnp.zeros(13)
     x0 = x0.at[:3].set(start_pos)
@@ -271,7 +271,7 @@ def main():
     ax3d.set_title("I-MPPI Simulation (3D)")
     ax3d.legend()
 
-    output_path = "i_mppi_simulation.png"
+    output_path = "docs/_media/i_mppi_simulation.png"
     plt.tight_layout()
     plt.savefig(output_path)
     print(f"Simulation complete. Plot saved to {output_path}")
