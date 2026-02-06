@@ -12,6 +12,9 @@ dist/
 .venv/
 uv.lock
 
+# Docs
+docs/_issues
+
 # Site
 site/
 _site/
