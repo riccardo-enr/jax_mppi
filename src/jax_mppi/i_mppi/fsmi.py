@@ -10,7 +10,40 @@ from .map import GridMap, world_to_grid
 
 @dataclass
 class FSMIConfig:
+    # Legacy rectangular zone parameters (for backward compatibility)
     info_threshold: float = 20.0
+    ref_speed: float = 2.0
+    info_weight: float = 10.0
+    motion_weight: float = 1.0
+
+    # Grid-based FSMI parameters
+    use_grid_fsmi: bool = True  # Toggle between grid FSMI and legacy geometric
+
+    # Sensor parameters (Zhang et al. 2020)
+    fov_rad: float = 1.57  # 90 degrees FOV
+    num_beams: int = 16  # Rays per scan (keep low for MPPI speed)
+    max_range: float = 5.0  # Meters
+    ray_step: float = 0.1  # Ray integration resolution (10cm cells)
+    sigma_range: float = 0.15  # Sensor noise std dev (Gaussian model)
+
+    # Inverse Sensor Model (Log Odds)
+    # p_occ=0.7 -> log(0.7/0.3) ≈ 0.85
+    # p_emp=0.4 -> log(0.4/0.6) ≈ -0.4
+    inv_sensor_model_occ: float = 0.85
+    inv_sensor_model_emp: float = -0.4
+
+    # FSMI optimization parameters
+    gaussian_truncation_sigma: float = 3.0  # Truncate G_kj beyond 3σ
+    trajectory_subsample_rate: int = 5  # Evaluate FSMI every N steps
+
+    # Legacy geometric parameters (kept for backward compatibility)
+    sensor_range: float = 6.0
+    fov_half_angle_deg: float = 60.0
+    info_scale: float = 20.0
+    distance_sigma: float = 1.0
+    info_depletion_rate: float = 20.0
+    info_depletion_sigma: float = 1.0
+
     goal_pos: jax.Array = field(
         default_factory=lambda: jnp.array([9.0, 5.0, -2.0])
     )
@@ -158,7 +191,11 @@ def _update_grid_zones(
 @register_pytree_node_class
 @dataclass
 class FSMITrajectoryGenerator:
-    """Layer 2: FSMI-driven trajectory generator."""
+    """
+    Layer 2: FSMI-driven trajectory generator.
+
+    Generates reference trajectories by selecting targets that maximize
+    information gain while minimizing motion cost.
 
     config: FSMIConfig
     info_zones: jax.Array
