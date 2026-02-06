@@ -279,9 +279,6 @@ def run_quadrotor_circle(
     print(f"  Mean velocity error: {jnp.mean(vel_errors):.4f}m/s")
     print(f"  Total cost: {jnp.sum(costs_history):.2f}")
 
-    # Return sliced reference matching num_steps for consistency
-    reference = reference[:num_steps]
-
     if visualize:
         try:
             import matplotlib.pyplot as plt
