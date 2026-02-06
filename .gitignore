@@ -20,3 +20,7 @@ site/
 _site/
 .quarto/
 **/*.quarto_ipynb
+
+# IDEs
+.vscode/
+.zed/
