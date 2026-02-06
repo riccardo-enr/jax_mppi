@@ -9,7 +9,7 @@ class TestFigure8Comparison:
 
     def test_figure8_comparison_runs(self):
         """Test that figure-8 comparison example runs."""
-        from examples.quadrotor_figure8_comparison import run_quadrotor_figure8_comparison
+        from examples.quadrotor.figure8_comparison import run_quadrotor_figure8_comparison
 
         results, reference = run_quadrotor_figure8_comparison(
             num_steps=100,
@@ -36,7 +36,7 @@ class TestFigure8Comparison:
 
     def test_figure8_produces_metrics(self):
         """Test that figure-8 comparison produces performance metrics."""
-        from examples.quadrotor_figure8_comparison import run_quadrotor_figure8_comparison
+        from examples.quadrotor.figure8_comparison import run_quadrotor_figure8_comparison
 
         results, _ = run_quadrotor_figure8_comparison(
             num_steps=50,
@@ -64,7 +64,7 @@ class TestFigure8Comparison:
 
     def test_figure8_quaternions_normalized(self):
         """Test that quaternions stay normalized for all controllers."""
-        from examples.quadrotor_figure8_comparison import run_quadrotor_figure8_comparison
+        from examples.quadrotor.figure8_comparison import run_quadrotor_figure8_comparison
 
         results, _ = run_quadrotor_figure8_comparison(
             num_steps=50,
@@ -83,7 +83,7 @@ class TestFigure8Comparison:
 
     def test_figure8_finite_values(self):
         """Test that all controllers produce finite values."""
-        from examples.quadrotor_figure8_comparison import run_quadrotor_figure8_comparison
+        from examples.quadrotor.figure8_comparison import run_quadrotor_figure8_comparison
 
         results, _ = run_quadrotor_figure8_comparison(
             num_steps=50,
@@ -108,7 +108,7 @@ class TestCustomTrajectory:
 
     def test_custom_trajectory_runs(self):
         """Test that custom trajectory example runs."""
-        from examples.quadrotor_custom_trajectory import run_quadrotor_custom_trajectory
+        from examples.quadrotor.custom_trajectory import run_quadrotor_custom_trajectory
 
         waypoints = jnp.array([
             [0.0, 0.0, -2.0],
@@ -135,7 +135,7 @@ class TestCustomTrajectory:
 
     def test_custom_trajectory_passes_near_waypoints(self):
         """Test that trajectory passes near specified waypoints."""
-        from examples.quadrotor_custom_trajectory import run_quadrotor_custom_trajectory
+        from examples.quadrotor.custom_trajectory import run_quadrotor_custom_trajectory
 
         waypoints = jnp.array([
             [0.0, 0.0, -2.0],
@@ -167,7 +167,7 @@ class TestCustomTrajectory:
 
     def test_custom_trajectory_quaternions_normalized(self):
         """Test that quaternions stay normalized."""
-        from examples.quadrotor_custom_trajectory import run_quadrotor_custom_trajectory
+        from examples.quadrotor.custom_trajectory import run_quadrotor_custom_trajectory
 
         waypoints = jnp.array([
             [0.0, 0.0, -2.0],
@@ -190,7 +190,7 @@ class TestCustomTrajectory:
 
     def test_custom_trajectory_finite_values(self):
         """Test that custom trajectory produces finite values."""
-        from examples.quadrotor_custom_trajectory import run_quadrotor_custom_trajectory
+        from examples.quadrotor.custom_trajectory import run_quadrotor_custom_trajectory
 
         waypoints = jnp.array([
             [0.0, 0.0, -2.0],
@@ -213,7 +213,7 @@ class TestCustomTrajectory:
 
     def test_custom_trajectory_different_waypoint_counts(self):
         """Test with different numbers of waypoints."""
-        from examples.quadrotor_custom_trajectory import run_quadrotor_custom_trajectory
+        from examples.quadrotor.custom_trajectory import run_quadrotor_custom_trajectory
 
         # Test with 2, 3, and 4 waypoints
         for num_waypoints in [2, 3, 4]:
@@ -241,8 +241,8 @@ class TestAdvancedExamplesCompatibility:
 
     def test_examples_use_consistent_state_format(self):
         """Test that all advanced examples use same state format."""
-        from examples.quadrotor_custom_trajectory import run_quadrotor_custom_trajectory
-        from examples.quadrotor_figure8_comparison import run_quadrotor_figure8_comparison
+        from examples.quadrotor.custom_trajectory import run_quadrotor_custom_trajectory
+        from examples.quadrotor.figure8_comparison import run_quadrotor_figure8_comparison
 
         results_fig8, _ = run_quadrotor_figure8_comparison(
             num_steps=20, num_samples=50, horizon=5, visualize=False, seed=42
