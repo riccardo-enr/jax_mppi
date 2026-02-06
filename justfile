@@ -7,15 +7,15 @@ default:
 
 # Run quadrotor hover comparison
 hover:
-    uv run python examples/quadrotor_hover_comparison.py --visualize
+    uv run python examples/quadrotor/hover_comparison.py --visualize
 
 # Run quadrotor figure-8 comparison
 figure8:
-    uv run python examples/quadrotor_figure8_comparison.py --visualize
+    uv run python examples/quadrotor/figure8.py --visualize
 
 # Run I-MPPI simulation example
 run-i-mppi-sim:
-    PYTHONPATH=src uv run python examples/i_mppi_simulation.py
+    PYTHONPATH=src uv run python examples/i_mppi/simulation.py
 
 # Run all quadrotor comparisons
 all: hover figure8 run-i-mppi-sim
@@ -23,11 +23,11 @@ all: hover figure8 run-i-mppi-sim
 # Run CUDA JIT pendulum example
 jit-pendulum:
     @export CUDA_MPPI_INCLUDE_DIR=$(pwd)/third_party/cuda-mppi/include && \
-    uv run python examples/cuda_pendulum_jit.py --visualization
+    uv run python examples/cuda/pendulum_jit.py --visualization
 
 # Run hover comparison with custom parameters
 hover-custom steps samples horizon lambda:
-    uv run python examples/quadrotor_hover_comparison.py \
+    uv run python examples/quadrotor/hover_comparison.py \
         --steps {{ steps }} \
         --samples {{ samples }} \
         --horizon {{ horizon }} \
@@ -36,7 +36,7 @@ hover-custom steps samples horizon lambda:
 
 # Run figure-8 comparison with custom parameters
 figure8-custom steps samples horizon lambda:
-    uv run python examples/quadrotor_figure8_comparison.py \
+    uv run python examples/quadrotor/figure8.py \
         --steps {{ steps }} \
         --samples {{ samples }} \
         --horizon {{ horizon }} \
@@ -45,7 +45,7 @@ figure8-custom steps samples horizon lambda:
 
 # Test basic CUDA bindings
 test-cuda:
-    uv run python examples/test_cuda_mppi.py
+    uv run python examples/cuda/test_cuda_mppi.py
 
 # Run tests
 test:
@@ -66,11 +66,11 @@ clean:
 
 # Show help for hover comparison
 help-hover:
-    uv run python examples/quadrotor_hover_comparison.py --help
+    uv run python examples/quadrotor/hover_comparison.py --help
 
 # Show help for figure8 comparison
 help-figure8:
-    uv run python examples/quadrotor_figure8_comparison.py --help
+    uv run python examples/quadrotor/figure8.py --help
 
 # Documentation
 quarto-doc:

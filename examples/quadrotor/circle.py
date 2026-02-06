@@ -9,12 +9,12 @@ import sys
 from pathlib import Path
 
 # Add parent directory to path for imports when running directly
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import jax
 import jax.numpy as jnp
 
-from examples.quadrotor.trajectories import (
+from .trajectories import (
     compute_trajectory_metrics,
     generate_circle_trajectory,
 )
@@ -423,7 +423,7 @@ def run_quadrotor_circle(
             plt.tight_layout()
 
             # Save to docs/media directory
-            output_dir = Path(__file__).parent.parent / "docs" / "media"
+            output_dir = Path(__file__).parent.parent.parent / "docs" / "media"
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / "quadrotor_circle_mppi.png"
 
