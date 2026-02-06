@@ -243,14 +243,17 @@ def biased_smppi_command(
 
     # Shift nominal trajectory if requested
     if shift:
-        new_state = _shift_nominal_smppi(new_state, shift_steps=config.u_per_command)
+        new_state = _shift_nominal_smppi(
+            new_state, shift_steps=config.u_per_command
+        )
 
     # Extract action to return
     if config.u_per_command == 1:
         action = new_action_sequence[0] * config.u_scale
     else:
         action = (
-            new_action_sequence[: config.u_per_command].reshape(-1) * config.u_scale
+            new_action_sequence[: config.u_per_command].reshape(-1)
+            * config.u_scale
         )
 
     return action, new_state
@@ -312,7 +315,9 @@ def biased_kmppi_command(
     # Solution: theta_ref = (K^T K)^-1 K^T U_ref
     KtK = K_matrix.T @ K_matrix
     KtU_ref = K_matrix.T @ U_ref
-    theta_ref = jax.scipy.linalg.solve(KtK + 1e-6 * jnp.eye(config.num_support_pts), KtU_ref, assume_a="pos")
+    theta_ref = jax.scipy.linalg.solve(
+        KtK + 1e-6 * jnp.eye(config.num_support_pts), KtU_ref, assume_a="pos"
+    )
 
     # Difference between reference and current control points
     delta_theta_ref = theta_ref - kmppi_state.theta
@@ -337,7 +342,9 @@ def biased_kmppi_command(
         )
         return U_interp
 
-    perturbed_actions = jax.vmap(interpolate_single)(perturbed_theta)  # (K, T, nu)
+    perturbed_actions = jax.vmap(interpolate_single)(
+        perturbed_theta
+    )  # (K, T, nu)
     perturbed_actions = _bound_action_kmppi(
         perturbed_actions, kmppi_state.u_min, kmppi_state.u_max
     )
@@ -366,7 +373,9 @@ def biased_kmppi_command(
     weights = _compute_weights_kmppi(total_costs, config.lambda_)
 
     # Update control points (optimization in control point space)
-    delta_theta = jnp.sum(weights[:, None, None] * effective_noise_theta, axis=0)
+    delta_theta = jnp.sum(
+        weights[:, None, None] * effective_noise_theta, axis=0
+    )
     new_theta = kmppi_state.theta + delta_theta
 
     # Interpolate updated control points to get full trajectory
@@ -401,6 +410,8 @@ def biased_kmppi_command(
     if config.u_per_command == 1:
         action = new_state.U[0] * config.u_scale
     else:
-        action = new_state.U[: config.u_per_command].reshape(-1) * config.u_scale
+        action = (
+            new_state.U[: config.u_per_command].reshape(-1) * config.u_scale
+        )
 
     return action, new_state
