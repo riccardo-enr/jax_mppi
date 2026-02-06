@@ -2,82 +2,82 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/autotuning.html</loc>
-    <lastmod>2026-02-06T10:24:57.909Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.608Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/plan/index.html</loc>
-    <lastmod>2026-02-06T10:24:57.925Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.625Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/plan/completed/porting_pytorch_jax.html</loc>
-    <lastmod>2026-02-06T10:24:57.925Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.625Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/plan/completed/cuda_mppi_implementation.html</loc>
-    <lastmod>2026-02-06T10:24:57.925Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.625Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/plan/completed/move_i_mppi_to_src.html</loc>
-    <lastmod>2026-02-06T10:24:57.925Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.625Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/plan/performance_analysis.html</loc>
-    <lastmod>2026-02-06T10:24:57.926Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.625Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/plan/quadrotor_trajectory_following.html</loc>
-    <lastmod>2026-02-06T10:24:57.926Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.626Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/index.html</loc>
-    <lastmod>2026-02-06T10:24:57.909Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.609Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/examples/i_mppi_interactive_simulation.html</loc>
-    <lastmod>2026-02-06T10:24:57.909Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.609Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/releasing.html</loc>
-    <lastmod>2026-02-06T10:24:57.926Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.626Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/i_mppi.html</loc>
-    <lastmod>2026-02-06T10:24:57.909Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.609Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/examples/pendulum.html</loc>
-    <lastmod>2026-02-06T10:24:57.909Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.609Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/testing.html</loc>
-    <lastmod>2026-02-06T10:24:57.926Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.626Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/plan/issue_31_visualization_exploration.html</loc>
-    <lastmod>2026-02-06T10:24:57.926Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.625Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/plan/fsm_i_exploration.html</loc>
-    <lastmod>2026-02-06T10:24:57.925Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.625Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/plan/example_performance_investigation.html</loc>
-    <lastmod>2026-02-06T10:24:57.925Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.625Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/plan/completed/evosax_integration.html</loc>
-    <lastmod>2026-02-06T10:24:57.925Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.625Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/plan/completed/cuda_mppi_submodule_plan.html</loc>
-    <lastmod>2026-02-06T10:24:57.925Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.625Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/plan/i_mppi_architecture_alignment.html</loc>
-    <lastmod>2026-02-06T10:24:57.925Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.625Z</lastmod>
   </url>
   <url>
     <loc>https://riccardo-enr.github.io/jax_mppi/theory.html</loc>
-    <lastmod>2026-02-06T10:24:57.926Z</lastmod>
+    <lastmod>2026-02-06T10:27:49.626Z</lastmod>
   </url>
 </urlset>

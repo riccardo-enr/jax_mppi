@@ -274,7 +274,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#architecture-overview" id="toc-architecture-overview" class="nav-link active" data-scroll-target="#architecture-overview">Architecture Overview</a></li>
   <li><a href="#environment-setup" id="toc-environment-setup" class="nav-link" data-scroll-target="#environment-setup">Environment Setup</a></li>
   <li><a href="#interactive-parameter-configuration" id="toc-interactive-parameter-configuration" class="nav-link" data-scroll-target="#interactive-parameter-configuration">Interactive Parameter Configuration</a></li>
-  <li><a href="#mppi-simulation-with-fixed-parametersrun-the-i-mppi-controller-with-fixed-parameters-for-a-reproducible-comparison-baseline.the-two-layer-architecture-uses--layer-2-full-fsmi-reference-trajectory-generation--layer-3-biased-mppi-tracking-local-uniform-fsmi-information-gain" id="toc-mppi-simulation-with-fixed-parametersrun-the-i-mppi-controller-with-fixed-parameters-for-a-reproducible-comparison-baseline.the-two-layer-architecture-uses--layer-2-full-fsmi-reference-trajectory-generation--layer-3-biased-mppi-tracking-local-uniform-fsmi-information-gain" class="nav-link" data-scroll-target="#mppi-simulation-with-fixed-parametersrun-the-i-mppi-controller-with-fixed-parameters-for-a-reproducible-comparison-baseline.the-two-layer-architecture-uses--layer-2-full-fsmi-reference-trajectory-generation--layer-3-biased-mppi-tracking-local-uniform-fsmi-information-gain">MPPI Simulation with Fixed ParametersRun the I-MPPI controller with fixed parameters for a reproducible comparison baseline.The two-layer architecture uses:- <strong>Layer 2</strong>: Full FSMI reference trajectory generation- <strong>Layer 3</strong>: Biased MPPI tracking + local Uniform-FSMI information gain</a></li>
+  <li><a href="#mppi-simulation-with-fixed-parameters" id="toc-mppi-simulation-with-fixed-parameters" class="nav-link" data-scroll-target="#mppi-simulation-with-fixed-parameters">MPPI Simulation with Fixed Parameters</a></li>
   </ul>
 </nav>
     </div>
@@ -320,10 +320,76 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><strong>Layer 3</strong> tracks the reference while maintaining local informative viewpoints via Uniform-FSMI, ensuring reactive exploration even between Layer 2 updates.</p>
 <p><strong>Cost function</strong>: <code>J = Tracking(ref) + Obstacles - lambda * Uniform_FSMI(local)</code></p>
 <div id="9d64eeaa" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># @title Setup: Install jax_mppi and dependencies (Colab only)import osimport sysif "COLAB_GPU" in os.environ or "COLAB_RELEASE_TAG" in os.environ:    # Running in Google Colab    !git clone https://github.com/riccardo-enr/jax_mppi.git /content/jax_mppi    # Install Python dependencies only (skip C++ build)    %pip install -q jaxtyping chex matplotlib ipywidgets    # Add source to path directly    sys.path.insert(0, "/content/jax_mppi/src")    os.chdir("/content/jax_mppi")else:    print("Not running in Colab -- assuming local installation.")# Verify JAX and GPUimport jaxprint(f"JAX version: {jax.__version__}")print(f"Available devices: {jax.devices()}")gpu_available = any(    "gpu" in str(d).lower() or "cuda" in str(d).lower() for d in jax.devices())if gpu_available:    print("GPU detected.")else:    print("WARNING: No GPU detected. Simulation will run on CPU (slower).")    print("In Colab: Runtime &gt; Change runtime type &gt; GPU")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># @title Setup: Install jax_mppi and dependencies (Colab only)</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="st">"COLAB_GPU"</span> <span class="kw">in</span> os.environ <span class="kw">or</span> <span class="st">"COLAB_RELEASE_TAG"</span> <span class="kw">in</span> os.environ:</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Running in Google Colab</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">!</span>git clone https:<span class="op">//</span>github.com<span class="op">/</span>riccardo<span class="op">-</span>enr<span class="op">/</span>jax_mppi.git <span class="op">/</span>content<span class="op">/</span>jax_mppi</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Install Python dependencies only (skip C++ build)</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">!</span>rm <span class="op">-</span>rf <span class="op">/</span>content<span class="op">/</span>jax_mppi</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">!</span>git clone https:<span class="op">//</span>github.com<span class="op">/</span>riccardo<span class="op">-</span>enr<span class="op">/</span>jax_mppi.git <span class="op">/</span>content<span class="op">/</span>jax_mppi</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">%</span>pip install <span class="op">-</span>q jaxtyping chex matplotlib ipywidgets</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add source to path directly</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    sys.path.insert(<span class="dv">0</span>, <span class="st">"/content/jax_mppi/src"</span>)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    os.chdir(<span class="st">"/content/jax_mppi"</span>)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Not running in Colab -- assuming local installation."</span>)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify JAX and GPU</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"JAX version: </span><span class="sc">{</span>jax<span class="sc">.</span>__version__<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Available devices: </span><span class="sc">{</span>jax<span class="sc">.</span>devices()<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>gpu_available <span class="op">=</span> <span class="bu">any</span>(</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    <span class="st">"gpu"</span> <span class="kw">in</span> <span class="bu">str</span>(d).lower() <span class="kw">or</span> <span class="st">"cuda"</span> <span class="kw">in</span> <span class="bu">str</span>(d).lower() <span class="cf">for</span> d <span class="kw">in</span> jax.devices()</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> gpu_available:</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"GPU detected."</span>)</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"WARNING: No GPU detected. Simulation will run on CPU (slower)."</span>)</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"In Colab: Runtime &gt; Change runtime type &gt; GPU"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Not running in Colab -- assuming local installation.
+JAX version: 0.9.0
+Available devices: [CudaDevice(id=0)]
+GPU detected.</code></pre>
 </div>
-<div id="08f1e1a3" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Importsimport timefrom functools import partialimport ipywidgets as widgetsimport jaximport jax.numpy as jnpimport matplotlib.patches as mpatchesimport matplotlib.pyplot as pltimport numpy as npfrom IPython.display import clear_output, displayfrom jax_mppi import mppifrom jax_mppi.i_mppi.environment import (    GOAL_POS,    INFO_ZONES,    augmented_dynamics,    informative_running_cost,)from jax_mppi.i_mppi.fsmi import (    FSMIConfig,    FSMITrajectoryGenerator,    UniformFSMI,    UniformFSMIConfig,)from jax_mppi.i_mppi.map import GridMapfrom jax_mppi.i_mppi.planner import biased_mppi_commandprint("All imports successful.")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="08f1e1a3" class="cell" data-execution_count="22">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Imports</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> functools <span class="im">import</span> partial</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ipywidgets <span class="im">as</span> widgets</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax.numpy <span class="im">as</span> jnp</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.patches <span class="im">as</span> mpatches</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> IPython.display <span class="im">import</span> clear_output, display</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> jax_mppi <span class="im">import</span> mppi</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> jax_mppi.i_mppi.environment <span class="im">import</span> (</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    GOAL_POS,</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    INFO_ZONES,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    augmented_dynamics,</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    informative_running_cost,</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> jax_mppi.i_mppi.fsmi <span class="im">import</span> (</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    FSMIConfig,</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    FSMITrajectoryGenerator,</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    UniformFSMI,</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    UniformFSMIConfig,</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> jax_mppi.i_mppi.<span class="bu">map</span> <span class="im">import</span> GridMap</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> jax_mppi.i_mppi.planner <span class="im">import</span> biased_mppi_command</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"All imports successful."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>All imports successful.</code></pre>
+</div>
 </div>
 </section>
 <section id="environment-setup" class="level2">
@@ -331,7 +397,160 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The simulation takes place in a <strong>14m x 12m office-like environment</strong> with: - <strong>Walls</strong> (gray): Physical obstacles the quadrotor must avoid - <strong>Info zones</strong> (yellow): Unknown regions with high entropy – the robot gains information by flying near them - <strong>Goal</strong> (red star): Target position the robot must reach - <strong>Start</strong> (green circle): Initial robot position</p>
 <p>The occupancy grid encodes uncertainty: 0.5 = unknown, 0.2 = known free, 0.9 = known occupied.</p>
 <div id="1c7619c7" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> create_occupancy_grid():    <span class="st">"""Create an office-like occupancy grid with rooms and corridors."""</span>    world_width <span class="op">=</span> <span class="fl">14.0</span>    world_height <span class="op">=</span> <span class="fl">12.0</span>    resolution <span class="op">=</span> <span class="fl">0.1</span>    width <span class="op">=</span> <span class="bu">int</span>(world_width <span class="op">/</span> resolution)    height <span class="op">=</span> <span class="bu">int</span>(world_height <span class="op">/</span> resolution)    grid <span class="op">=</span> <span class="fl">0.5</span> <span class="op">*</span> jnp.ones((height, width))    <span class="co"># Known free space (central corridor)    grid = grid.at[35:85, 5:135].set(0.2)    # Outer walls    grid = grid.at[0:5, :].set(0.9)    grid = grid.at[115:120, :].set(0.9)    grid = grid.at[:, 0:5].set(0.9)    grid = grid.at[:, 135:140].set(0.9)    # Room 1: Bottom-left office    grid = grid.at[85:115, 5:45].set(0.9)    grid = grid.at[35:115, 5:10].set(0.9)    grid = grid.at[35:85, 40:45].set(0.9)    grid = grid.at[35:45, 40:45].set(0.2)  # doorway    grid = grid.at[40:80, 10:40].set(0.5)  # unknown interior    grid = grid.at[40:50, 30:40].set(0.35)    # Room 2: Top-left office    grid = grid.at[5:35, 5:45].set(0.9)    grid = grid.at[5:35, 40:45].set(0.9)    grid = grid.at[28:36, 40:45].set(0.2)  # doorway    grid = grid.at[10:30, 10:40].set(0.5)    # Room 3: Bottom-right office    grid = grid.at[85:115, 95:135].set(0.9)    grid = grid.at[85:115, 130:135].set(0.9)    grid = grid.at[35:85, 95:100].set(0.9)    grid = grid.at[40:50, 95:100].set(0.2)  # doorway    grid = grid.at[40:80, 100:130].set(0.5)    grid = grid.at[50:60, 105:115].set(0.8)    grid = grid.at[65:75, 120:125].set(0.8)    # Room 4: Top-right office    grid = grid.at[5:35, 95:135].set(0.9)    grid = grid.at[5:35, 95:100].set(0.9)    grid = grid.at[28:36, 95:100].set(0.2)  # doorway    grid = grid.at[10:30, 100:130].set(0.5)    grid = grid.at[25:32, 100:110].set(0.35)    # Central obstacles    grid = grid.at[45:55, 50:60].set(0.85)    grid = grid.at[65:75, 70:80].set(0.85)    grid = grid.at[40:45, 85:90].set(0.8)    grid = grid.at[75:80, 20:25].set(0.8)    # Narrow passages    grid = grid.at[35:85, 45:52].set(0.2)    grid = grid.at[55:65, 60:70].set(0.2)    # Info zones (high uncertainty)    grid = grid.at[50:75, 12:35].set(0.5)    grid = grid.at[55:70, 15:30].set(0.55)    grid = grid.at[12:28, 102:128].set(0.5)    grid = grid.at[15:25, 105:125].set(0.55)    # Additional complexity    grid = grid.at[70:82, 48:52].set(0.9)    grid = grid.at[72:80, 48:52].set(0.2)    grid = grid.at[72:80, 45:48].set(0.52)    grid = grid.at[55:70, 90:95].set(0.9)    grid = grid.at[35:36, 40:45].set(0.75)    grid = grid.at[84:85, 95:100].set(0.75)    map_origin = jnp.array([0.0, 0.0])    return grid, map_origin, resolution, width, height# Build environmentgrid_array, map_origin, map_resolution, grid_width, grid_height = (    create_occupancy_grid())grid_map_obj = GridMap(    grid=grid_array,    origin=map_origin,    resolution=map_resolution,    width=grid_width,    height=grid_height,)# Visualizedef plot_environment(ax, grid, resolution, show_labels=True):    """Plot the occupancy grid with walls, info zones, start, and goal."""    extent = [0, grid.shape[1] * resolution, 0, grid.shape[0] * resolution]    ax.imshow(        np.array(grid),        origin="lower",        extent=extent,        cmap="gray_r",        vmin=0,        vmax=1,        alpha=0.8,    )    # Info zones    for i in range(len(INFO_ZONES)):        cx, cy = float(INFO_ZONES[i, 0]), float(INFO_ZONES[i, 1])        w, h = float(INFO_ZONES[i, 2]), float(INFO_ZONES[i, 3])        rect = mpatches.FancyBboxPatch(            (cx - w / 2, cy - h / 2),            w,            h,            boxstyle="round,pad=0.05",            facecolor="yellow",            alpha=0.3,            edgecolor="orange",            linewidth=1.5,        )        ax.add_patch(rect)        if show_labels:            ax.text(                cx, cy, f"Info {i+1}", ha="center", va="center", fontsize=8            )    # Start and goal    ax.plot(1.0, 5.0, "go", markersize=10, label="Start", zorder=5)    ax.plot(        float(GOAL_POS[0]),        float(GOAL_POS[1]),        "r*",        markersize=15,        label="Goal",        zorder=5,    )    ax.set_xlim(-0.5, 14.5)    ax.set_ylim(-0.5, 12.5)    ax.set_xlabel("X (m)")    ax.set_ylabel("Y (m)")    ax.set_aspect("equal")fig, ax = plt.subplots(1, 1, figsize=(10, 8))plot_environment(ax, grid_array, map_resolution)ax.set_title("Office Environment: Occupancy Grid")ax.legend(loc="upper left")plt.colorbar(    ax.images[0],    ax=ax,    label="Occupancy (0=free, 0.5=unknown, 1=occupied)",)plt.tight_layout()plt.show()</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> create_occupancy_grid():</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Create an office-like occupancy grid with rooms and corridors."""</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    world_width <span class="op">=</span> <span class="fl">14.0</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    world_height <span class="op">=</span> <span class="fl">12.0</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    resolution <span class="op">=</span> <span class="fl">0.1</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    width <span class="op">=</span> <span class="bu">int</span>(world_width <span class="op">/</span> resolution)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    height <span class="op">=</span> <span class="bu">int</span>(world_height <span class="op">/</span> resolution)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> <span class="fl">0.5</span> <span class="op">*</span> jnp.ones((height, width))</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Known free space (central corridor)</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">35</span>:<span class="dv">85</span>, <span class="dv">5</span>:<span class="dv">135</span>].<span class="bu">set</span>(<span class="fl">0.2</span>)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Outer walls</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">0</span>:<span class="dv">5</span>, :].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">115</span>:<span class="dv">120</span>, :].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[:, <span class="dv">0</span>:<span class="dv">5</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[:, <span class="dv">135</span>:<span class="dv">140</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Room 1: Bottom-left office</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">85</span>:<span class="dv">115</span>, <span class="dv">5</span>:<span class="dv">45</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">35</span>:<span class="dv">115</span>, <span class="dv">5</span>:<span class="dv">10</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">35</span>:<span class="dv">85</span>, <span class="dv">40</span>:<span class="dv">45</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">35</span>:<span class="dv">45</span>, <span class="dv">40</span>:<span class="dv">45</span>].<span class="bu">set</span>(<span class="fl">0.2</span>)  <span class="co"># doorway</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">40</span>:<span class="dv">80</span>, <span class="dv">10</span>:<span class="dv">40</span>].<span class="bu">set</span>(<span class="fl">0.5</span>)  <span class="co"># unknown interior</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">40</span>:<span class="dv">50</span>, <span class="dv">30</span>:<span class="dv">40</span>].<span class="bu">set</span>(<span class="fl">0.35</span>)</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Room 2: Top-left office</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">5</span>:<span class="dv">35</span>, <span class="dv">5</span>:<span class="dv">45</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">5</span>:<span class="dv">35</span>, <span class="dv">40</span>:<span class="dv">45</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">28</span>:<span class="dv">36</span>, <span class="dv">40</span>:<span class="dv">45</span>].<span class="bu">set</span>(<span class="fl">0.2</span>)  <span class="co"># doorway</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">10</span>:<span class="dv">30</span>, <span class="dv">10</span>:<span class="dv">40</span>].<span class="bu">set</span>(<span class="fl">0.5</span>)</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Room 3: Bottom-right office</span></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">85</span>:<span class="dv">115</span>, <span class="dv">95</span>:<span class="dv">135</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">85</span>:<span class="dv">115</span>, <span class="dv">130</span>:<span class="dv">135</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">35</span>:<span class="dv">85</span>, <span class="dv">95</span>:<span class="dv">100</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">40</span>:<span class="dv">50</span>, <span class="dv">95</span>:<span class="dv">100</span>].<span class="bu">set</span>(<span class="fl">0.2</span>)  <span class="co"># doorway</span></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">40</span>:<span class="dv">80</span>, <span class="dv">100</span>:<span class="dv">130</span>].<span class="bu">set</span>(<span class="fl">0.5</span>)</span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">50</span>:<span class="dv">60</span>, <span class="dv">105</span>:<span class="dv">115</span>].<span class="bu">set</span>(<span class="fl">0.8</span>)</span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">65</span>:<span class="dv">75</span>, <span class="dv">120</span>:<span class="dv">125</span>].<span class="bu">set</span>(<span class="fl">0.8</span>)</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Room 4: Top-right office</span></span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">5</span>:<span class="dv">35</span>, <span class="dv">95</span>:<span class="dv">135</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">5</span>:<span class="dv">35</span>, <span class="dv">95</span>:<span class="dv">100</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">28</span>:<span class="dv">36</span>, <span class="dv">95</span>:<span class="dv">100</span>].<span class="bu">set</span>(<span class="fl">0.2</span>)  <span class="co"># doorway</span></span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">10</span>:<span class="dv">30</span>, <span class="dv">100</span>:<span class="dv">130</span>].<span class="bu">set</span>(<span class="fl">0.5</span>)</span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">25</span>:<span class="dv">32</span>, <span class="dv">100</span>:<span class="dv">110</span>].<span class="bu">set</span>(<span class="fl">0.35</span>)</span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Central obstacles</span></span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">45</span>:<span class="dv">55</span>, <span class="dv">50</span>:<span class="dv">60</span>].<span class="bu">set</span>(<span class="fl">0.85</span>)</span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">65</span>:<span class="dv">75</span>, <span class="dv">70</span>:<span class="dv">80</span>].<span class="bu">set</span>(<span class="fl">0.85</span>)</span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">40</span>:<span class="dv">45</span>, <span class="dv">85</span>:<span class="dv">90</span>].<span class="bu">set</span>(<span class="fl">0.8</span>)</span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">75</span>:<span class="dv">80</span>, <span class="dv">20</span>:<span class="dv">25</span>].<span class="bu">set</span>(<span class="fl">0.8</span>)</span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Narrow passages</span></span>
+<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">35</span>:<span class="dv">85</span>, <span class="dv">45</span>:<span class="dv">52</span>].<span class="bu">set</span>(<span class="fl">0.2</span>)</span>
+<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">55</span>:<span class="dv">65</span>, <span class="dv">60</span>:<span class="dv">70</span>].<span class="bu">set</span>(<span class="fl">0.2</span>)</span>
+<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Info zones (high uncertainty)</span></span>
+<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">50</span>:<span class="dv">75</span>, <span class="dv">12</span>:<span class="dv">35</span>].<span class="bu">set</span>(<span class="fl">0.5</span>)</span>
+<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">55</span>:<span class="dv">70</span>, <span class="dv">15</span>:<span class="dv">30</span>].<span class="bu">set</span>(<span class="fl">0.55</span>)</span>
+<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">12</span>:<span class="dv">28</span>, <span class="dv">102</span>:<span class="dv">128</span>].<span class="bu">set</span>(<span class="fl">0.5</span>)</span>
+<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">15</span>:<span class="dv">25</span>, <span class="dv">105</span>:<span class="dv">125</span>].<span class="bu">set</span>(<span class="fl">0.55</span>)</span>
+<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Additional complexity</span></span>
+<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">70</span>:<span class="dv">82</span>, <span class="dv">48</span>:<span class="dv">52</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">72</span>:<span class="dv">80</span>, <span class="dv">48</span>:<span class="dv">52</span>].<span class="bu">set</span>(<span class="fl">0.2</span>)</span>
+<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">72</span>:<span class="dv">80</span>, <span class="dv">45</span>:<span class="dv">48</span>].<span class="bu">set</span>(<span class="fl">0.52</span>)</span>
+<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">55</span>:<span class="dv">70</span>, <span class="dv">90</span>:<span class="dv">95</span>].<span class="bu">set</span>(<span class="fl">0.9</span>)</span>
+<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">35</span>:<span class="dv">36</span>, <span class="dv">40</span>:<span class="dv">45</span>].<span class="bu">set</span>(<span class="fl">0.75</span>)</span>
+<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> grid.at[<span class="dv">84</span>:<span class="dv">85</span>, <span class="dv">95</span>:<span class="dv">100</span>].<span class="bu">set</span>(<span class="fl">0.75</span>)</span>
+<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a>    map_origin <span class="op">=</span> jnp.array([<span class="fl">0.0</span>, <span class="fl">0.0</span>])</span>
+<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> grid, map_origin, resolution, width, height</span>
+<span id="cb6-77"><a href="#cb6-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-78"><a href="#cb6-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-79"><a href="#cb6-79" aria-hidden="true" tabindex="-1"></a><span class="co"># Build environment</span></span>
+<span id="cb6-80"><a href="#cb6-80" aria-hidden="true" tabindex="-1"></a>grid_array, map_origin, map_resolution, grid_width, grid_height <span class="op">=</span> (</span>
+<span id="cb6-81"><a href="#cb6-81" aria-hidden="true" tabindex="-1"></a>    create_occupancy_grid()</span>
+<span id="cb6-82"><a href="#cb6-82" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-83"><a href="#cb6-83" aria-hidden="true" tabindex="-1"></a>grid_map_obj <span class="op">=</span> GridMap(</span>
+<span id="cb6-84"><a href="#cb6-84" aria-hidden="true" tabindex="-1"></a>    grid<span class="op">=</span>grid_array,</span>
+<span id="cb6-85"><a href="#cb6-85" aria-hidden="true" tabindex="-1"></a>    origin<span class="op">=</span>map_origin,</span>
+<span id="cb6-86"><a href="#cb6-86" aria-hidden="true" tabindex="-1"></a>    resolution<span class="op">=</span>map_resolution,</span>
+<span id="cb6-87"><a href="#cb6-87" aria-hidden="true" tabindex="-1"></a>    width<span class="op">=</span>grid_width,</span>
+<span id="cb6-88"><a href="#cb6-88" aria-hidden="true" tabindex="-1"></a>    height<span class="op">=</span>grid_height,</span>
+<span id="cb6-89"><a href="#cb6-89" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-90"><a href="#cb6-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-91"><a href="#cb6-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-92"><a href="#cb6-92" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize</span></span>
+<span id="cb6-93"><a href="#cb6-93" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_environment(ax, grid, resolution, show_labels<span class="op">=</span><span class="va">True</span>):</span>
+<span id="cb6-94"><a href="#cb6-94" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Plot the occupancy grid with walls, info zones, start, and goal."""</span></span>
+<span id="cb6-95"><a href="#cb6-95" aria-hidden="true" tabindex="-1"></a>    extent <span class="op">=</span> [<span class="dv">0</span>, grid.shape[<span class="dv">1</span>] <span class="op">*</span> resolution, <span class="dv">0</span>, grid.shape[<span class="dv">0</span>] <span class="op">*</span> resolution]</span>
+<span id="cb6-96"><a href="#cb6-96" aria-hidden="true" tabindex="-1"></a>    ax.imshow(</span>
+<span id="cb6-97"><a href="#cb6-97" aria-hidden="true" tabindex="-1"></a>        np.array(grid),</span>
+<span id="cb6-98"><a href="#cb6-98" aria-hidden="true" tabindex="-1"></a>        origin<span class="op">=</span><span class="st">"lower"</span>,</span>
+<span id="cb6-99"><a href="#cb6-99" aria-hidden="true" tabindex="-1"></a>        extent<span class="op">=</span>extent,</span>
+<span id="cb6-100"><a href="#cb6-100" aria-hidden="true" tabindex="-1"></a>        cmap<span class="op">=</span><span class="st">"gray_r"</span>,</span>
+<span id="cb6-101"><a href="#cb6-101" aria-hidden="true" tabindex="-1"></a>        vmin<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb6-102"><a href="#cb6-102" aria-hidden="true" tabindex="-1"></a>        vmax<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb6-103"><a href="#cb6-103" aria-hidden="true" tabindex="-1"></a>        alpha<span class="op">=</span><span class="fl">0.8</span>,</span>
+<span id="cb6-104"><a href="#cb6-104" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb6-105"><a href="#cb6-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-106"><a href="#cb6-106" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Info zones</span></span>
+<span id="cb6-107"><a href="#cb6-107" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(INFO_ZONES)):</span>
+<span id="cb6-108"><a href="#cb6-108" aria-hidden="true" tabindex="-1"></a>        cx, cy <span class="op">=</span> <span class="bu">float</span>(INFO_ZONES[i, <span class="dv">0</span>]), <span class="bu">float</span>(INFO_ZONES[i, <span class="dv">1</span>])</span>
+<span id="cb6-109"><a href="#cb6-109" aria-hidden="true" tabindex="-1"></a>        w, h <span class="op">=</span> <span class="bu">float</span>(INFO_ZONES[i, <span class="dv">2</span>]), <span class="bu">float</span>(INFO_ZONES[i, <span class="dv">3</span>])</span>
+<span id="cb6-110"><a href="#cb6-110" aria-hidden="true" tabindex="-1"></a>        rect <span class="op">=</span> mpatches.FancyBboxPatch(</span>
+<span id="cb6-111"><a href="#cb6-111" aria-hidden="true" tabindex="-1"></a>            (cx <span class="op">-</span> w <span class="op">/</span> <span class="dv">2</span>, cy <span class="op">-</span> h <span class="op">/</span> <span class="dv">2</span>),</span>
+<span id="cb6-112"><a href="#cb6-112" aria-hidden="true" tabindex="-1"></a>            w,</span>
+<span id="cb6-113"><a href="#cb6-113" aria-hidden="true" tabindex="-1"></a>            h,</span>
+<span id="cb6-114"><a href="#cb6-114" aria-hidden="true" tabindex="-1"></a>            boxstyle<span class="op">=</span><span class="st">"round,pad=0.05"</span>,</span>
+<span id="cb6-115"><a href="#cb6-115" aria-hidden="true" tabindex="-1"></a>            facecolor<span class="op">=</span><span class="st">"yellow"</span>,</span>
+<span id="cb6-116"><a href="#cb6-116" aria-hidden="true" tabindex="-1"></a>            alpha<span class="op">=</span><span class="fl">0.3</span>,</span>
+<span id="cb6-117"><a href="#cb6-117" aria-hidden="true" tabindex="-1"></a>            edgecolor<span class="op">=</span><span class="st">"orange"</span>,</span>
+<span id="cb6-118"><a href="#cb6-118" aria-hidden="true" tabindex="-1"></a>            linewidth<span class="op">=</span><span class="fl">1.5</span>,</span>
+<span id="cb6-119"><a href="#cb6-119" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb6-120"><a href="#cb6-120" aria-hidden="true" tabindex="-1"></a>        ax.add_patch(rect)</span>
+<span id="cb6-121"><a href="#cb6-121" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> show_labels:</span>
+<span id="cb6-122"><a href="#cb6-122" aria-hidden="true" tabindex="-1"></a>            ax.text(</span>
+<span id="cb6-123"><a href="#cb6-123" aria-hidden="true" tabindex="-1"></a>                cx, cy, <span class="ss">f"Info </span><span class="sc">{</span>i<span class="op">+</span><span class="dv">1</span><span class="sc">}</span><span class="ss">"</span>, ha<span class="op">=</span><span class="st">"center"</span>, va<span class="op">=</span><span class="st">"center"</span>, fontsize<span class="op">=</span><span class="dv">8</span></span>
+<span id="cb6-124"><a href="#cb6-124" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb6-125"><a href="#cb6-125" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-126"><a href="#cb6-126" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Start and goal</span></span>
+<span id="cb6-127"><a href="#cb6-127" aria-hidden="true" tabindex="-1"></a>    ax.plot(<span class="fl">1.0</span>, <span class="fl">5.0</span>, <span class="st">"go"</span>, markersize<span class="op">=</span><span class="dv">10</span>, label<span class="op">=</span><span class="st">"Start"</span>, zorder<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb6-128"><a href="#cb6-128" aria-hidden="true" tabindex="-1"></a>    ax.plot(</span>
+<span id="cb6-129"><a href="#cb6-129" aria-hidden="true" tabindex="-1"></a>        <span class="bu">float</span>(GOAL_POS[<span class="dv">0</span>]),</span>
+<span id="cb6-130"><a href="#cb6-130" aria-hidden="true" tabindex="-1"></a>        <span class="bu">float</span>(GOAL_POS[<span class="dv">1</span>]),</span>
+<span id="cb6-131"><a href="#cb6-131" aria-hidden="true" tabindex="-1"></a>        <span class="st">"r*"</span>,</span>
+<span id="cb6-132"><a href="#cb6-132" aria-hidden="true" tabindex="-1"></a>        markersize<span class="op">=</span><span class="dv">15</span>,</span>
+<span id="cb6-133"><a href="#cb6-133" aria-hidden="true" tabindex="-1"></a>        label<span class="op">=</span><span class="st">"Goal"</span>,</span>
+<span id="cb6-134"><a href="#cb6-134" aria-hidden="true" tabindex="-1"></a>        zorder<span class="op">=</span><span class="dv">5</span>,</span>
+<span id="cb6-135"><a href="#cb6-135" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb6-136"><a href="#cb6-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-137"><a href="#cb6-137" aria-hidden="true" tabindex="-1"></a>    ax.set_xlim(<span class="op">-</span><span class="fl">0.5</span>, <span class="fl">14.5</span>)</span>
+<span id="cb6-138"><a href="#cb6-138" aria-hidden="true" tabindex="-1"></a>    ax.set_ylim(<span class="op">-</span><span class="fl">0.5</span>, <span class="fl">12.5</span>)</span>
+<span id="cb6-139"><a href="#cb6-139" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="st">"X (m)"</span>)</span>
+<span id="cb6-140"><a href="#cb6-140" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(<span class="st">"Y (m)"</span>)</span>
+<span id="cb6-141"><a href="#cb6-141" aria-hidden="true" tabindex="-1"></a>    ax.set_aspect(<span class="st">"equal"</span>)</span>
+<span id="cb6-142"><a href="#cb6-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-143"><a href="#cb6-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-144"><a href="#cb6-144" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">8</span>))</span>
+<span id="cb6-145"><a href="#cb6-145" aria-hidden="true" tabindex="-1"></a>plot_environment(ax, grid_array, map_resolution)</span>
+<span id="cb6-146"><a href="#cb6-146" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"Office Environment: Occupancy Grid"</span>)</span>
+<span id="cb6-147"><a href="#cb6-147" aria-hidden="true" tabindex="-1"></a>ax.legend(loc<span class="op">=</span><span class="st">"upper left"</span>)</span>
+<span id="cb6-148"><a href="#cb6-148" aria-hidden="true" tabindex="-1"></a>plt.colorbar(</span>
+<span id="cb6-149"><a href="#cb6-149" aria-hidden="true" tabindex="-1"></a>    ax.images[<span class="dv">0</span>],</span>
+<span id="cb6-150"><a href="#cb6-150" aria-hidden="true" tabindex="-1"></a>    ax<span class="op">=</span>ax,</span>
+<span id="cb6-151"><a href="#cb6-151" aria-hidden="true" tabindex="-1"></a>    label<span class="op">=</span><span class="st">"Occupancy (0=free, 0.5=unknown, 1=occupied)"</span>,</span>
+<span id="cb6-152"><a href="#cb6-152" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-153"><a href="#cb6-153" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb6-154"><a href="#cb6-154" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="interactive-parameter-configuration" class="level2">
@@ -384,145 +603,648 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 <div id="14d9b06d" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualization helper functionsdef plot_trajectory_2d(    ax, history_x, grid, resolution, title="I-MPPI Trajectory"):    """Plot 2D trajectory over the environment."""    plot_environment(ax, grid, resolution, show_labels=False)    # Trajectory colored by time    positions = np.array(history_x[:, :2])    n_steps = len(positions)    colors = plt.cm.viridis(np.linspace(0, 1, n_steps))    for i in range(n_steps - 1):        ax.plot(            positions[i : i + 2, 0],            positions[i : i + 2, 1],            color=colors[i],            linewidth=2,        )    ax.plot(positions[0, 0], positions[0, 1], "go", markersize=10, zorder=5)    ax.plot(positions[-1, 0], positions[-1, 1], "bs", markersize=8, zorder=5)    ax.plot(        float(GOAL_POS[0]), float(GOAL_POS[1]), "r*", markersize=15, zorder=5    )    ax.set_title(title)def plot_info_levels(ax, history_info, dt):    """Plot info zone depletion over time."""    info = np.array(history_info)    t = np.arange(len(info)) * dt    for i in range(info.shape[1]):        ax.plot(t, info[:, i], linewidth=2, label=f"Info Zone {i+1}")    ax.set_xlabel("Time (s)")    ax.set_ylabel("Information Level")    ax.set_title("Information Zone Depletion")    ax.legend()    ax.grid(True, alpha=0.3)def plot_control_inputs(axes, actions, dt):    """Plot control inputs over time (4 subplots)."""    acts = np.array(actions)    t = np.arange(len(acts)) * dt    labels = [        "Thrust (N)",        "Omega X (rad/s)",        "Omega Y (rad/s)",        "Omega Z (rad/s)",    ]    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]    for i, (ax, label, color) in enumerate(zip(axes, labels, colors)):        ax.plot(t, acts[:, i], color=color, linewidth=1, alpha=0.8)        ax.set_ylabel(label)        ax.grid(True, alpha=0.3)    axes[-1].set_xlabel("Time (s)")    axes[0].set_title("Control Inputs")def plot_position_3d(ax, history_x):    """Plot 3D trajectory."""    pos = np.array(history_x[:, :3])    n = len(pos)    colors = plt.cm.viridis(np.linspace(0, 1, n))    for i in range(n - 1):        ax.plot(            pos[i : i + 2, 0],            pos[i : i + 2, 1],            pos[i : i + 2, 2],            color=colors[i],            linewidth=1.5,        )    ax.scatter(*pos[0], color="green", s=60, zorder=5)    ax.scatter(        float(GOAL_POS[0]),        float(GOAL_POS[1]),        float(GOAL_POS[2]),        color="red",        marker="*",        s=100,        zorder=5,    )    ax.set_xlabel("X (m)")    ax.set_ylabel("Y (m)")    ax.set_zlabel("Z (m)")    ax.set_title("3D Trajectory")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualization helper functions</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_trajectory_2d(</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    ax, history_x, grid, resolution, title<span class="op">=</span><span class="st">"I-MPPI Trajectory"</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Plot 2D trajectory over the environment."""</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    plot_environment(ax, grid, resolution, show_labels<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Trajectory colored by time</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    positions <span class="op">=</span> np.array(history_x[:, :<span class="dv">2</span>])</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    n_steps <span class="op">=</span> <span class="bu">len</span>(positions)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    colors <span class="op">=</span> plt.cm.viridis(np.linspace(<span class="dv">0</span>, <span class="dv">1</span>, n_steps))</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_steps <span class="op">-</span> <span class="dv">1</span>):</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        ax.plot(</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>            positions[i : i <span class="op">+</span> <span class="dv">2</span>, <span class="dv">0</span>],</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>            positions[i : i <span class="op">+</span> <span class="dv">2</span>, <span class="dv">1</span>],</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>            color<span class="op">=</span>colors[i],</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>            linewidth<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    ax.plot(positions[<span class="dv">0</span>, <span class="dv">0</span>], positions[<span class="dv">0</span>, <span class="dv">1</span>], <span class="st">"go"</span>, markersize<span class="op">=</span><span class="dv">10</span>, zorder<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    ax.plot(positions[<span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>], positions[<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>], <span class="st">"bs"</span>, markersize<span class="op">=</span><span class="dv">8</span>, zorder<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    ax.plot(</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>        <span class="bu">float</span>(GOAL_POS[<span class="dv">0</span>]), <span class="bu">float</span>(GOAL_POS[<span class="dv">1</span>]), <span class="st">"r*"</span>, markersize<span class="op">=</span><span class="dv">15</span>, zorder<span class="op">=</span><span class="dv">5</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    ax.set_title(title)</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_info_levels(ax, history_info, dt):</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Plot info zone depletion over time."""</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    info <span class="op">=</span> np.array(history_info)</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> np.arange(<span class="bu">len</span>(info)) <span class="op">*</span> dt</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(info.shape[<span class="dv">1</span>]):</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>        ax.plot(t, info[:, i], linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f"Info Zone </span><span class="sc">{</span>i<span class="op">+</span><span class="dv">1</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="st">"Time (s)"</span>)</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(<span class="st">"Information Level"</span>)</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>    ax.set_title(<span class="st">"Information Zone Depletion"</span>)</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>    ax.legend()</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>    ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_control_inputs(axes, actions, dt):</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Plot control inputs over time (4 subplots)."""</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>    acts <span class="op">=</span> np.array(actions)</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> np.arange(<span class="bu">len</span>(acts)) <span class="op">*</span> dt</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>    labels <span class="op">=</span> [</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Thrust (N)"</span>,</span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Omega X (rad/s)"</span>,</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Omega Y (rad/s)"</span>,</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Omega Z (rad/s)"</span>,</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>    colors <span class="op">=</span> [<span class="st">"#1f77b4"</span>, <span class="st">"#ff7f0e"</span>, <span class="st">"#2ca02c"</span>, <span class="st">"#d62728"</span>]</span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, (ax, label, color) <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="bu">zip</span>(axes, labels, colors)):</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>        ax.plot(t, acts[:, i], color<span class="op">=</span>color, linewidth<span class="op">=</span><span class="dv">1</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>        ax.set_ylabel(label)</span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>        ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>    axes[<span class="op">-</span><span class="dv">1</span>].set_xlabel(<span class="st">"Time (s)"</span>)</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">0</span>].set_title(<span class="st">"Control Inputs"</span>)</span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_position_3d(ax, history_x):</span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Plot 3D trajectory."""</span></span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>    pos <span class="op">=</span> np.array(history_x[:, :<span class="dv">3</span>])</span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(pos)</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>    colors <span class="op">=</span> plt.cm.viridis(np.linspace(<span class="dv">0</span>, <span class="dv">1</span>, n))</span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n <span class="op">-</span> <span class="dv">1</span>):</span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>        ax.plot(</span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>            pos[i : i <span class="op">+</span> <span class="dv">2</span>, <span class="dv">0</span>],</span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>            pos[i : i <span class="op">+</span> <span class="dv">2</span>, <span class="dv">1</span>],</span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>            pos[i : i <span class="op">+</span> <span class="dv">2</span>, <span class="dv">2</span>],</span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>            color<span class="op">=</span>colors[i],</span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>            linewidth<span class="op">=</span><span class="fl">1.5</span>,</span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>    ax.scatter(<span class="op">*</span>pos[<span class="dv">0</span>], color<span class="op">=</span><span class="st">"green"</span>, s<span class="op">=</span><span class="dv">60</span>, zorder<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>    ax.scatter(</span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>        <span class="bu">float</span>(GOAL_POS[<span class="dv">0</span>]),</span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>        <span class="bu">float</span>(GOAL_POS[<span class="dv">1</span>]),</span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>        <span class="bu">float</span>(GOAL_POS[<span class="dv">2</span>]),</span>
+<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>        color<span class="op">=</span><span class="st">"red"</span>,</span>
+<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>        marker<span class="op">=</span><span class="st">"*"</span>,</span>
+<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a>        s<span class="op">=</span><span class="dv">100</span>,</span>
+<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a>        zorder<span class="op">=</span><span class="dv">5</span>,</span>
+<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="st">"X (m)"</span>)</span>
+<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(<span class="st">"Y (m)"</span>)</span>
+<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a>    ax.set_zlabel(<span class="st">"Z (m)"</span>)</span>
+<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a>    ax.set_title(<span class="st">"3D Trajectory"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="0556acba" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulation helper functions</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Constants</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>DT <span class="op">=</span> <span class="fl">0.05</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>NX <span class="op">=</span> <span class="dv">16</span>  <span class="co"># 13 (quad) + 3 (info zones)</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>NU <span class="op">=</span> <span class="dv">4</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>CONTROL_HZ <span class="op">=</span> <span class="fl">50.0</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>FSMI_HZ <span class="op">=</span> <span class="fl">5.0</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>FSMI_STEPS <span class="op">=</span> <span class="bu">int</span>(<span class="bu">round</span>(CONTROL_HZ <span class="op">/</span> FSMI_HZ))</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>U_MIN <span class="op">=</span> jnp.array([<span class="fl">0.0</span>, <span class="op">-</span><span class="fl">10.0</span>, <span class="op">-</span><span class="fl">10.0</span>, <span class="op">-</span><span class="fl">10.0</span>])</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>U_MAX <span class="op">=</span> jnp.array([<span class="fl">4.0</span> <span class="op">*</span> <span class="fl">9.81</span>, <span class="fl">10.0</span>, <span class="fl">10.0</span>, <span class="fl">10.0</span>])</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>U_INIT <span class="op">=</span> jnp.array([<span class="fl">9.81</span>, <span class="fl">0.0</span>, <span class="fl">0.0</span>, <span class="fl">0.0</span>])</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>NOISE_SIGMA <span class="op">=</span> jnp.diag(jnp.array([<span class="fl">2.0</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span>]) <span class="op">**</span> <span class="dv">2</span>)</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> make_u_ref_from_traj(current_state, ref_traj):</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Convert position reference trajectory to control reference."""</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    pos <span class="op">=</span> current_state[:<span class="dv">3</span>]</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    err <span class="op">=</span> ref_traj <span class="op">-</span> pos[<span class="va">None</span>, :]</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    k_thrust <span class="op">=</span> <span class="fl">3.0</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    thrust <span class="op">=</span> U_INIT[<span class="dv">0</span>] <span class="op">+</span> k_thrust <span class="op">*</span> err[:, <span class="dv">2</span>]</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    k_omega <span class="op">=</span> <span class="fl">0.6</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    omega_x <span class="op">=</span> k_omega <span class="op">*</span> err[:, <span class="dv">1</span>]</span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    omega_y <span class="op">=</span> <span class="op">-</span>k_omega <span class="op">*</span> err[:, <span class="dv">0</span>]</span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    omega_z <span class="op">=</span> jnp.zeros_like(omega_x)</span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    u_ref <span class="op">=</span> jnp.stack([thrust, omega_x, omega_y, omega_z], axis<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>    u_ref <span class="op">=</span> jnp.clip(u_ref, U_MIN, U_MAX)</span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> u_ref</span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_smoothness(actions, positions, dt_val):</span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Compute action jerk and trajectory jerk metrics."""</span></span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>    action_jerk <span class="op">=</span> jnp.diff(actions, n<span class="op">=</span><span class="dv">2</span>, axis<span class="op">=</span><span class="dv">0</span>) <span class="op">/</span> (dt_val<span class="op">**</span><span class="dv">2</span>)</span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>    action_jerk_mean <span class="op">=</span> jnp.mean(jnp.linalg.norm(action_jerk, axis<span class="op">=</span><span class="dv">1</span>))</span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>    pos <span class="op">=</span> positions[:, :<span class="dv">3</span>]</span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>    vel <span class="op">=</span> jnp.diff(pos, axis<span class="op">=</span><span class="dv">0</span>) <span class="op">/</span> dt_val</span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>    acc <span class="op">=</span> jnp.diff(vel, axis<span class="op">=</span><span class="dv">0</span>) <span class="op">/</span> dt_val</span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>    jerk <span class="op">=</span> jnp.diff(acc, axis<span class="op">=</span><span class="dv">0</span>) <span class="op">/</span> dt_val</span>
-<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>    traj_jerk_mean <span class="op">=</span> jnp.mean(jnp.linalg.norm(jerk, axis<span class="op">=</span><span class="dv">1</span>))</span>
-<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> action_jerk_mean, traj_jerk_mean</span>
-<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> build_sim_fn(</span>
-<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>    config,</span>
-<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>    fsmi_planner,</span>
-<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>    uniform_fsmi,</span>
-<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>    uniform_fsmi_config,</span>
-<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>    horizon,</span>
-<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a>    sim_steps,</span>
-<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a>):</span>
-<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Build a JIT-compiled simulation function."""</span></span>
-<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> step_fn(carry, t):</span>
-<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a>        current_state, current_ctrl_state, ref_traj <span class="op">=</span> carry</span>
-<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Layer 2: Full FSMI reference trajectory (slow, 5 Hz)</span></span>
-<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a>        current_info <span class="op">=</span> current_state[<span class="dv">13</span>:]</span>
-<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a>        do_update <span class="op">=</span> jnp.equal(jnp.mod(t, FSMI_STEPS), <span class="dv">0</span>)</span>
-<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a>        info_data <span class="op">=</span> (grid_map_obj.grid, current_info)</span>
-<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a>        ref_traj <span class="op">=</span> jax.lax.cond(</span>
-<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a>            do_update,</span>
-<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a>            <span class="kw">lambda</span> _: fsmi_planner.get_reference_trajectory(</span>
-<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a>                current_state, info_data, horizon, DT</span>
-<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a>            )[<span class="dv">0</span>],</span>
-<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a>            <span class="kw">lambda</span> _: ref_traj,</span>
-<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a>            operand<span class="op">=</span><span class="va">None</span>,</span>
-<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Layer 3: Biased I-MPPI with Uniform-FSMI (fast, 50 Hz)</span></span>
-<span id="cb6-77"><a href="#cb6-77" aria-hidden="true" tabindex="-1"></a>        cost_fn <span class="op">=</span> partial(</span>
-<span id="cb6-78"><a href="#cb6-78" aria-hidden="true" tabindex="-1"></a>            informative_running_cost,</span>
-<span id="cb6-79"><a href="#cb6-79" aria-hidden="true" tabindex="-1"></a>            target<span class="op">=</span>ref_traj,</span>
-<span id="cb6-80"><a href="#cb6-80" aria-hidden="true" tabindex="-1"></a>            grid_map<span class="op">=</span>grid_map_obj.grid,</span>
-<span id="cb6-81"><a href="#cb6-81" aria-hidden="true" tabindex="-1"></a>            uniform_fsmi_fn<span class="op">=</span>uniform_fsmi.compute,</span>
-<span id="cb6-82"><a href="#cb6-82" aria-hidden="true" tabindex="-1"></a>            info_weight<span class="op">=</span>uniform_fsmi_config.info_weight,</span>
-<span id="cb6-83"><a href="#cb6-83" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb6-84"><a href="#cb6-84" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-85"><a href="#cb6-85" aria-hidden="true" tabindex="-1"></a>        U_ref_local <span class="op">=</span> make_u_ref_from_traj(current_state, ref_traj)</span>
-<span id="cb6-86"><a href="#cb6-86" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-87"><a href="#cb6-87" aria-hidden="true" tabindex="-1"></a>        action, next_ctrl_state <span class="op">=</span> biased_mppi_command(</span>
-<span id="cb6-88"><a href="#cb6-88" aria-hidden="true" tabindex="-1"></a>            config,</span>
-<span id="cb6-89"><a href="#cb6-89" aria-hidden="true" tabindex="-1"></a>            current_ctrl_state,</span>
-<span id="cb6-90"><a href="#cb6-90" aria-hidden="true" tabindex="-1"></a>            current_state,</span>
-<span id="cb6-91"><a href="#cb6-91" aria-hidden="true" tabindex="-1"></a>            augmented_dynamics,</span>
-<span id="cb6-92"><a href="#cb6-92" aria-hidden="true" tabindex="-1"></a>            cost_fn,</span>
-<span id="cb6-93"><a href="#cb6-93" aria-hidden="true" tabindex="-1"></a>            U_ref_local,</span>
-<span id="cb6-94"><a href="#cb6-94" aria-hidden="true" tabindex="-1"></a>            bias_alpha<span class="op">=</span><span class="fl">0.2</span>,</span>
-<span id="cb6-95"><a href="#cb6-95" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb6-96"><a href="#cb6-96" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-97"><a href="#cb6-97" aria-hidden="true" tabindex="-1"></a>        next_state <span class="op">=</span> augmented_dynamics(current_state, action, dt<span class="op">=</span>DT)</span>
-<span id="cb6-98"><a href="#cb6-98" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-99"><a href="#cb6-99" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> (next_state, next_ctrl_state, ref_traj), (</span>
-<span id="cb6-100"><a href="#cb6-100" aria-hidden="true" tabindex="-1"></a>            next_state,</span>
-<span id="cb6-101"><a href="#cb6-101" aria-hidden="true" tabindex="-1"></a>            current_info,</span>
-<span id="cb6-102"><a href="#cb6-102" aria-hidden="true" tabindex="-1"></a>            ref_traj[<span class="dv">0</span>],</span>
-<span id="cb6-103"><a href="#cb6-103" aria-hidden="true" tabindex="-1"></a>            action,</span>
-<span id="cb6-104"><a href="#cb6-104" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb6-105"><a href="#cb6-105" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-106"><a href="#cb6-106" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> sim_fn(initial_state, initial_ctrl_state):</span>
-<span id="cb6-107"><a href="#cb6-107" aria-hidden="true" tabindex="-1"></a>        info_data <span class="op">=</span> (grid_map_obj.grid, initial_state[<span class="dv">13</span>:])</span>
-<span id="cb6-108"><a href="#cb6-108" aria-hidden="true" tabindex="-1"></a>        init_ref_traj, _ <span class="op">=</span> fsmi_planner.get_reference_trajectory(</span>
-<span id="cb6-109"><a href="#cb6-109" aria-hidden="true" tabindex="-1"></a>            initial_state, info_data, horizon, DT</span>
-<span id="cb6-110"><a href="#cb6-110" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb6-111"><a href="#cb6-111" aria-hidden="true" tabindex="-1"></a>        (</span>
-<span id="cb6-112"><a href="#cb6-112" aria-hidden="true" tabindex="-1"></a>            (final_state, final_ctrl_state, _),</span>
-<span id="cb6-113"><a href="#cb6-113" aria-hidden="true" tabindex="-1"></a>            (history_x, history_info, targets, actions),</span>
-<span id="cb6-114"><a href="#cb6-114" aria-hidden="true" tabindex="-1"></a>        ) <span class="op">=</span> jax.lax.scan(</span>
-<span id="cb6-115"><a href="#cb6-115" aria-hidden="true" tabindex="-1"></a>            step_fn,</span>
-<span id="cb6-116"><a href="#cb6-116" aria-hidden="true" tabindex="-1"></a>            (initial_state, initial_ctrl_state, init_ref_traj),</span>
-<span id="cb6-117"><a href="#cb6-117" aria-hidden="true" tabindex="-1"></a>            jnp.arange(sim_steps),</span>
-<span id="cb6-118"><a href="#cb6-118" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb6-119"><a href="#cb6-119" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> final_state, history_x, history_info, targets, actions</span>
-<span id="cb6-120"><a href="#cb6-120" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-121"><a href="#cb6-121" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jax.jit(sim_fn)</span>
-<span id="cb6-122"><a href="#cb6-122" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-123"><a href="#cb6-123" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-124"><a href="#cb6-124" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Simulation engine ready."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulation helper functions</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Constants</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>DT <span class="op">=</span> <span class="fl">0.05</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>NX <span class="op">=</span> <span class="dv">16</span>  <span class="co"># 13 (quad) + 3 (info zones)</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>NU <span class="op">=</span> <span class="dv">4</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>CONTROL_HZ <span class="op">=</span> <span class="fl">50.0</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>FSMI_HZ <span class="op">=</span> <span class="fl">5.0</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>FSMI_STEPS <span class="op">=</span> <span class="bu">int</span>(<span class="bu">round</span>(CONTROL_HZ <span class="op">/</span> FSMI_HZ))</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>U_MIN <span class="op">=</span> jnp.array([<span class="fl">0.0</span>, <span class="op">-</span><span class="fl">10.0</span>, <span class="op">-</span><span class="fl">10.0</span>, <span class="op">-</span><span class="fl">10.0</span>])</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>U_MAX <span class="op">=</span> jnp.array([<span class="fl">4.0</span> <span class="op">*</span> <span class="fl">9.81</span>, <span class="fl">10.0</span>, <span class="fl">10.0</span>, <span class="fl">10.0</span>])</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>U_INIT <span class="op">=</span> jnp.array([<span class="fl">9.81</span>, <span class="fl">0.0</span>, <span class="fl">0.0</span>, <span class="fl">0.0</span>])</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>NOISE_SIGMA <span class="op">=</span> jnp.diag(jnp.array([<span class="fl">2.0</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span>]) <span class="op">**</span> <span class="dv">2</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> make_u_ref_from_traj(current_state, ref_traj):</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Convert position reference trajectory to control reference."""</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    pos <span class="op">=</span> current_state[:<span class="dv">3</span>]</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    err <span class="op">=</span> ref_traj <span class="op">-</span> pos[<span class="va">None</span>, :]</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    k_thrust <span class="op">=</span> <span class="fl">3.0</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    thrust <span class="op">=</span> U_INIT[<span class="dv">0</span>] <span class="op">+</span> k_thrust <span class="op">*</span> err[:, <span class="dv">2</span>]</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>    k_omega <span class="op">=</span> <span class="fl">0.6</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>    omega_x <span class="op">=</span> k_omega <span class="op">*</span> err[:, <span class="dv">1</span>]</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>    omega_y <span class="op">=</span> <span class="op">-</span>k_omega <span class="op">*</span> err[:, <span class="dv">0</span>]</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>    omega_z <span class="op">=</span> jnp.zeros_like(omega_x)</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>    u_ref <span class="op">=</span> jnp.stack([thrust, omega_x, omega_y, omega_z], axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>    u_ref <span class="op">=</span> jnp.clip(u_ref, U_MIN, U_MAX)</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> u_ref</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_smoothness(actions, positions, dt_val):</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Compute action jerk and trajectory jerk metrics."""</span></span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>    action_jerk <span class="op">=</span> jnp.diff(actions, n<span class="op">=</span><span class="dv">2</span>, axis<span class="op">=</span><span class="dv">0</span>) <span class="op">/</span> (dt_val<span class="op">**</span><span class="dv">2</span>)</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>    action_jerk_mean <span class="op">=</span> jnp.mean(jnp.linalg.norm(action_jerk, axis<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>    pos <span class="op">=</span> positions[:, :<span class="dv">3</span>]</span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>    vel <span class="op">=</span> jnp.diff(pos, axis<span class="op">=</span><span class="dv">0</span>) <span class="op">/</span> dt_val</span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>    acc <span class="op">=</span> jnp.diff(vel, axis<span class="op">=</span><span class="dv">0</span>) <span class="op">/</span> dt_val</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>    jerk <span class="op">=</span> jnp.diff(acc, axis<span class="op">=</span><span class="dv">0</span>) <span class="op">/</span> dt_val</span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>    traj_jerk_mean <span class="op">=</span> jnp.mean(jnp.linalg.norm(jerk, axis<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> action_jerk_mean, traj_jerk_mean</span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> build_sim_fn(</span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>    config,</span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>    fsmi_planner,</span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>    uniform_fsmi,</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>    uniform_fsmi_config,</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>    horizon,</span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a>    sim_steps,</span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Build a JIT-compiled simulation function."""</span></span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> step_fn(carry, t):</span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a>        current_state, current_ctrl_state, ref_traj <span class="op">=</span> carry</span>
+<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Layer 2: Full FSMI reference trajectory (slow, 5 Hz)</span></span>
+<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a>        current_info <span class="op">=</span> current_state[<span class="dv">13</span>:]</span>
+<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a>        do_update <span class="op">=</span> jnp.equal(jnp.mod(t, FSMI_STEPS), <span class="dv">0</span>)</span>
+<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a>        info_data <span class="op">=</span> (grid_map_obj.grid, current_info)</span>
+<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a>        ref_traj <span class="op">=</span> jax.lax.cond(</span>
+<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a>            do_update,</span>
+<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a>            <span class="kw">lambda</span> _: fsmi_planner.get_reference_trajectory(</span>
+<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a>                current_state, info_data, horizon, DT</span>
+<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a>            )[<span class="dv">0</span>],</span>
+<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a>            <span class="kw">lambda</span> _: ref_traj,</span>
+<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a>            operand<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Layer 3: Biased I-MPPI with Uniform-FSMI (fast, 50 Hz)</span></span>
+<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a>        cost_fn <span class="op">=</span> partial(</span>
+<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a>            informative_running_cost,</span>
+<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a>            target<span class="op">=</span>ref_traj,</span>
+<span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a>            grid_map<span class="op">=</span>grid_map_obj.grid,</span>
+<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a>            uniform_fsmi_fn<span class="op">=</span>uniform_fsmi.compute,</span>
+<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a>            info_weight<span class="op">=</span>uniform_fsmi_config.info_weight,</span>
+<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a>        U_ref_local <span class="op">=</span> make_u_ref_from_traj(current_state, ref_traj)</span>
+<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a>        action, next_ctrl_state <span class="op">=</span> biased_mppi_command(</span>
+<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a>            config,</span>
+<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a>            current_ctrl_state,</span>
+<span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a>            current_state,</span>
+<span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a>            augmented_dynamics,</span>
+<span id="cb8-92"><a href="#cb8-92" aria-hidden="true" tabindex="-1"></a>            cost_fn,</span>
+<span id="cb8-93"><a href="#cb8-93" aria-hidden="true" tabindex="-1"></a>            U_ref_local,</span>
+<span id="cb8-94"><a href="#cb8-94" aria-hidden="true" tabindex="-1"></a>            bias_alpha<span class="op">=</span><span class="fl">0.2</span>,</span>
+<span id="cb8-95"><a href="#cb8-95" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb8-96"><a href="#cb8-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-97"><a href="#cb8-97" aria-hidden="true" tabindex="-1"></a>        next_state <span class="op">=</span> augmented_dynamics(current_state, action, dt<span class="op">=</span>DT)</span>
+<span id="cb8-98"><a href="#cb8-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-99"><a href="#cb8-99" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> (next_state, next_ctrl_state, ref_traj), (</span>
+<span id="cb8-100"><a href="#cb8-100" aria-hidden="true" tabindex="-1"></a>            next_state,</span>
+<span id="cb8-101"><a href="#cb8-101" aria-hidden="true" tabindex="-1"></a>            current_info,</span>
+<span id="cb8-102"><a href="#cb8-102" aria-hidden="true" tabindex="-1"></a>            ref_traj[<span class="dv">0</span>],</span>
+<span id="cb8-103"><a href="#cb8-103" aria-hidden="true" tabindex="-1"></a>            action,</span>
+<span id="cb8-104"><a href="#cb8-104" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb8-105"><a href="#cb8-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-106"><a href="#cb8-106" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> sim_fn(initial_state, initial_ctrl_state):</span>
+<span id="cb8-107"><a href="#cb8-107" aria-hidden="true" tabindex="-1"></a>        info_data <span class="op">=</span> (grid_map_obj.grid, initial_state[<span class="dv">13</span>:])</span>
+<span id="cb8-108"><a href="#cb8-108" aria-hidden="true" tabindex="-1"></a>        init_ref_traj, _ <span class="op">=</span> fsmi_planner.get_reference_trajectory(</span>
+<span id="cb8-109"><a href="#cb8-109" aria-hidden="true" tabindex="-1"></a>            initial_state, info_data, horizon, DT</span>
+<span id="cb8-110"><a href="#cb8-110" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb8-111"><a href="#cb8-111" aria-hidden="true" tabindex="-1"></a>        (</span>
+<span id="cb8-112"><a href="#cb8-112" aria-hidden="true" tabindex="-1"></a>            (final_state, final_ctrl_state, _),</span>
+<span id="cb8-113"><a href="#cb8-113" aria-hidden="true" tabindex="-1"></a>            (history_x, history_info, targets, actions),</span>
+<span id="cb8-114"><a href="#cb8-114" aria-hidden="true" tabindex="-1"></a>        ) <span class="op">=</span> jax.lax.scan(</span>
+<span id="cb8-115"><a href="#cb8-115" aria-hidden="true" tabindex="-1"></a>            step_fn,</span>
+<span id="cb8-116"><a href="#cb8-116" aria-hidden="true" tabindex="-1"></a>            (initial_state, initial_ctrl_state, init_ref_traj),</span>
+<span id="cb8-117"><a href="#cb8-117" aria-hidden="true" tabindex="-1"></a>            jnp.arange(sim_steps),</span>
+<span id="cb8-118"><a href="#cb8-118" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb8-119"><a href="#cb8-119" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> final_state, history_x, history_info, targets, actions</span>
+<span id="cb8-120"><a href="#cb8-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-121"><a href="#cb8-121" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jax.jit(sim_fn)</span>
+<span id="cb8-122"><a href="#cb8-122" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-123"><a href="#cb8-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-124"><a href="#cb8-124" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Simulation engine ready."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="9b9d95dc" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Interactive widgets# System parametersw_start_x = widgets.FloatSlider(    value=1.0, min=0.5, max=12.0, step=0.5, description="Start X (m):")w_start_y = widgets.FloatSlider(    value=5.0, min=0.5, max=9.0, step=0.5, description="Start Y (m):")w_duration = widgets.FloatSlider(    value=15.0, min=5.0, max=60.0, step=5.0, description="Duration (s):")# Controller parametersw_samples = widgets.IntSlider(    value=1000, min=100, max=5000, step=100, description="Samples:")w_horizon = widgets.IntSlider(    value=40, min=10, max=80, step=5, description="Horizon:")w_lambda = widgets.FloatLogSlider(    value=0.1, min=-2, max=1, step=0.1, description="Lambda:")w_info_weight = widgets.FloatSlider(    value=5.0, min=0.0, max=20.0, step=1.0, description="Info Weight:")# FSMI parametersw_fsmi_beams = widgets.IntSlider(    value=12, min=4, max=24, step=2, description="FSMI Beams:")w_fsmi_range = widgets.FloatSlider(    value=5.0, min=2.0, max=10.0, step=0.5, description="FSMI Range:")run_button = widgets.Button(    description="Run Simulation",    button_style="success",    icon="play",    layout=widgets.Layout(width="200px", height="40px"),)output_area = widgets.Output()def run_simulation(button):    """Run I-MPPI simulation with current widget parameters."""    with output_area:        clear_output(wait=True)        # Read parameters        start_x = w_start_x.value        start_y = w_start_y.value        sim_duration = w_duration.value        num_samples = w_samples.value        horizon = w_horizon.value        lambda_ = w_lambda.value        info_weight = w_info_weight.value        fsmi_beams = w_fsmi_beams.value        fsmi_range = w_fsmi_range.value        sim_steps = int(round(sim_duration * CONTROL_HZ))        print("=" * 60)        print("I-MPPI Interactive Simulation")        print("=" * 60)        print(f"  Start: ({start_x}, {start_y})")        print(f"  Duration: {sim_duration}s ({sim_steps} steps)")        print(            f"  Samples: {num_samples}, Horizon: {horizon}, "            f"Lambda: {lambda_}"        )        print(f"  Info Weight: {info_weight}")        print(f"  FSMI Beams: {fsmi_beams}, Range: {fsmi_range}m")        print()        # Initial state        start_pos = jnp.array([start_x, start_y, -2.0])        info_init = jnp.array([100.0, 100.0, 100.0])        x0 = jnp.zeros(13)        x0 = x0.at[:3].set(start_pos)        x0 = x0.at[6].set(1.0)  # qw=1        state = jnp.concatenate([x0, info_init])        # Layer 2: FSMI config        fsmi_config = FSMIConfig(            use_grid_fsmi=True,            goal_pos=GOAL_POS,            fov_rad=1.57,            num_beams=fsmi_beams,            max_range=fsmi_range,            ray_step=0.15,            sigma_range=0.15,            gaussian_truncation_sigma=3.0,            trajectory_subsample_rate=8,            info_weight=25.0,            motion_weight=0.5,        )        fsmi_planner = FSMITrajectoryGenerator(            config=fsmi_config,            info_zones=INFO_ZONES,            grid_map=grid_map_obj,        )        # Layer 3: Uniform-FSMI config        uniform_fsmi_config = UniformFSMIConfig(            fov_rad=1.57,            num_beams=6,            max_range=2.5,            ray_step=0.2,            info_weight=info_weight,        )        uniform_fsmi = UniformFSMI(            uniform_fsmi_config,            map_origin,            map_resolution,        )        # MPPI config        config, ctrl_state = mppi.create(            nx=NX,            nu=NU,            noise_sigma=NOISE_SIGMA,            num_samples=num_samples,            horizon=horizon,            lambda_=lambda_,            u_min=U_MIN,            u_max=U_MAX,            u_init=U_INIT,            step_dependent_dynamics=True,        )        # Build simulation        sim_fn = build_sim_fn(            config,            fsmi_planner,            uniform_fsmi,            uniform_fsmi_config,            horizon,            sim_steps,        )        # JIT compile (warm-up)        print("JIT compiling... (this may take 1-2 min on first run)")        t0 = time.perf_counter()        warm = sim_fn(state, ctrl_state)        for leaf in jax.tree_util.tree_leaves(warm):            leaf.block_until_ready()        compile_time = time.perf_counter() - t0        print(f"  Compilation: {compile_time:.1f}s")        # Timed run        print("Running simulation...")        t0 = time.perf_counter()        final_state, history_x, history_info, targets, actions = sim_fn(            state, ctrl_state        )        final_state.block_until_ready()        runtime = time.perf_counter() - t0        # Metrics        action_jerk, traj_jerk = compute_smoothness(actions, history_x, DT)        final_pos = final_state[:3]        goal_dist = float(jnp.linalg.norm(final_pos - GOAL_POS))        print(            f"  Runtime: {runtime:.2f}s "            f"({runtime / sim_duration:.2f}x realtime)"        )        print(            f"  Final position: [{final_pos[0]:.2f}, "            f"{final_pos[1]:.2f}, {final_pos[2]:.2f}]"        )        print(f"  Distance to goal: {goal_dist:.2f}m")        print(f"  Info levels: {final_state[13:]}")        print(f"  Action jerk: {float(action_jerk):.4f}")        print(f"  Trajectory jerk: {float(traj_jerk):.4f}")        print()        # Visualization        fig = plt.figure(figsize=(16, 12))        # 2D trajectory        ax1 = fig.add_subplot(2, 2, 1)        plot_trajectory_2d(            ax1,            history_x,            grid_array,            map_resolution,            "I-MPPI Trajectory (2D)",        )        # Info level depletion        ax2 = fig.add_subplot(2, 2, 2)        plot_info_levels(ax2, history_info, DT)        # 3D trajectory        ax3 = fig.add_subplot(2, 2, 3, projection="3d")        plot_position_3d(ax3, history_x)        # Control inputs        ax4a = fig.add_subplot(4, 2, 6)        ax4b = fig.add_subplot(4, 2, 8)        acts = np.array(actions)        t_arr = np.arange(len(acts)) * DT        ax4a.plot(t_arr, acts[:, 0], color="#1f77b4", linewidth=1)        ax4a.set_ylabel("Thrust (N)")        ax4a.set_title("Control Inputs")        ax4a.grid(True, alpha=0.3)        ax4b.plot(t_arr, acts[:, 1], color="#ff7f0e", linewidth=1, label="wx")        ax4b.plot(t_arr, acts[:, 2], color="#2ca02c", linewidth=1, label="wy")        ax4b.plot(t_arr, acts[:, 3], color="#d62728", linewidth=1, label="wz")        ax4b.set_ylabel("Angular rates")        ax4b.set_xlabel("Time (s)")        ax4b.legend(fontsize=8)        ax4b.grid(True, alpha=0.3)        plt.tight_layout()        plt.show()run_button.on_click(run_simulation)# Layoutsystem_box = widgets.VBox(    [        widgets.HTML("&lt;h3&gt;System Parameters&lt;/h3&gt;"),        w_start_x,        w_start_y,        w_duration,    ])controller_box = widgets.VBox(    [        widgets.HTML("&lt;h3&gt;Controller Parameters&lt;/h3&gt;"),        w_samples,        w_horizon,        w_lambda,        w_info_weight,    ])fsmi_box = widgets.VBox(    [        widgets.HTML("&lt;h3&gt;FSMI Parameters (Layer 2)&lt;/h3&gt;"),        w_fsmi_beams,        w_fsmi_range,    ])param_panel = widgets.HBox([system_box, controller_box, fsmi_box])display(widgets.VBox([param_panel, run_button, output_area]))</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Interactive widgets</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># System parameters</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>w_start_x <span class="op">=</span> widgets.FloatSlider(</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    value<span class="op">=</span><span class="fl">1.0</span>, <span class="bu">min</span><span class="op">=</span><span class="fl">0.5</span>, <span class="bu">max</span><span class="op">=</span><span class="fl">12.0</span>, step<span class="op">=</span><span class="fl">0.5</span>, description<span class="op">=</span><span class="st">"Start X (m):"</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>w_start_y <span class="op">=</span> widgets.FloatSlider(</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    value<span class="op">=</span><span class="fl">5.0</span>, <span class="bu">min</span><span class="op">=</span><span class="fl">0.5</span>, <span class="bu">max</span><span class="op">=</span><span class="fl">9.0</span>, step<span class="op">=</span><span class="fl">0.5</span>, description<span class="op">=</span><span class="st">"Start Y (m):"</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>w_duration <span class="op">=</span> widgets.FloatSlider(</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    value<span class="op">=</span><span class="fl">15.0</span>, <span class="bu">min</span><span class="op">=</span><span class="fl">5.0</span>, <span class="bu">max</span><span class="op">=</span><span class="fl">60.0</span>, step<span class="op">=</span><span class="fl">5.0</span>, description<span class="op">=</span><span class="st">"Duration (s):"</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Controller parameters</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>w_samples <span class="op">=</span> widgets.IntSlider(</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    value<span class="op">=</span><span class="dv">1000</span>, <span class="bu">min</span><span class="op">=</span><span class="dv">100</span>, <span class="bu">max</span><span class="op">=</span><span class="dv">5000</span>, step<span class="op">=</span><span class="dv">100</span>, description<span class="op">=</span><span class="st">"Samples:"</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>w_horizon <span class="op">=</span> widgets.IntSlider(</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    value<span class="op">=</span><span class="dv">40</span>, <span class="bu">min</span><span class="op">=</span><span class="dv">10</span>, <span class="bu">max</span><span class="op">=</span><span class="dv">80</span>, step<span class="op">=</span><span class="dv">5</span>, description<span class="op">=</span><span class="st">"Horizon:"</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>w_lambda <span class="op">=</span> widgets.FloatLogSlider(</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    value<span class="op">=</span><span class="fl">0.1</span>, <span class="bu">min</span><span class="op">=-</span><span class="dv">2</span>, <span class="bu">max</span><span class="op">=</span><span class="dv">1</span>, step<span class="op">=</span><span class="fl">0.1</span>, description<span class="op">=</span><span class="st">"Lambda:"</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>w_info_weight <span class="op">=</span> widgets.FloatSlider(</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    value<span class="op">=</span><span class="fl">5.0</span>, <span class="bu">min</span><span class="op">=</span><span class="fl">0.0</span>, <span class="bu">max</span><span class="op">=</span><span class="fl">20.0</span>, step<span class="op">=</span><span class="fl">1.0</span>, description<span class="op">=</span><span class="st">"Info Weight:"</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="co"># FSMI parameters</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>w_fsmi_beams <span class="op">=</span> widgets.IntSlider(</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>    value<span class="op">=</span><span class="dv">12</span>, <span class="bu">min</span><span class="op">=</span><span class="dv">4</span>, <span class="bu">max</span><span class="op">=</span><span class="dv">24</span>, step<span class="op">=</span><span class="dv">2</span>, description<span class="op">=</span><span class="st">"FSMI Beams:"</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>w_fsmi_range <span class="op">=</span> widgets.FloatSlider(</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>    value<span class="op">=</span><span class="fl">5.0</span>, <span class="bu">min</span><span class="op">=</span><span class="fl">2.0</span>, <span class="bu">max</span><span class="op">=</span><span class="fl">10.0</span>, step<span class="op">=</span><span class="fl">0.5</span>, description<span class="op">=</span><span class="st">"FSMI Range:"</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>run_button <span class="op">=</span> widgets.Button(</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>    description<span class="op">=</span><span class="st">"Run Simulation"</span>,</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>    button_style<span class="op">=</span><span class="st">"success"</span>,</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>    icon<span class="op">=</span><span class="st">"play"</span>,</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>    layout<span class="op">=</span>widgets.Layout(width<span class="op">=</span><span class="st">"200px"</span>, height<span class="op">=</span><span class="st">"40px"</span>),</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>output_area <span class="op">=</span> widgets.Output()</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_simulation(button):</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Run I-MPPI simulation with current widget parameters."""</span></span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> output_area:</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>        clear_output(wait<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Read parameters</span></span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>        start_x <span class="op">=</span> w_start_x.value</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>        start_y <span class="op">=</span> w_start_y.value</span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>        sim_duration <span class="op">=</span> w_duration.value</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>        num_samples <span class="op">=</span> w_samples.value</span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>        horizon <span class="op">=</span> w_horizon.value</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>        lambda_ <span class="op">=</span> w_lambda.value</span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>        info_weight <span class="op">=</span> w_info_weight.value</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>        fsmi_beams <span class="op">=</span> w_fsmi_beams.value</span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>        fsmi_range <span class="op">=</span> w_fsmi_range.value</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>        sim_steps <span class="op">=</span> <span class="bu">int</span>(<span class="bu">round</span>(sim_duration <span class="op">*</span> CONTROL_HZ))</span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">60</span>)</span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"I-MPPI Interactive Simulation"</span>)</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">60</span>)</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Start: (</span><span class="sc">{</span>start_x<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>start_y<span class="sc">}</span><span class="ss">)"</span>)</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Duration: </span><span class="sc">{</span>sim_duration<span class="sc">}</span><span class="ss">s (</span><span class="sc">{</span>sim_steps<span class="sc">}</span><span class="ss"> steps)"</span>)</span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(</span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"  Samples: </span><span class="sc">{</span>num_samples<span class="sc">}</span><span class="ss">, Horizon: </span><span class="sc">{</span>horizon<span class="sc">}</span><span class="ss">, "</span></span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"Lambda: </span><span class="sc">{</span>lambda_<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Info Weight: </span><span class="sc">{</span>info_weight<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  FSMI Beams: </span><span class="sc">{</span>fsmi_beams<span class="sc">}</span><span class="ss">, Range: </span><span class="sc">{</span>fsmi_range<span class="sc">}</span><span class="ss">m"</span>)</span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>()</span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Initial state</span></span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>        start_pos <span class="op">=</span> jnp.array([start_x, start_y, <span class="op">-</span><span class="fl">2.0</span>])</span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>        info_init <span class="op">=</span> jnp.array([<span class="fl">100.0</span>, <span class="fl">100.0</span>, <span class="fl">100.0</span>])</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>        x0 <span class="op">=</span> jnp.zeros(<span class="dv">13</span>)</span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>        x0 <span class="op">=</span> x0.at[:<span class="dv">3</span>].<span class="bu">set</span>(start_pos)</span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a>        x0 <span class="op">=</span> x0.at[<span class="dv">6</span>].<span class="bu">set</span>(<span class="fl">1.0</span>)  <span class="co"># qw=1</span></span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>        state <span class="op">=</span> jnp.concatenate([x0, info_init])</span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Layer 2: FSMI config</span></span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a>        fsmi_config <span class="op">=</span> FSMIConfig(</span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a>            use_grid_fsmi<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a>            goal_pos<span class="op">=</span>GOAL_POS,</span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a>            fov_rad<span class="op">=</span><span class="fl">1.57</span>,</span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a>            num_beams<span class="op">=</span>fsmi_beams,</span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>            max_range<span class="op">=</span>fsmi_range,</span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a>            ray_step<span class="op">=</span><span class="fl">0.15</span>,</span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a>            sigma_range<span class="op">=</span><span class="fl">0.15</span>,</span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a>            gaussian_truncation_sigma<span class="op">=</span><span class="fl">3.0</span>,</span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a>            trajectory_subsample_rate<span class="op">=</span><span class="dv">8</span>,</span>
+<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a>            info_weight<span class="op">=</span><span class="fl">25.0</span>,</span>
+<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a>            motion_weight<span class="op">=</span><span class="fl">0.5</span>,</span>
+<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a>        fsmi_planner <span class="op">=</span> FSMITrajectoryGenerator(</span>
+<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a>            config<span class="op">=</span>fsmi_config,</span>
+<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a>            info_zones<span class="op">=</span>INFO_ZONES,</span>
+<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a>            grid_map<span class="op">=</span>grid_map_obj,</span>
+<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Layer 3: Uniform-FSMI config</span></span>
+<span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a>        uniform_fsmi_config <span class="op">=</span> UniformFSMIConfig(</span>
+<span id="cb9-106"><a href="#cb9-106" aria-hidden="true" tabindex="-1"></a>            fov_rad<span class="op">=</span><span class="fl">1.57</span>,</span>
+<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a>            num_beams<span class="op">=</span><span class="dv">6</span>,</span>
+<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a>            max_range<span class="op">=</span><span class="fl">2.5</span>,</span>
+<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a>            ray_step<span class="op">=</span><span class="fl">0.2</span>,</span>
+<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a>            info_weight<span class="op">=</span>info_weight,</span>
+<span id="cb9-111"><a href="#cb9-111" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-112"><a href="#cb9-112" aria-hidden="true" tabindex="-1"></a>        uniform_fsmi <span class="op">=</span> UniformFSMI(</span>
+<span id="cb9-113"><a href="#cb9-113" aria-hidden="true" tabindex="-1"></a>            uniform_fsmi_config,</span>
+<span id="cb9-114"><a href="#cb9-114" aria-hidden="true" tabindex="-1"></a>            map_origin,</span>
+<span id="cb9-115"><a href="#cb9-115" aria-hidden="true" tabindex="-1"></a>            map_resolution,</span>
+<span id="cb9-116"><a href="#cb9-116" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-117"><a href="#cb9-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-118"><a href="#cb9-118" aria-hidden="true" tabindex="-1"></a>        <span class="co"># MPPI config</span></span>
+<span id="cb9-119"><a href="#cb9-119" aria-hidden="true" tabindex="-1"></a>        config, ctrl_state <span class="op">=</span> mppi.create(</span>
+<span id="cb9-120"><a href="#cb9-120" aria-hidden="true" tabindex="-1"></a>            nx<span class="op">=</span>NX,</span>
+<span id="cb9-121"><a href="#cb9-121" aria-hidden="true" tabindex="-1"></a>            nu<span class="op">=</span>NU,</span>
+<span id="cb9-122"><a href="#cb9-122" aria-hidden="true" tabindex="-1"></a>            noise_sigma<span class="op">=</span>NOISE_SIGMA,</span>
+<span id="cb9-123"><a href="#cb9-123" aria-hidden="true" tabindex="-1"></a>            num_samples<span class="op">=</span>num_samples,</span>
+<span id="cb9-124"><a href="#cb9-124" aria-hidden="true" tabindex="-1"></a>            horizon<span class="op">=</span>horizon,</span>
+<span id="cb9-125"><a href="#cb9-125" aria-hidden="true" tabindex="-1"></a>            lambda_<span class="op">=</span>lambda_,</span>
+<span id="cb9-126"><a href="#cb9-126" aria-hidden="true" tabindex="-1"></a>            u_min<span class="op">=</span>U_MIN,</span>
+<span id="cb9-127"><a href="#cb9-127" aria-hidden="true" tabindex="-1"></a>            u_max<span class="op">=</span>U_MAX,</span>
+<span id="cb9-128"><a href="#cb9-128" aria-hidden="true" tabindex="-1"></a>            u_init<span class="op">=</span>U_INIT,</span>
+<span id="cb9-129"><a href="#cb9-129" aria-hidden="true" tabindex="-1"></a>            step_dependent_dynamics<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb9-130"><a href="#cb9-130" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-131"><a href="#cb9-131" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-132"><a href="#cb9-132" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Build simulation</span></span>
+<span id="cb9-133"><a href="#cb9-133" aria-hidden="true" tabindex="-1"></a>        sim_fn <span class="op">=</span> build_sim_fn(</span>
+<span id="cb9-134"><a href="#cb9-134" aria-hidden="true" tabindex="-1"></a>            config,</span>
+<span id="cb9-135"><a href="#cb9-135" aria-hidden="true" tabindex="-1"></a>            fsmi_planner,</span>
+<span id="cb9-136"><a href="#cb9-136" aria-hidden="true" tabindex="-1"></a>            uniform_fsmi,</span>
+<span id="cb9-137"><a href="#cb9-137" aria-hidden="true" tabindex="-1"></a>            uniform_fsmi_config,</span>
+<span id="cb9-138"><a href="#cb9-138" aria-hidden="true" tabindex="-1"></a>            horizon,</span>
+<span id="cb9-139"><a href="#cb9-139" aria-hidden="true" tabindex="-1"></a>            sim_steps,</span>
+<span id="cb9-140"><a href="#cb9-140" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-141"><a href="#cb9-141" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-142"><a href="#cb9-142" aria-hidden="true" tabindex="-1"></a>        <span class="co"># JIT compile (warm-up)</span></span>
+<span id="cb9-143"><a href="#cb9-143" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"JIT compiling... (this may take 1-2 min on first run)"</span>)</span>
+<span id="cb9-144"><a href="#cb9-144" aria-hidden="true" tabindex="-1"></a>        t0 <span class="op">=</span> time.perf_counter()</span>
+<span id="cb9-145"><a href="#cb9-145" aria-hidden="true" tabindex="-1"></a>        warm <span class="op">=</span> sim_fn(state, ctrl_state)</span>
+<span id="cb9-146"><a href="#cb9-146" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> leaf <span class="kw">in</span> jax.tree_util.tree_leaves(warm):</span>
+<span id="cb9-147"><a href="#cb9-147" aria-hidden="true" tabindex="-1"></a>            leaf.block_until_ready()</span>
+<span id="cb9-148"><a href="#cb9-148" aria-hidden="true" tabindex="-1"></a>        compile_time <span class="op">=</span> time.perf_counter() <span class="op">-</span> t0</span>
+<span id="cb9-149"><a href="#cb9-149" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Compilation: </span><span class="sc">{</span>compile_time<span class="sc">:.1f}</span><span class="ss">s"</span>)</span>
+<span id="cb9-150"><a href="#cb9-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-151"><a href="#cb9-151" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Timed run</span></span>
+<span id="cb9-152"><a href="#cb9-152" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"Running simulation..."</span>)</span>
+<span id="cb9-153"><a href="#cb9-153" aria-hidden="true" tabindex="-1"></a>        t0 <span class="op">=</span> time.perf_counter()</span>
+<span id="cb9-154"><a href="#cb9-154" aria-hidden="true" tabindex="-1"></a>        final_state, history_x, history_info, targets, actions <span class="op">=</span> sim_fn(</span>
+<span id="cb9-155"><a href="#cb9-155" aria-hidden="true" tabindex="-1"></a>            state, ctrl_state</span>
+<span id="cb9-156"><a href="#cb9-156" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-157"><a href="#cb9-157" aria-hidden="true" tabindex="-1"></a>        final_state.block_until_ready()</span>
+<span id="cb9-158"><a href="#cb9-158" aria-hidden="true" tabindex="-1"></a>        runtime <span class="op">=</span> time.perf_counter() <span class="op">-</span> t0</span>
+<span id="cb9-159"><a href="#cb9-159" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-160"><a href="#cb9-160" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Metrics</span></span>
+<span id="cb9-161"><a href="#cb9-161" aria-hidden="true" tabindex="-1"></a>        action_jerk, traj_jerk <span class="op">=</span> compute_smoothness(actions, history_x, DT)</span>
+<span id="cb9-162"><a href="#cb9-162" aria-hidden="true" tabindex="-1"></a>        final_pos <span class="op">=</span> final_state[:<span class="dv">3</span>]</span>
+<span id="cb9-163"><a href="#cb9-163" aria-hidden="true" tabindex="-1"></a>        goal_dist <span class="op">=</span> <span class="bu">float</span>(jnp.linalg.norm(final_pos <span class="op">-</span> GOAL_POS))</span>
+<span id="cb9-164"><a href="#cb9-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-165"><a href="#cb9-165" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(</span>
+<span id="cb9-166"><a href="#cb9-166" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"  Runtime: </span><span class="sc">{</span>runtime<span class="sc">:.2f}</span><span class="ss">s "</span></span>
+<span id="cb9-167"><a href="#cb9-167" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"(</span><span class="sc">{</span>runtime <span class="op">/</span> sim_duration<span class="sc">:.2f}</span><span class="ss">x realtime)"</span></span>
+<span id="cb9-168"><a href="#cb9-168" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-169"><a href="#cb9-169" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(</span>
+<span id="cb9-170"><a href="#cb9-170" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"  Final position: [</span><span class="sc">{</span>final_pos[<span class="dv">0</span>]<span class="sc">:.2f}</span><span class="ss">, "</span></span>
+<span id="cb9-171"><a href="#cb9-171" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"</span><span class="sc">{</span>final_pos[<span class="dv">1</span>]<span class="sc">:.2f}</span><span class="ss">, </span><span class="sc">{</span>final_pos[<span class="dv">2</span>]<span class="sc">:.2f}</span><span class="ss">]"</span></span>
+<span id="cb9-172"><a href="#cb9-172" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-173"><a href="#cb9-173" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Distance to goal: </span><span class="sc">{</span>goal_dist<span class="sc">:.2f}</span><span class="ss">m"</span>)</span>
+<span id="cb9-174"><a href="#cb9-174" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Info levels: </span><span class="sc">{</span>final_state[<span class="dv">13</span>:]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-175"><a href="#cb9-175" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Action jerk: </span><span class="sc">{</span><span class="bu">float</span>(action_jerk)<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb9-176"><a href="#cb9-176" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Trajectory jerk: </span><span class="sc">{</span><span class="bu">float</span>(traj_jerk)<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb9-177"><a href="#cb9-177" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>()</span>
+<span id="cb9-178"><a href="#cb9-178" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-179"><a href="#cb9-179" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Visualization</span></span>
+<span id="cb9-180"><a href="#cb9-180" aria-hidden="true" tabindex="-1"></a>        fig <span class="op">=</span> plt.figure(figsize<span class="op">=</span>(<span class="dv">16</span>, <span class="dv">12</span>))</span>
+<span id="cb9-181"><a href="#cb9-181" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-182"><a href="#cb9-182" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 2D trajectory</span></span>
+<span id="cb9-183"><a href="#cb9-183" aria-hidden="true" tabindex="-1"></a>        ax1 <span class="op">=</span> fig.add_subplot(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>)</span>
+<span id="cb9-184"><a href="#cb9-184" aria-hidden="true" tabindex="-1"></a>        plot_trajectory_2d(</span>
+<span id="cb9-185"><a href="#cb9-185" aria-hidden="true" tabindex="-1"></a>            ax1,</span>
+<span id="cb9-186"><a href="#cb9-186" aria-hidden="true" tabindex="-1"></a>            history_x,</span>
+<span id="cb9-187"><a href="#cb9-187" aria-hidden="true" tabindex="-1"></a>            grid_array,</span>
+<span id="cb9-188"><a href="#cb9-188" aria-hidden="true" tabindex="-1"></a>            map_resolution,</span>
+<span id="cb9-189"><a href="#cb9-189" aria-hidden="true" tabindex="-1"></a>            <span class="st">"I-MPPI Trajectory (2D)"</span>,</span>
+<span id="cb9-190"><a href="#cb9-190" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-191"><a href="#cb9-191" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-192"><a href="#cb9-192" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Info level depletion</span></span>
+<span id="cb9-193"><a href="#cb9-193" aria-hidden="true" tabindex="-1"></a>        ax2 <span class="op">=</span> fig.add_subplot(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>)</span>
+<span id="cb9-194"><a href="#cb9-194" aria-hidden="true" tabindex="-1"></a>        plot_info_levels(ax2, history_info, DT)</span>
+<span id="cb9-195"><a href="#cb9-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-196"><a href="#cb9-196" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 3D trajectory</span></span>
+<span id="cb9-197"><a href="#cb9-197" aria-hidden="true" tabindex="-1"></a>        ax3 <span class="op">=</span> fig.add_subplot(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, projection<span class="op">=</span><span class="st">"3d"</span>)</span>
+<span id="cb9-198"><a href="#cb9-198" aria-hidden="true" tabindex="-1"></a>        plot_position_3d(ax3, history_x)</span>
+<span id="cb9-199"><a href="#cb9-199" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-200"><a href="#cb9-200" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Control inputs</span></span>
+<span id="cb9-201"><a href="#cb9-201" aria-hidden="true" tabindex="-1"></a>        ax4a <span class="op">=</span> fig.add_subplot(<span class="dv">4</span>, <span class="dv">2</span>, <span class="dv">6</span>)</span>
+<span id="cb9-202"><a href="#cb9-202" aria-hidden="true" tabindex="-1"></a>        ax4b <span class="op">=</span> fig.add_subplot(<span class="dv">4</span>, <span class="dv">2</span>, <span class="dv">8</span>)</span>
+<span id="cb9-203"><a href="#cb9-203" aria-hidden="true" tabindex="-1"></a>        acts <span class="op">=</span> np.array(actions)</span>
+<span id="cb9-204"><a href="#cb9-204" aria-hidden="true" tabindex="-1"></a>        t_arr <span class="op">=</span> np.arange(<span class="bu">len</span>(acts)) <span class="op">*</span> DT</span>
+<span id="cb9-205"><a href="#cb9-205" aria-hidden="true" tabindex="-1"></a>        ax4a.plot(t_arr, acts[:, <span class="dv">0</span>], color<span class="op">=</span><span class="st">"#1f77b4"</span>, linewidth<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb9-206"><a href="#cb9-206" aria-hidden="true" tabindex="-1"></a>        ax4a.set_ylabel(<span class="st">"Thrust (N)"</span>)</span>
+<span id="cb9-207"><a href="#cb9-207" aria-hidden="true" tabindex="-1"></a>        ax4a.set_title(<span class="st">"Control Inputs"</span>)</span>
+<span id="cb9-208"><a href="#cb9-208" aria-hidden="true" tabindex="-1"></a>        ax4a.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb9-209"><a href="#cb9-209" aria-hidden="true" tabindex="-1"></a>        ax4b.plot(t_arr, acts[:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">"#ff7f0e"</span>, linewidth<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="st">"wx"</span>)</span>
+<span id="cb9-210"><a href="#cb9-210" aria-hidden="true" tabindex="-1"></a>        ax4b.plot(t_arr, acts[:, <span class="dv">2</span>], color<span class="op">=</span><span class="st">"#2ca02c"</span>, linewidth<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="st">"wy"</span>)</span>
+<span id="cb9-211"><a href="#cb9-211" aria-hidden="true" tabindex="-1"></a>        ax4b.plot(t_arr, acts[:, <span class="dv">3</span>], color<span class="op">=</span><span class="st">"#d62728"</span>, linewidth<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="st">"wz"</span>)</span>
+<span id="cb9-212"><a href="#cb9-212" aria-hidden="true" tabindex="-1"></a>        ax4b.set_ylabel(<span class="st">"Angular rates"</span>)</span>
+<span id="cb9-213"><a href="#cb9-213" aria-hidden="true" tabindex="-1"></a>        ax4b.set_xlabel(<span class="st">"Time (s)"</span>)</span>
+<span id="cb9-214"><a href="#cb9-214" aria-hidden="true" tabindex="-1"></a>        ax4b.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb9-215"><a href="#cb9-215" aria-hidden="true" tabindex="-1"></a>        ax4b.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb9-216"><a href="#cb9-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-217"><a href="#cb9-217" aria-hidden="true" tabindex="-1"></a>        plt.tight_layout()</span>
+<span id="cb9-218"><a href="#cb9-218" aria-hidden="true" tabindex="-1"></a>        plt.show()</span>
+<span id="cb9-219"><a href="#cb9-219" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-220"><a href="#cb9-220" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-221"><a href="#cb9-221" aria-hidden="true" tabindex="-1"></a>run_button.on_click(run_simulation)</span>
+<span id="cb9-222"><a href="#cb9-222" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-223"><a href="#cb9-223" aria-hidden="true" tabindex="-1"></a><span class="co"># Layout</span></span>
+<span id="cb9-224"><a href="#cb9-224" aria-hidden="true" tabindex="-1"></a>system_box <span class="op">=</span> widgets.VBox(</span>
+<span id="cb9-225"><a href="#cb9-225" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb9-226"><a href="#cb9-226" aria-hidden="true" tabindex="-1"></a>        widgets.HTML(<span class="st">"&lt;h3&gt;System Parameters&lt;/h3&gt;"</span>),</span>
+<span id="cb9-227"><a href="#cb9-227" aria-hidden="true" tabindex="-1"></a>        w_start_x,</span>
+<span id="cb9-228"><a href="#cb9-228" aria-hidden="true" tabindex="-1"></a>        w_start_y,</span>
+<span id="cb9-229"><a href="#cb9-229" aria-hidden="true" tabindex="-1"></a>        w_duration,</span>
+<span id="cb9-230"><a href="#cb9-230" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb9-231"><a href="#cb9-231" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-232"><a href="#cb9-232" aria-hidden="true" tabindex="-1"></a>controller_box <span class="op">=</span> widgets.VBox(</span>
+<span id="cb9-233"><a href="#cb9-233" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb9-234"><a href="#cb9-234" aria-hidden="true" tabindex="-1"></a>        widgets.HTML(<span class="st">"&lt;h3&gt;Controller Parameters&lt;/h3&gt;"</span>),</span>
+<span id="cb9-235"><a href="#cb9-235" aria-hidden="true" tabindex="-1"></a>        w_samples,</span>
+<span id="cb9-236"><a href="#cb9-236" aria-hidden="true" tabindex="-1"></a>        w_horizon,</span>
+<span id="cb9-237"><a href="#cb9-237" aria-hidden="true" tabindex="-1"></a>        w_lambda,</span>
+<span id="cb9-238"><a href="#cb9-238" aria-hidden="true" tabindex="-1"></a>        w_info_weight,</span>
+<span id="cb9-239"><a href="#cb9-239" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb9-240"><a href="#cb9-240" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-241"><a href="#cb9-241" aria-hidden="true" tabindex="-1"></a>fsmi_box <span class="op">=</span> widgets.VBox(</span>
+<span id="cb9-242"><a href="#cb9-242" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb9-243"><a href="#cb9-243" aria-hidden="true" tabindex="-1"></a>        widgets.HTML(<span class="st">"&lt;h3&gt;FSMI Parameters (Layer 2)&lt;/h3&gt;"</span>),</span>
+<span id="cb9-244"><a href="#cb9-244" aria-hidden="true" tabindex="-1"></a>        w_fsmi_beams,</span>
+<span id="cb9-245"><a href="#cb9-245" aria-hidden="true" tabindex="-1"></a>        w_fsmi_range,</span>
+<span id="cb9-246"><a href="#cb9-246" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb9-247"><a href="#cb9-247" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-248"><a href="#cb9-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-249"><a href="#cb9-249" aria-hidden="true" tabindex="-1"></a>param_panel <span class="op">=</span> widgets.HBox([system_box, controller_box, fsmi_box])</span>
+<span id="cb9-250"><a href="#cb9-250" aria-hidden="true" tabindex="-1"></a>display(widgets.VBox([param_panel, run_button, output_area]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
-<section id="mppi-simulation-with-fixed-parametersrun-the-i-mppi-controller-with-fixed-parameters-for-a-reproducible-comparison-baseline.the-two-layer-architecture-uses--layer-2-full-fsmi-reference-trajectory-generation--layer-3-biased-mppi-tracking-local-uniform-fsmi-information-gain" class="level2">
-<h2 class="anchored" data-anchor-id="mppi-simulation-with-fixed-parametersrun-the-i-mppi-controller-with-fixed-parameters-for-a-reproducible-comparison-baseline.the-two-layer-architecture-uses--layer-2-full-fsmi-reference-trajectory-generation--layer-3-biased-mppi-tracking-local-uniform-fsmi-information-gain">MPPI Simulation with Fixed ParametersRun the I-MPPI controller with fixed parameters for a reproducible comparison baseline.The two-layer architecture uses:- <strong>Layer 2</strong>: Full FSMI reference trajectory generation- <strong>Layer 3</strong>: Biased MPPI tracking + local Uniform-FSMI information gain</h2>
+<section id="mppi-simulation-with-fixed-parameters" class="level2">
+<h2 class="anchored" data-anchor-id="mppi-simulation-with-fixed-parameters">MPPI Simulation with Fixed Parameters</h2>
+<p>Run the I-MPPI controller with fixed parameters for a reproducible comparison baseline.</p>
+<p>The two-layer architecture uses: - <strong>Layer 2</strong>: Full FSMI reference trajectory generation - <strong>Layer 3</strong>: Biased MPPI tracking + local Uniform-FSMI information gain</p>
 <div id="8541ef46" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fixed-parameter MPPI simulationdef run_fixed_simulation():    """Run MPPI controller with fixed parameters."""    horizon = 40    sim_duration = 30.0    sim_steps = int(round(sim_duration * CONTROL_HZ))    # Initial state    start_pos = jnp.array([1.0, 5.0, -2.0])    info_init = jnp.array([100.0, 100.0, 100.0])    x0 = jnp.zeros(13)    x0 = x0.at[:3].set(start_pos)    x0 = x0.at[6].set(1.0)    state = jnp.concatenate([x0, info_init])    # Shared FSMI setup    fsmi_config = FSMIConfig(        use_grid_fsmi=True,        goal_pos=GOAL_POS,        fov_rad=1.57,        num_beams=12,        max_range=5.0,        ray_step=0.15,        sigma_range=0.15,        gaussian_truncation_sigma=3.0,        trajectory_subsample_rate=8,        info_weight=25.0,        motion_weight=0.5,    )    fsmi_planner = FSMITrajectoryGenerator(        config=fsmi_config,        info_zones=INFO_ZONES,        grid_map=grid_map_obj,    )    uniform_fsmi_config = UniformFSMIConfig(        fov_rad=1.57,        num_beams=6,        max_range=2.5,        ray_step=0.2,        info_weight=5.0,    )    uniform_fsmi = UniformFSMI(        uniform_fsmi_config,        map_origin,        map_resolution,    )    def block_until_ready(tree):        for leaf in jax.tree_util.tree_leaves(tree):            leaf.block_until_ready()    # MPPI    mppi_config, mppi_state = mppi.create(        nx=NX,        nu=NU,        noise_sigma=NOISE_SIGMA,        num_samples=1000,        horizon=horizon,        lambda_=0.1,        u_min=U_MIN,        u_max=U_MAX,        u_init=U_INIT,        step_dependent_dynamics=True,    )    sim_fn = build_sim_fn(        mppi_config,        fsmi_planner,        uniform_fsmi,        uniform_fsmi_config,        horizon,        sim_steps,    )    print("Running MPPI...")    # Warm-up    print("  JIT compiling...")    warm = sim_fn(state, mppi_state)    block_until_ready(warm)    # Timed run    t0 = time.perf_counter()    final_state, history_x, history_info, targets, actions = sim_fn(        state, mppi_state    )    final_state.block_until_ready()    elapsed = time.perf_counter() - t0    action_jerk, traj_jerk = compute_smoothness(actions, history_x, DT)    goal_dist = float(jnp.linalg.norm(final_state[:3] - GOAL_POS))    results = {        "history_x": history_x,        "history_info": history_info,        "actions": actions,        "runtime_s": elapsed,        "action_jerk": float(action_jerk),        "traj_jerk": float(traj_jerk),        "goal_dist": goal_dist,        "final_state": final_state,    }    print(        f"  MPPI: {elapsed:.2f}s "        f"({elapsed / sim_duration:.2f}x realtime), "        f"goal dist: {goal_dist:.2f}m"    )    return resultsprint("Running fixed-parameter simulation...")print()mppi_results = run_fixed_simulation()</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fixed-parameter MPPI simulation</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_fixed_simulation():</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Run MPPI controller with fixed parameters."""</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    horizon <span class="op">=</span> <span class="dv">40</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    sim_duration <span class="op">=</span> <span class="fl">30.0</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    sim_steps <span class="op">=</span> <span class="bu">int</span>(<span class="bu">round</span>(sim_duration <span class="op">*</span> CONTROL_HZ))</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Initial state</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    start_pos <span class="op">=</span> jnp.array([<span class="fl">1.0</span>, <span class="fl">5.0</span>, <span class="op">-</span><span class="fl">2.0</span>])</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    info_init <span class="op">=</span> jnp.array([<span class="fl">100.0</span>, <span class="fl">100.0</span>, <span class="fl">100.0</span>])</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    x0 <span class="op">=</span> jnp.zeros(<span class="dv">13</span>)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    x0 <span class="op">=</span> x0.at[:<span class="dv">3</span>].<span class="bu">set</span>(start_pos)</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    x0 <span class="op">=</span> x0.at[<span class="dv">6</span>].<span class="bu">set</span>(<span class="fl">1.0</span>)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    state <span class="op">=</span> jnp.concatenate([x0, info_init])</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Shared FSMI setup</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    fsmi_config <span class="op">=</span> FSMIConfig(</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>        use_grid_fsmi<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>        goal_pos<span class="op">=</span>GOAL_POS,</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>        fov_rad<span class="op">=</span><span class="fl">1.57</span>,</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>        num_beams<span class="op">=</span><span class="dv">12</span>,</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>        max_range<span class="op">=</span><span class="fl">5.0</span>,</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>        ray_step<span class="op">=</span><span class="fl">0.15</span>,</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>        sigma_range<span class="op">=</span><span class="fl">0.15</span>,</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>        gaussian_truncation_sigma<span class="op">=</span><span class="fl">3.0</span>,</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>        trajectory_subsample_rate<span class="op">=</span><span class="dv">8</span>,</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>        info_weight<span class="op">=</span><span class="fl">25.0</span>,</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>        motion_weight<span class="op">=</span><span class="fl">0.5</span>,</span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>    fsmi_planner <span class="op">=</span> FSMITrajectoryGenerator(</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>        config<span class="op">=</span>fsmi_config,</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>        info_zones<span class="op">=</span>INFO_ZONES,</span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>        grid_map<span class="op">=</span>grid_map_obj,</span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>    uniform_fsmi_config <span class="op">=</span> UniformFSMIConfig(</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>        fov_rad<span class="op">=</span><span class="fl">1.57</span>,</span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>        num_beams<span class="op">=</span><span class="dv">6</span>,</span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a>        max_range<span class="op">=</span><span class="fl">2.5</span>,</span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a>        ray_step<span class="op">=</span><span class="fl">0.2</span>,</span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a>        info_weight<span class="op">=</span><span class="fl">5.0</span>,</span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a>    uniform_fsmi <span class="op">=</span> UniformFSMI(</span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a>        uniform_fsmi_config,</span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a>        map_origin,</span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a>        map_resolution,</span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> block_until_ready(tree):</span>
+<span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> leaf <span class="kw">in</span> jax.tree_util.tree_leaves(tree):</span>
+<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a>            leaf.block_until_ready()</span>
+<span id="cb10-54"><a href="#cb10-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-55"><a href="#cb10-55" aria-hidden="true" tabindex="-1"></a>    <span class="co"># MPPI</span></span>
+<span id="cb10-56"><a href="#cb10-56" aria-hidden="true" tabindex="-1"></a>    mppi_config, mppi_state <span class="op">=</span> mppi.create(</span>
+<span id="cb10-57"><a href="#cb10-57" aria-hidden="true" tabindex="-1"></a>        nx<span class="op">=</span>NX, nu<span class="op">=</span>NU, noise_sigma<span class="op">=</span>NOISE_SIGMA, num_samples<span class="op">=</span><span class="dv">1000</span>,</span>
+<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a>        horizon<span class="op">=</span>horizon, lambda_<span class="op">=</span><span class="fl">0.1</span>, u_min<span class="op">=</span>U_MIN, u_max<span class="op">=</span>U_MAX,</span>
+<span id="cb10-59"><a href="#cb10-59" aria-hidden="true" tabindex="-1"></a>        u_init<span class="op">=</span>U_INIT, step_dependent_dynamics<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb10-60"><a href="#cb10-60" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-61"><a href="#cb10-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-62"><a href="#cb10-62" aria-hidden="true" tabindex="-1"></a>    sim_fn <span class="op">=</span> build_sim_fn(</span>
+<span id="cb10-63"><a href="#cb10-63" aria-hidden="true" tabindex="-1"></a>        mppi_config,</span>
+<span id="cb10-64"><a href="#cb10-64" aria-hidden="true" tabindex="-1"></a>        fsmi_planner,</span>
+<span id="cb10-65"><a href="#cb10-65" aria-hidden="true" tabindex="-1"></a>        uniform_fsmi,</span>
+<span id="cb10-66"><a href="#cb10-66" aria-hidden="true" tabindex="-1"></a>        uniform_fsmi_config,</span>
+<span id="cb10-67"><a href="#cb10-67" aria-hidden="true" tabindex="-1"></a>        horizon,</span>
+<span id="cb10-68"><a href="#cb10-68" aria-hidden="true" tabindex="-1"></a>        sim_steps,</span>
+<span id="cb10-69"><a href="#cb10-69" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-70"><a href="#cb10-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-71"><a href="#cb10-71" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Running MPPI..."</span>)</span>
+<span id="cb10-72"><a href="#cb10-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-73"><a href="#cb10-73" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Warm-up</span></span>
+<span id="cb10-74"><a href="#cb10-74" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"  JIT compiling..."</span>)</span>
+<span id="cb10-75"><a href="#cb10-75" aria-hidden="true" tabindex="-1"></a>    warm <span class="op">=</span> sim_fn(state, mppi_state)</span>
+<span id="cb10-76"><a href="#cb10-76" aria-hidden="true" tabindex="-1"></a>    block_until_ready(warm)</span>
+<span id="cb10-77"><a href="#cb10-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-78"><a href="#cb10-78" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Timed run</span></span>
+<span id="cb10-79"><a href="#cb10-79" aria-hidden="true" tabindex="-1"></a>    t0 <span class="op">=</span> time.perf_counter()</span>
+<span id="cb10-80"><a href="#cb10-80" aria-hidden="true" tabindex="-1"></a>    final_state, history_x, history_info, targets, actions <span class="op">=</span> sim_fn(</span>
+<span id="cb10-81"><a href="#cb10-81" aria-hidden="true" tabindex="-1"></a>        state, mppi_state</span>
+<span id="cb10-82"><a href="#cb10-82" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-83"><a href="#cb10-83" aria-hidden="true" tabindex="-1"></a>    final_state.block_until_ready()</span>
+<span id="cb10-84"><a href="#cb10-84" aria-hidden="true" tabindex="-1"></a>    elapsed <span class="op">=</span> time.perf_counter() <span class="op">-</span> t0</span>
+<span id="cb10-85"><a href="#cb10-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-86"><a href="#cb10-86" aria-hidden="true" tabindex="-1"></a>    action_jerk, traj_jerk <span class="op">=</span> compute_smoothness(actions, history_x, DT)</span>
+<span id="cb10-87"><a href="#cb10-87" aria-hidden="true" tabindex="-1"></a>    goal_dist <span class="op">=</span> <span class="bu">float</span>(jnp.linalg.norm(final_state[:<span class="dv">3</span>] <span class="op">-</span> GOAL_POS))</span>
+<span id="cb10-88"><a href="#cb10-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-89"><a href="#cb10-89" aria-hidden="true" tabindex="-1"></a>    results <span class="op">=</span> {</span>
+<span id="cb10-90"><a href="#cb10-90" aria-hidden="true" tabindex="-1"></a>        <span class="st">"history_x"</span>: history_x,</span>
+<span id="cb10-91"><a href="#cb10-91" aria-hidden="true" tabindex="-1"></a>        <span class="st">"history_info"</span>: history_info,</span>
+<span id="cb10-92"><a href="#cb10-92" aria-hidden="true" tabindex="-1"></a>        <span class="st">"actions"</span>: actions,</span>
+<span id="cb10-93"><a href="#cb10-93" aria-hidden="true" tabindex="-1"></a>        <span class="st">"runtime_s"</span>: elapsed,</span>
+<span id="cb10-94"><a href="#cb10-94" aria-hidden="true" tabindex="-1"></a>        <span class="st">"action_jerk"</span>: <span class="bu">float</span>(action_jerk),</span>
+<span id="cb10-95"><a href="#cb10-95" aria-hidden="true" tabindex="-1"></a>        <span class="st">"traj_jerk"</span>: <span class="bu">float</span>(traj_jerk),</span>
+<span id="cb10-96"><a href="#cb10-96" aria-hidden="true" tabindex="-1"></a>        <span class="st">"goal_dist"</span>: goal_dist,</span>
+<span id="cb10-97"><a href="#cb10-97" aria-hidden="true" tabindex="-1"></a>        <span class="st">"final_state"</span>: final_state,</span>
+<span id="cb10-98"><a href="#cb10-98" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb10-99"><a href="#cb10-99" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(</span>
+<span id="cb10-100"><a href="#cb10-100" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"  MPPI: </span><span class="sc">{</span>elapsed<span class="sc">:.2f}</span><span class="ss">s "</span></span>
+<span id="cb10-101"><a href="#cb10-101" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"(</span><span class="sc">{</span>elapsed <span class="op">/</span> sim_duration<span class="sc">:.2f}</span><span class="ss">x realtime), "</span></span>
+<span id="cb10-102"><a href="#cb10-102" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"goal dist: </span><span class="sc">{</span>goal_dist<span class="sc">:.2f}</span><span class="ss">m"</span></span>
+<span id="cb10-103"><a href="#cb10-103" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-104"><a href="#cb10-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-105"><a href="#cb10-105" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> results</span>
+<span id="cb10-106"><a href="#cb10-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-107"><a href="#cb10-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-108"><a href="#cb10-108" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Running fixed-parameter simulation..."</span>)</span>
+<span id="cb10-109"><a href="#cb10-109" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>()</span>
+<span id="cb10-110"><a href="#cb10-110" aria-hidden="true" tabindex="-1"></a>mppi_results <span class="op">=</span> run_fixed_simulation()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="d0b6c126" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># MPPI results visualizationfig, axes = plt.subplots(1, 3, figsize=(18, 6))# 2D trajectoryax = axes[0]plot_environment(ax, grid_array, map_resolution, show_labels=False)history_x = mppi_results["history_x"]positions = np.array(history_x[:, :2])n_steps = len(positions)colors_traj = plt.cm.viridis(np.linspace(0, 1, n_steps))for i in range(n_steps - 1):    ax.plot(        positions[i : i + 2, 0],        positions[i : i + 2, 1],        color=colors_traj[i],        linewidth=2,    )ax.set_title("I-MPPI Trajectory")# Info level depletionplot_info_levels(axes[1], mppi_results["history_info"], DT)axes[1].set_title("Information Zone Depletion")# Control inputsacts = np.array(mppi_results["actions"])t_arr = np.arange(len(acts)) * DTax3 = axes[2]ax3.plot(t_arr, acts[:, 0], color="#1f77b4", linewidth=1, label="Thrust")ax3.plot(t_arr, acts[:, 1], color="#ff7f0e", linewidth=1, label="wx")ax3.plot(t_arr, acts[:, 2], color="#2ca02c", linewidth=1, label="wy")ax3.plot(t_arr, acts[:, 3], color="#d62728", linewidth=1, label="wz")ax3.set_ylabel("Control Input")ax3.set_xlabel("Time (s)")ax3.set_title("Control Inputs")ax3.legend(fontsize=8)ax3.grid(True, alpha=0.3)plt.suptitle(    "I-MPPI: Full FSMI (Layer 2) + "    "Biased MPPI with Uniform-FSMI (Layer 3)",    fontsize=14,)plt.tight_layout()plt.show()# Performance summaryr = mppi_resultsprint()print("=" * 60)print(f"{'Metric':&lt;25} {'Value':&gt;15}")print("-" * 60)print(f"{'Runtime (ms)':&lt;25} {r['runtime_s']*1000:&gt;15.1f}")print(f"{'Goal Distance (m)':&lt;25} {r['goal_dist']:&gt;15.2f}")print(f"{'Action Jerk':&lt;25} {r['action_jerk']:&gt;15.4f}")print(f"{'Trajectory Jerk':&lt;25} {r['traj_jerk']:&gt;15.4f}")print("=" * 60)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># MPPI results visualization</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">18</span>, <span class="dv">6</span>))</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 2D trajectory</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>]</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>plot_environment(ax, grid_array, map_resolution, show_labels<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>history_x <span class="op">=</span> mppi_results[<span class="st">"history_x"</span>]</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>positions <span class="op">=</span> np.array(history_x[:, :<span class="dv">2</span>])</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>n_steps <span class="op">=</span> <span class="bu">len</span>(positions)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>colors_traj <span class="op">=</span> plt.cm.viridis(np.linspace(<span class="dv">0</span>, <span class="dv">1</span>, n_steps))</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_steps <span class="op">-</span> <span class="dv">1</span>):</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    ax.plot(</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>        positions[i : i <span class="op">+</span> <span class="dv">2</span>, <span class="dv">0</span>],</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>        positions[i : i <span class="op">+</span> <span class="dv">2</span>, <span class="dv">1</span>],</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>        color<span class="op">=</span>colors_traj[i],</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>        linewidth<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"I-MPPI Trajectory"</span>)</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Info level depletion</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>plot_info_levels(axes[<span class="dv">1</span>], mppi_results[<span class="st">"history_info"</span>], DT)</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_title(<span class="st">"Information Zone Depletion"</span>)</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Control inputs</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>acts <span class="op">=</span> np.array(mppi_results[<span class="st">"actions"</span>])</span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>t_arr <span class="op">=</span> np.arange(<span class="bu">len</span>(acts)) <span class="op">*</span> DT</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>ax3 <span class="op">=</span> axes[<span class="dv">2</span>]</span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>ax3.plot(t_arr, acts[:, <span class="dv">0</span>], color<span class="op">=</span><span class="st">"#1f77b4"</span>, linewidth<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="st">"Thrust"</span>)</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>ax3.plot(t_arr, acts[:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">"#ff7f0e"</span>, linewidth<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="st">"wx"</span>)</span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>ax3.plot(t_arr, acts[:, <span class="dv">2</span>], color<span class="op">=</span><span class="st">"#2ca02c"</span>, linewidth<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="st">"wy"</span>)</span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>ax3.plot(t_arr, acts[:, <span class="dv">3</span>], color<span class="op">=</span><span class="st">"#d62728"</span>, linewidth<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="st">"wz"</span>)</span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>ax3.set_ylabel(<span class="st">"Control Input"</span>)</span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>ax3.set_xlabel(<span class="st">"Time (s)"</span>)</span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>ax3.set_title(<span class="st">"Control Inputs"</span>)</span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>ax3.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>ax3.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>plt.suptitle(</span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>    <span class="st">"I-MPPI: Full FSMI (Layer 2) + "</span></span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Biased MPPI with Uniform-FSMI (Layer 3)"</span>,</span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a>    fontsize<span class="op">=</span><span class="dv">14</span>,</span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Performance summary</span></span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> mppi_results</span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>()</span>
+<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">60</span>)</span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span><span class="st">'Metric'</span><span class="sc">:&lt;25}</span><span class="ss"> </span><span class="sc">{</span><span class="st">'Value'</span><span class="sc">:&gt;15}</span><span class="ss">"</span>)</span>
+<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"-"</span> <span class="op">*</span> <span class="dv">60</span>)</span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span><span class="st">'Runtime (ms)'</span><span class="sc">:&lt;25}</span><span class="ss"> </span><span class="sc">{</span>r[<span class="st">'runtime_s'</span>]<span class="op">*</span><span class="dv">1000</span><span class="sc">:&gt;15.1f}</span><span class="ss">"</span>)</span>
+<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span><span class="st">'Goal Distance (m)'</span><span class="sc">:&lt;25}</span><span class="ss"> </span><span class="sc">{</span>r[<span class="st">'goal_dist'</span>]<span class="sc">:&gt;15.2f}</span><span class="ss">"</span>)</span>
+<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span><span class="st">'Action Jerk'</span><span class="sc">:&lt;25}</span><span class="ss"> </span><span class="sc">{</span>r[<span class="st">'action_jerk'</span>]<span class="sc">:&gt;15.4f}</span><span class="ss">"</span>)</span>
+<span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span><span class="st">'Trajectory Jerk'</span><span class="sc">:&lt;25}</span><span class="ss"> </span><span class="sc">{</span>r[<span class="st">'traj_jerk'</span>]<span class="sc">:&gt;15.4f}</span><span class="ss">"</span>)</span>
+<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">60</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 
 
