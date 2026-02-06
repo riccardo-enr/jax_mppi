@@ -5,6 +5,8 @@
 ![JAX](https://img.shields.io/badge/backend-JAX-blue)
 ![Status](https://img.shields.io/badge/status-planning-yellow)
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/riccardo-enr/jax_mppi/blob/main/docs/examples/i_mppi_interactive_simulation.ipynb)
+
 **jax_mppi** is a functional, JIT-compilable port of the [pytorch_mppi](https://github.com/UM-ARM-Lab/pytorch_mppi) library to JAX. It implements Model Predictive Path Integral (MPPI) control with a focus on performance and composability.
 
 ## Design Philosophy
