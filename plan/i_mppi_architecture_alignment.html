@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>index – jax-mppi</title>
+<title>i_mppi_architecture_alignment – jax-mppi</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,6 +19,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -236,10 +271,32 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#development-plans" id="toc-development-plans" class="nav-link active" data-scroll-target="#development-plans">Development Plans</a>
+  <li><a href="#i-mppi-architecture-alignment-plan" id="toc-i-mppi-architecture-alignment-plan" class="nav-link active" data-scroll-target="#i-mppi-architecture-alignment-plan">I-MPPI Architecture Alignment Plan</a>
   <ul class="collapse">
-  <li><a href="#active-plans" id="toc-active-plans" class="nav-link" data-scroll-target="#active-plans">Active Plans</a></li>
-  <li><a href="#completed-plans" id="toc-completed-plans" class="nav-link" data-scroll-target="#completed-plans">Completed Plans</a></li>
+  <li><a href="#problem-statement" id="toc-problem-statement" class="nav-link" data-scroll-target="#problem-statement">Problem Statement</a></li>
+  <li><a href="#required-changes" id="toc-required-changes" class="nav-link" data-scroll-target="#required-changes">Required Changes</a>
+  <ul class="collapse">
+  <li><a href="#implement-uniform-fsmi-module" id="toc-implement-uniform-fsmi-module" class="nav-link" data-scroll-target="#implement-uniform-fsmi-module">1. Implement Uniform-FSMI Module</a></li>
+  <li><a href="#create-informative-cost-function" id="toc-create-informative-cost-function" class="nav-link" data-scroll-target="#create-informative-cost-function">2. Create Informative Cost Function</a></li>
+  <li><a href="#update-i-mppi-simulation" id="toc-update-i-mppi-simulation" class="nav-link" data-scroll-target="#update-i-mppi-simulation">3. Update I-MPPI Simulation</a></li>
+  <li><a href="#update-examples-directory-structure" id="toc-update-examples-directory-structure" class="nav-link" data-scroll-target="#update-examples-directory-structure">4. Update Examples Directory Structure</a></li>
+  </ul></li>
+  <li><a href="#implementation-steps" id="toc-implementation-steps" class="nav-link" data-scroll-target="#implementation-steps">Implementation Steps</a>
+  <ul class="collapse">
+  <li><a href="#step-1-implement-uniform-fsmi" id="toc-step-1-implement-uniform-fsmi" class="nav-link" data-scroll-target="#step-1-implement-uniform-fsmi">Step 1: Implement Uniform-FSMI</a></li>
+  <li><a href="#step-2-update-cost-functions" id="toc-step-2-update-cost-functions" class="nav-link" data-scroll-target="#step-2-update-cost-functions">Step 2: Update Cost Functions</a></li>
+  <li><a href="#step-3-update-i-mppi-simulation" id="toc-step-3-update-i-mppi-simulation" class="nav-link" data-scroll-target="#step-3-update-i-mppi-simulation">Step 3: Update I-MPPI Simulation</a></li>
+  <li><a href="#step-4-add-demonstration-examples" id="toc-step-4-add-demonstration-examples" class="nav-link" data-scroll-target="#step-4-add-demonstration-examples">Step 4: Add Demonstration Examples</a></li>
+  <li><a href="#step-5-documentation" id="toc-step-5-documentation" class="nav-link" data-scroll-target="#step-5-documentation">Step 5: Documentation</a></li>
+  </ul></li>
+  <li><a href="#configuration-parameters" id="toc-configuration-parameters" class="nav-link" data-scroll-target="#configuration-parameters">Configuration Parameters</a>
+  <ul class="collapse">
+  <li><a href="#layer-2-full-fsmi---slow-path" id="toc-layer-2-full-fsmi---slow-path" class="nav-link" data-scroll-target="#layer-2-full-fsmi---slow-path">Layer 2 (Full FSMI) - Slow Path</a></li>
+  <li><a href="#layer-3-uniform-fsmi---fast-path" id="toc-layer-3-uniform-fsmi---fast-path" class="nav-link" data-scroll-target="#layer-3-uniform-fsmi---fast-path">Layer 3 (Uniform-FSMI) - Fast Path</a></li>
+  </ul></li>
+  <li><a href="#expected-performance" id="toc-expected-performance" class="nav-link" data-scroll-target="#expected-performance">Expected Performance</a></li>
+  <li><a href="#benefits-of-proper-architecture" id="toc-benefits-of-proper-architecture" class="nav-link" data-scroll-target="#benefits-of-proper-architecture">Benefits of Proper Architecture</a></li>
+  <li><a href="#status" id="toc-status" class="nav-link" data-scroll-target="#status">Status</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -250,28 +307,188 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<section id="development-plans" class="level1">
-<h1>Development Plans</h1>
-<p>This section contains various development plans and investigations for the <code>jax-mppi</code> project.</p>
-<section id="active-plans" class="level2">
-<h2 class="anchored" data-anchor-id="active-plans">Active Plans</h2>
-<ul>
-<li><a href="../plan/performance_analysis.html">Performance Analysis</a></li>
-<li><a href="../plan/example_performance_investigation.html">Example Performance Investigation</a></li>
-<li><a href="../plan/fsm_i_exploration.html">FSMI Exploration</a></li>
-<li><a href="../plan/quadrotor_trajectory_following.html">Quadrotor Trajectory Following</a></li>
-<li><a href="../plan/i_mppi_architecture_alignment.html">I-MPPI Architecture Alignment</a></li>
+<section id="i-mppi-architecture-alignment-plan" class="level1">
+<h1>I-MPPI Architecture Alignment Plan</h1>
+<section id="problem-statement" class="level2">
+<h2 class="anchored" data-anchor-id="problem-statement">Problem Statement</h2>
+<p>The current I-MPPI implementation is missing the <strong>informative term in Layer 3 (fast loop)</strong>. The architecture description specifies a two-layer system:</p>
+<ol type="1">
+<li><strong>Layer 2 (FSMI Analyzer):</strong> ~5-10 Hz - Full FSMI for reference trajectory generation</li>
+<li><strong>Layer 3 (I-MPPI Controller):</strong> ~50 Hz - Fast control with <strong>Uniform-FSMI</strong> for local reactivity</li>
+</ol>
+<p>Currently, Layer 3 only does trajectory tracking (<code>running_cost</code>), which reduces I-MPPI to standard MPPI with a biased reference. This loses: - Reactive viewpoint maintenance during disturbances - Handling of occlusions detected between Layer 2 updates - True informative control behavior</p>
+</section>
+<section id="required-changes" class="level2">
+<h2 class="anchored" data-anchor-id="required-changes">Required Changes</h2>
+<section id="implement-uniform-fsmi-module" class="level3">
+<h3 class="anchored" data-anchor-id="implement-uniform-fsmi-module">1. Implement Uniform-FSMI Module</h3>
+<p>Create a simplified O(n) FSMI variant for the fast loop:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> UniformFSMI:</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Uniform-FSMI from Zhang et al. (2020) for O(n) computation.</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Simplifications vs full FSMI:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">    - Assumes uniform sensor noise</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">    - Uses shorter ray range (local, 2-3m)</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">    - Fewer beams</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co">    - No G_kj matrix computation (biggest speedup)</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Key differences from full FSMI: - Sensor noise is uniform (constant sigma) - Ray range limited to 2-3m (local) - Reduced beam count (4-8 vs 16) - Direct sum without G_kj matrix: <code>MI ≈ sum_j P(e_j) * C_j</code></p>
+</section>
+<section id="create-informative-cost-function" class="level3">
+<h3 class="anchored" data-anchor-id="create-informative-cost-function">2. Create Informative Cost Function</h3>
+<p>Add to <code>src/jax_mppi/i_mppi/environment.py</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> informative_running_cost(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    state: jax.Array,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    action: jax.Array,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    t: <span class="bu">int</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    target: jax.Array,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    grid_map: jax.Array,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    uniform_fsmi: UniformFSMI,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    info_weight: <span class="bu">float</span> <span class="op">=</span> <span class="fl">5.0</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> jax.Array:</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co">    Cost function with informative term:</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co">    J = tracking_cost - info_weight * uniform_fsmi(state)</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    tracking <span class="op">=</span> running_cost(state, action, t, target)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    info_gain <span class="op">=</span> uniform_fsmi.compute(grid_map, state[:<span class="dv">2</span>], yaw)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> tracking <span class="op">-</span> info_weight <span class="op">*</span> info_gain</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="update-i-mppi-simulation" class="level3">
+<h3 class="anchored" data-anchor-id="update-i-mppi-simulation">3. Update I-MPPI Simulation</h3>
+<p>Modify <code>examples/i_mppi/i_mppi_simulation.py</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Layer 3: Biased I-MPPI with informative cost</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>cost_fn <span class="op">=</span> partial(</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    informative_running_cost,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    target<span class="op">=</span>ref_traj,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    grid_map<span class="op">=</span>grid_map,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    uniform_fsmi<span class="op">=</span>uniform_fsmi,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    info_weight<span class="op">=</span>local_info_weight,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="update-examples-directory-structure" class="level3">
+<h3 class="anchored" data-anchor-id="update-examples-directory-structure">4. Update Examples Directory Structure</h3>
+<p>Reorganize <code>examples/i_mppi/</code> to clearly show the architecture:</p>
+<pre><code>examples/i_mppi/
+├── __init__.py
+├── i_mppi_simulation.py      # Main: Layer 2 (FSMI) + Layer 3 (I-MPPI with Uniform-FSMI)
+├── i_mppi_simulation_legacy.py  # Legacy: geometric zones
+├── fsmi_grid_demo.py         # Demo: Full FSMI visualization
+├── uniform_fsmi_demo.py      # NEW: Demonstrate Uniform-FSMI speedup
+└── architecture_comparison.py # NEW: Compare with/without Layer 3 info term</code></pre>
+</section>
+</section>
+<section id="implementation-steps" class="level2">
+<h2 class="anchored" data-anchor-id="implementation-steps">Implementation Steps</h2>
+<section id="step-1-implement-uniform-fsmi" class="level3">
+<h3 class="anchored" data-anchor-id="step-1-implement-uniform-fsmi">Step 1: Implement Uniform-FSMI</h3>
+<ul class="task-list">
+<li><label><input type="checkbox">Add <code>UniformFSMI</code> class to <code>fsmi.py</code></label></li>
+<li><label><input type="checkbox">Implement O(n) MI computation</label></li>
+<li><label><input type="checkbox">Add configuration parameters (short_range, few_beams)</label></li>
+<li><label><input type="checkbox">Benchmark vs full FSMI</label></li>
 </ul>
 </section>
-<section id="completed-plans" class="level2">
-<h2 class="anchored" data-anchor-id="completed-plans">Completed Plans</h2>
-<ul>
-<li><a href="completed/fsmi_grid_implementation.md">FSMI Grid-Based Implementation</a></li>
-<li><a href="completed/i_mppi_flavors_comparison.md">I-MPPI Flavors Comparison</a></li>
-<li><a href="../plan/completed/porting_pytorch_jax.html">Porting from PyTorch to JAX</a></li>
-<li><a href="../plan/completed/evosax_integration.html">Evosax Integration</a></li>
-<li><a href="../plan/completed/cuda_mppi_implementation.html">CUDA MPPI Implementation</a></li>
-<li><a href="../plan/completed/cuda_mppi_submodule_plan.html">CUDA MPPI Submodule Plan</a></li>
+<section id="step-2-update-cost-functions" class="level3">
+<h3 class="anchored" data-anchor-id="step-2-update-cost-functions">Step 2: Update Cost Functions</h3>
+<ul class="task-list">
+<li><label><input type="checkbox">Add <code>informative_running_cost()</code> to environment.py</label></li>
+<li><label><input type="checkbox">Make grid_map accessible in cost function (via closure or state)</label></li>
+<li><label><input type="checkbox">Handle yaw extraction from state</label></li>
+</ul>
+</section>
+<section id="step-3-update-i-mppi-simulation" class="level3">
+<h3 class="anchored" data-anchor-id="step-3-update-i-mppi-simulation">Step 3: Update I-MPPI Simulation</h3>
+<ul class="task-list">
+<li><label><input type="checkbox">Integrate Uniform-FSMI into Layer 3 cost</label></li>
+<li><label><input type="checkbox">Add config parameters for local info weight</label></li>
+<li><label><input type="checkbox">Maintain backward compatibility flag</label></li>
+</ul>
+</section>
+<section id="step-4-add-demonstration-examples" class="level3">
+<h3 class="anchored" data-anchor-id="step-4-add-demonstration-examples">Step 4: Add Demonstration Examples</h3>
+<ul class="task-list">
+<li><label><input type="checkbox">Create <code>uniform_fsmi_demo.py</code></label></li>
+<li><label><input type="checkbox">Create <code>architecture_comparison.py</code> showing the difference</label></li>
+</ul>
+</section>
+<section id="step-5-documentation" class="level3">
+<h3 class="anchored" data-anchor-id="step-5-documentation">Step 5: Documentation</h3>
+<ul class="task-list">
+<li><label><input type="checkbox">Update README in examples/i_mppi/</label></li>
+<li><label><input type="checkbox">Document the two-layer architecture</label></li>
+</ul>
+</section>
+</section>
+<section id="configuration-parameters" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-parameters">Configuration Parameters</h2>
+<section id="layer-2-full-fsmi---slow-path" class="level3">
+<h3 class="anchored" data-anchor-id="layer-2-full-fsmi---slow-path">Layer 2 (Full FSMI) - Slow Path</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>FSMIConfig(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    use_grid_fsmi<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    num_beams<span class="op">=</span><span class="dv">16</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    max_range<span class="op">=</span><span class="fl">5.0</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    ray_step<span class="op">=</span><span class="fl">0.15</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    trajectory_subsample_rate<span class="op">=</span><span class="dv">8</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    info_weight<span class="op">=</span><span class="fl">15.0</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="layer-3-uniform-fsmi---fast-path" class="level3">
+<h3 class="anchored" data-anchor-id="layer-3-uniform-fsmi---fast-path">Layer 3 (Uniform-FSMI) - Fast Path</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>UniformFSMIConfig(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    num_beams<span class="op">=</span><span class="dv">6</span>,          <span class="co"># Reduced</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    max_range<span class="op">=</span><span class="fl">2.5</span>,        <span class="co"># Local only</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    ray_step<span class="op">=</span><span class="fl">0.2</span>,         <span class="co"># Coarser</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    info_weight<span class="op">=</span><span class="fl">5.0</span>,      <span class="co"># Lower weight (reactive)</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="expected-performance" class="level2">
+<h2 class="anchored" data-anchor-id="expected-performance">Expected Performance</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Rate</th>
+<th>Computation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Layer 2 (Full FSMI)</td>
+<td>5 Hz</td>
+<td>~40-50ms</td>
+</tr>
+<tr class="even">
+<td>Layer 3 (Uniform-FSMI per sample)</td>
+<td>50 Hz</td>
+<td>~0.5ms</td>
+</tr>
+<tr class="odd">
+<td>Total control cycle</td>
+<td>50 Hz</td>
+<td>&lt;20ms</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="benefits-of-proper-architecture" class="level2">
+<h2 class="anchored" data-anchor-id="benefits-of-proper-architecture">Benefits of Proper Architecture</h2>
+<ol type="1">
+<li><strong>Reactive Viewpoint Maintenance:</strong> During disturbances, Layer 3 locally optimizes viewing angle</li>
+<li><strong>Occlusion Handling:</strong> Can detect and respond to occlusions between Layer 2 updates</li>
+<li><strong>True I-MPPI:</strong> Not just biased trajectory tracking</li>
+</ol>
+</section>
+<section id="status" class="level2">
+<h2 class="anchored" data-anchor-id="status">Status</h2>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">Step 1: Uniform-FSMI implementation (UniformFSMI class in fsmi.py)</label></li>
+<li><label><input type="checkbox" checked="">Step 2: Cost function update (informative_running_cost in environment.py)</label></li>
+<li><label><input type="checkbox" checked="">Step 3: Simulation integration (i_mppi_simulation.py updated)</label></li>
+<li><label><input type="checkbox">Step 4: Demo examples (optional: architecture_comparison.py)</label></li>
+<li><label><input type="checkbox" checked="">Step 5: Documentation (README.md updated)</label></li>
 </ul>
 
 
