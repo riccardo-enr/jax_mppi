@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-07
+
+### Added
+
+- **I-MPPI (Informative MPPI)**: Two-layer architecture for informative path planning with GPU acceleration
+  - Layer 2: Full FSMI (Fisher-Shannon Mutual Information) trajectory generation at ~5 Hz
+  - Layer 3: Biased MPPI + Uniform-FSMI tracking at ~50 Hz
+  - Occupancy grid-based exploration with configurable information zones
+- **Interactive Colab Notebook**: `examples/i_mppi/i_mppi_interactive_simulation.ipynb` with parameter widgets for real-time tuning
+- **Grid-based obstacle cost**: Samples occupancy grid at UAV position for accurate collision avoidance
+- **Biased SMPPI and KMPPI**: Mixture sampling commands for Smooth MPPI and Kernel MPPI variants
+- `ipywidgets` development dependency
+
+### Changed
+
+- Reorganized examples directory structure (`docs/examples/` → `examples/i_mppi/`)
+- Improved FSMI `select_target` to score zones by remaining information levels instead of accumulated trajectory gain
+- Migrated documentation from mkdocs to quarto
+- Optimized MPPI cost computation and weights
+
+### Fixed
+
+- Colab notebook compatibility: self-sufficient import path resolution across local and Colab environments
+- FSMI grid information gain now uses the passed grid parameter instead of stale instance state
+- Grid update preserves obstacle structure when blending information zone depletion
+
 ## [0.2.1] - 2026-02-03
 
 ### Changed
@@ -125,7 +151,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - Documentation structure with scientific theory for MPPI variants
 
-[unreleased]: https://github.com/riccardo-enr/jax_mppi/compare/v0.2.1...HEAD
+[unreleased]: https://github.com/riccardo-enr/jax_mppi/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/riccardo-enr/jax_mppi/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/riccardo-enr/jax_mppi/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.8...v0.2.0
 [0.1.8]: https://github.com/riccardo-enr/jax_mppi/compare/v0.1.7...v0.1.8
