@@ -181,6 +181,8 @@ def informative_running_cost(
     grid_map: jax.Array,
     uniform_fsmi_fn,
     info_weight: float = 5.0,
+    grid_origin: Optional[jax.Array] = None,
+    grid_resolution: Optional[float] = None,
 ) -> jax.Array:
     """
     Running cost with Layer 3 Uniform-FSMI informative term.
@@ -260,8 +262,20 @@ def informative_running_cost(
     # Cost = tracking + obstacles - λ * info_gain
     info_cost = -info_weight * info_gain
 
+    # Grid-based obstacle cost (supplements wall_cost_fn with full grid)
+    if grid_origin is not None and grid_resolution is not None:
+        col_f = (pos[0] - grid_origin[0]) / grid_resolution
+        row_f = (pos[1] - grid_origin[1]) / grid_resolution
+        row_i = jnp.clip(jnp.int32(jnp.floor(row_f)), 0, grid_map.shape[0] - 1)
+        col_i = jnp.clip(jnp.int32(jnp.floor(col_f)), 0, grid_map.shape[1] - 1)
+        grid_val = grid_map[row_i, col_i]
+        grid_obstacle_cost = 1000.0 * jnp.where(grid_val >= 0.7, 1.0, 0.0)
+    else:
+        grid_obstacle_cost = 0.0
+
     return (
         coll_cost
+        + grid_obstacle_cost
         + target_cost
         + bounds_cost
         + height_cost
