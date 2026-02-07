@@ -612,51 +612,68 @@ class FSMITrajectoryGenerator:
         new_map = replace(self.grid_map, grid=new_grid)
         return replace(self, grid_map=new_map)
 
-    def select_target(self, current_pos: jax.Array):
-        """Select best target using FSMI."""
-        # Candidates: Info Zones centers + Goal
+    def select_target(
+        self,
+        current_pos: jax.Array,
+        info_levels: jax.Array | None = None,
+    ):
+        """Select best target based on remaining info levels.
+
+        Zones with remaining information are scored by:
+            score = info_level - dist_weight * distance
+        Depleted zones (info < threshold) are skipped.
+        When no zone has remaining info, the goal is selected.
+
+        Args:
+            current_pos: Current robot position (3,).
+            info_levels: (N,) remaining info per zone. If None, falls
+                back to FSMI-based scoring on the grid.
+        """
         candidates = self.info_zones[:, :2]  # (N, 2)
         goal = self.config.goal_pos[:2]
 
-        # Evaluate candidates
-        def score_candidate(cand_pos, is_goal):
-            gain = compute_fsmi_gain(
-                cand_pos,
-                self.grid_map.grid,
-                self.grid_map.origin,
-                self.grid_map.resolution,
-                self.config.num_rays,
-                self.config.ray_max_steps,
-            )
-            dist = jnp.linalg.norm(cand_pos - current_pos[:2])
+        if info_levels is not None:
+            # Score zones by remaining info weighted against distance
+            dists = jax.vmap(
+                lambda p: jnp.linalg.norm(p - current_pos[:2])
+            )(candidates)
+            zone_scores = info_levels - self.config.dist_weight * dists
 
-            score = (
-                self.config.gain_weight * gain - self.config.dist_weight * dist
-            )
-            return score, gain
+            # Mask out depleted zones
+            has_info = info_levels > self.config.info_threshold
+            zone_scores = jnp.where(has_info, zone_scores, -1e6)
 
-        # Score zones
-        zone_scores, zone_gains = jax.vmap(lambda p: score_candidate(p, False))(
-            candidates
-        )
+            best_zone_idx = jnp.argmax(zone_scores)
+            go_to_zone = has_info[best_zone_idx]
+        else:
+            # Fallback: FSMI-based scoring on grid
+            def score_candidate(cand_pos):
+                gain = compute_fsmi_gain(
+                    cand_pos,
+                    self.grid_map.grid,
+                    self.grid_map.origin,
+                    self.grid_map.resolution,
+                    self.config.num_rays,
+                    self.config.ray_max_steps,
+                )
+                dist = jnp.linalg.norm(cand_pos - current_pos[:2])
+                score = (
+                    self.config.gain_weight * gain
+                    - self.config.dist_weight * dist
+                )
+                return score, gain
 
-        # Score goal
-        goal_score, goal_gain = score_candidate(goal, True)
-
-        # Find best zone
-        best_zone_idx = jnp.argmax(zone_scores)
-        best_zone_gain = zone_gains[best_zone_idx]
-
-        go_to_zone = best_zone_gain > self.config.min_gain_threshold
+            zone_scores, zone_gains = jax.vmap(
+                lambda p: score_candidate(p)
+            )(candidates)
+            best_zone_idx = jnp.argmax(zone_scores)
+            go_to_zone = zone_gains[best_zone_idx] > self.config.min_gain_threshold
 
         target_pos_2d = jax.lax.select(
             go_to_zone, candidates[best_zone_idx], goal
         )
 
-        # Construct 3D target (z fixed at -2.0)
         target_pos = jnp.array([target_pos_2d[0], target_pos_2d[1], -2.0])
-
-        # Mode: 1 = Exploring, 0 = Homming
         mode = jax.lax.select(go_to_zone, 1, 0)
 
         return target_pos, mode
@@ -794,7 +811,7 @@ class FSMITrajectoryGenerator:
         step_gains = jax.vmap(
             lambda pos: compute_fsmi_gain(
                 pos,
-                self.grid_map.grid,
+                grid_map,
                 self.grid_map.origin,
                 self.grid_map.resolution,
                 self.config.num_rays,
@@ -837,17 +854,11 @@ class FSMITrajectoryGenerator:
 
         # Info gain (dispatch based on mode)
         if self.config.use_grid_fsmi:
-            # We assume info_data contains grid map?
-            # In my version, grid_map is stored in self.grid_map.
-            # info_data passed here is from `get_target` which isn't fully
-            # compatible with `select_target`.
-
-            # I will stick to `select_target` logic but support this method for
-            # compatibility if needed.
-            # But `select_target` uses pre-calculated gains on zones.
+            # info_data is (grid_map, info_levels) tuple
+            grid_map, _info_levels = info_data
 
             info_gain = self._info_gain_grid(
-                ref_traj, view_dir_xy, self.grid_map.grid, dt
+                ref_traj, view_dir_xy, grid_map, dt
             )
         else:
             info_levels = info_data  # Single array
@@ -923,7 +934,13 @@ class FSMITrajectoryGenerator:
             target_mode: Integer index of selected target
         """
         pos0 = state[:3]
-        target_pos, target_mode = self.get_target(pos0, info_data, horizon, dt)
+        # Extract info_levels from info_data
+        if isinstance(info_data, tuple):
+            _grid, info_levels = info_data
+        else:
+            info_levels = info_data
+        # Use select_target with info_levels so depleted zones are skipped
+        target_pos, target_mode = self.select_target(pos0, info_levels)
         ref_traj = self._make_ref_traj(pos0, target_pos, horizon, dt)
 
         return ref_traj, target_mode
