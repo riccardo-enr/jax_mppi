@@ -168,6 +168,12 @@ def create_trajectory_gif(
         step_skip: Show every N-th simulation step as a frame.
     """
     positions = np.array(history_x[:, :2])
+    # Extract yaw from quaternion (indices 6-9: qw, qx, qy, qz)
+    quats = np.array(history_x[:, 6:10])
+    yaws = np.arctan2(
+        2 * (quats[:, 0] * quats[:, 3] + quats[:, 1] * quats[:, 2]),
+        1 - 2 * (quats[:, 2] ** 2 + quats[:, 3] ** 2),
+    )
     info = np.array(history_info)
     n_steps = len(positions)
     frame_indices = list(range(0, n_steps, step_skip))
@@ -220,6 +226,16 @@ def create_trajectory_gif(
     # Animated elements
     (trail_line,) = ax_map.plot([], [], "c-", linewidth=1.5, alpha=0.6)
     (uav_dot,) = ax_map.plot([], [], "ro", markersize=8, zorder=10)
+    heading_arrow = mpatches.FancyArrowPatch(
+        (0, 0),
+        (0, 0),
+        arrowstyle="-|>",
+        mutation_scale=12,
+        color="red",
+        linewidth=2,
+        zorder=11,
+    )
+    ax_map.add_patch(heading_arrow)
     title = ax_map.set_title("")
 
     # Info level plot setup
@@ -241,12 +257,20 @@ def create_trajectory_gif(
 
     plt.tight_layout()
 
+    arrow_len = 0.5  # heading arrow length in metres
+
     def update(frame_idx):
         k = frame_indices[frame_idx]
         # Trail
         trail_line.set_data(positions[: k + 1, 0], positions[: k + 1, 1])
         # UAV position
         uav_dot.set_data([positions[k, 0]], [positions[k, 1]])
+        # Heading arrow
+        x, y = positions[k, 0], positions[k, 1]
+        yaw = yaws[k]
+        dx = arrow_len * np.cos(yaw)
+        dy = arrow_len * np.sin(yaw)
+        heading_arrow.set_positions((x, y), (x + dx, y + dy))
         # Title with time
         title.set_text(f"I-MPPI Trajectory  t = {k * dt:.1f}s")
         # Info zone opacity (fade as depleted)
@@ -256,7 +280,7 @@ def create_trajectory_gif(
         # Info level lines
         for i, line in enumerate(info_lines):
             line.set_data(t_all[: k + 1], info[: k + 1, i])
-        return [trail_line, uav_dot, title] + zone_patches + info_lines
+        return [trail_line, uav_dot, heading_arrow, title] + zone_patches + info_lines
 
     anim = animation.FuncAnimation(
         fig, update, frames=len(frame_indices), interval=1000 // fps, blit=True
