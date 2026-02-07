@@ -7,6 +7,7 @@ dist/
 
 # png
 *.png
+*.gif
 
 # UV
 .venv/
