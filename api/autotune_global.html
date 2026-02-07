@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>I-MPPI: Interactive Informative Model Predictive Path Integral Control – jax-mppi</title>
+<title>autotune_global – jax-mppi</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,41 +19,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -75,7 +40,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-0b802d246790ecd80511443f8ae76f95.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-185758d5a34697737532308e7a8d5b83.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -155,7 +120,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">I-MPPI: Interactive Informative Model Predictive Path Integral Control</li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -224,12 +189,53 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Examples</span></a>
+ <span class="menu-text">API Reference</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/mppi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MPPI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/smppi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SMPPI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/kmppi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">KMPPI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/autotune.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autotune</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Types</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Examples</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../examples/pendulum.html" class="sidebar-item-text sidebar-link">
@@ -240,13 +246,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
  <span class="menu-text">Development</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../testing.html" class="sidebar-item-text sidebar-link">
@@ -271,78 +277,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#architecture-overview" id="toc-architecture-overview" class="nav-link active" data-scroll-target="#architecture-overview">Architecture Overview</a></li>
-  <li><a href="#environment-setup" id="toc-environment-setup" class="nav-link" data-scroll-target="#environment-setup">Environment Setup</a></li>
-  <li><a href="#interactive-parameter-configurationadjust-the-parameters-below-and-click-run-simulation-to-execute-the-i-mppi-controller.-parameter-description-effect---samples-number-of-mppi-rollout-samples-more-better-trajectories-slower-horizon-planning-horizon-steps-longer-further-look-ahead-lambda-mppi-temperature-lower-more-greedy-exploits-best-info-weight-uniform-fsmi-weight-in-layer-3-higher-more-exploration-driven-fsmi-beams-number-of-sensor-beams-layer-2-more-better-information-estimate-fsmi-range-max-sensor-range-layer-2-longer-wider-planning-scope" id="toc-interactive-parameter-configurationadjust-the-parameters-below-and-click-run-simulation-to-execute-the-i-mppi-controller.-parameter-description-effect---samples-number-of-mppi-rollout-samples-more-better-trajectories-slower-horizon-planning-horizon-steps-longer-further-look-ahead-lambda-mppi-temperature-lower-more-greedy-exploits-best-info-weight-uniform-fsmi-weight-in-layer-3-higher-more-exploration-driven-fsmi-beams-number-of-sensor-beams-layer-2-more-better-information-estimate-fsmi-range-max-sensor-range-layer-2-longer-wider-planning-scope" class="nav-link" data-scroll-target="#interactive-parameter-configurationadjust-the-parameters-below-and-click-run-simulation-to-execute-the-i-mppi-controller.-parameter-description-effect---samples-number-of-mppi-rollout-samples-more-better-trajectories-slower-horizon-planning-horizon-steps-longer-further-look-ahead-lambda-mppi-temperature-lower-more-greedy-exploits-best-info-weight-uniform-fsmi-weight-in-layer-3-higher-more-exploration-driven-fsmi-beams-number-of-sensor-beams-layer-2-more-better-information-estimate-fsmi-range-max-sensor-range-layer-2-longer-wider-planning-scope">Interactive Parameter ConfigurationAdjust the parameters below and click <strong>Run Simulation</strong> to execute the I-MPPI controller.| Parameter | Description | Effect ||———–|————-|——–|| <strong>Samples</strong> | Number of MPPI rollout samples | More = better trajectories, slower || <strong>Horizon</strong> | Planning horizon (steps) | Longer = further look-ahead || <strong>Lambda</strong> | MPPI temperature | Lower = more greedy (exploits best) || <strong>Info Weight</strong> | Uniform-FSMI weight in Layer 3 | Higher = more exploration-driven || <strong>FSMI Beams</strong> | Number of sensor beams (Layer 2) | More = better information estimate || <strong>FSMI Range</strong> | Max sensor range (Layer 2) | Longer = wider planning scope |</a></li>
+  <li><a href="#autotune-global" id="toc-autotune-global" class="nav-link active" data-scroll-target="#autotune-global">Autotune Global</a></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">I-MPPI: Interactive Informative Model Predictive Path Integral Control</h1>
+
+
+
+<section id="autotune-global" class="level1">
+<h1>Autotune Global</h1>
+<div class="jax_mppi.autotune_global">
+
+
 </div>
-
-
-
-<div class="quarto-title-meta">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
-
-
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><a href="https://colab.research.google.com/github/riccardo-enr/jax_mppi/blob/main/docs/examples/i_mppi_interactive_simulation.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" class="img-fluid figure-img"></a></p>
-<figcaption>Open In Colab</figcaption>
-</figure>
-</div>
-<p>This notebook provides an interactive simulation of the <strong>two-layer I-MPPI architecture</strong> for informative path planning with GPU acceleration.</p>
-<section id="architecture-overview" class="level2">
-<h2 class="anchored" data-anchor-id="architecture-overview">Architecture Overview</h2>
-<pre><code>Layer 2 (FSMI Analyzer, ~5 Hz)         Layer 3 (I-MPPI Controller, ~50 Hz)
-+---------------------------------+     +-----------------------------------+
-| Full FSMI (O(n^2))             |     | Biased MPPI + Uniform-FSMI (O(n)) |
-| - Occupancy grid analysis      | --&gt; | - Tracks Layer 2 reference traj   |
-| - Global information planning  |     | - Local informative reactivity    |
-| - Reference trajectory output  |     | - Obstacle avoidance              |
-+---------------------------------+     +-----------------------------------+</code></pre>
-<p><strong>Layer 2</strong> generates reference trajectories maximizing global information gain using Fisher-Shannon Mutual Information (FSMI) on the occupancy grid.</p>
-<p><strong>Layer 3</strong> tracks the reference while maintaining local informative viewpoints via Uniform-FSMI, ensuring reactive exploration even between Layer 2 updates.</p>
-<p><strong>Cost function</strong>: <code>J = Tracking(ref) + Obstacles - lambda * Uniform_FSMI(local)</code></p>
-<div id="9d64eeaa" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># @title Setup: Install jax_mppi and dependencies (Colab only)import osimport shutilimport sysif "COLAB_GPU" in os.environ or "COLAB_RELEASE_TAG" in os.environ:    # Running in Google Colab    target_dir = "/content/jax_mppi"        # Change to /content first to avoid directory issues    os.chdir("/content")        # Remove existing directory if present    if os.path.exists(target_dir):        shutil.rmtree(target_dir)        print(f"Removed existing directory: {target_dir}")        # Clone the repository    !git clone https://github.com/riccardo-enr/jax_mppi.git /content/jax_mppi        # Install Python dependencies    %pip install -q jaxtyping chex matplotlib ipywidgets        # Add source and examples directories to sys.path    sys.path.insert(0, "/content/jax_mppi/src")    sys.path.insert(0, "/content/jax_mppi/docs/examples")        os.chdir("/content/jax_mppi")    print("Setup complete!")else:    print("Not running in Colab -- assuming local installation.")    # Ensure helper modules alongside this notebook are importable    _nb_dir = os.path.dirname(os.path.abspath("__file__"))    if _nb_dir not in sys.path:        sys.path.insert(0, _nb_dir)# Verify JAX and GPUimport jaxprint(f"JAX version: {jax.__version__}")print(f"Available devices: {jax.devices()}")gpu_available = any(    "gpu" in str(d).lower() or "cuda" in str(d).lower() for d in jax.devices())if gpu_available:    print("GPU detected.")else:    print("WARNING: No GPU detected. Simulation will run on CPU (slower).")    print("  In Colab: Runtime &gt; Change runtime type &gt; GPU")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div id="08f1e1a3" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> importlibimport timeimport jaximport jax.numpy <span class="im">as</span> jnpimport matplotlib.pyplot <span class="im">as</span> pltimport numpy <span class="im">as</span> npfrom jax_mppi <span class="im">import</span> mppifrom jax_mppi.i_mppi.environment <span class="im">import</span> GOAL_POS, INFO_ZONESfrom jax_mppi.i_mppi.fsmi <span class="im">import</span> (    FSMIConfig,    FSMITrajectoryGenerator,    UniformFSMI,    UniformFSMIConfig,)<span class="im">import</span> env_setup, viz_utils, sim_utilsimportlib.<span class="bu">reload</span>(env_setup)importlib.<span class="bu">reload</span>(viz_utils)importlib.<span class="bu">reload</span>(sim_utils)<span class="im">from</span> env_setup <span class="im">import</span> create_grid_mapfrom viz_utils <span class="im">import</span> (    plot_environment,    plot_info_levels,    plot_trajectory_2d,    plot_position_3d,    create_trajectory_gif,)<span class="im">from</span> sim_utils <span class="im">import</span> (    DT, NX, NU, CONTROL_HZ,    U_MIN, U_MAX, U_INIT, NOISE_SIGMA,    build_sim_fn, compute_smoothness,)<span class="bu">print</span>(<span class="st">"All imports successful."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-</section>
-<section id="environment-setup" class="level2">
-<h2 class="anchored" data-anchor-id="environment-setup">Environment Setup</h2>
-<p>The simulation takes place in a <strong>14m x 12m office-like environment</strong> with: - <strong>Walls</strong> (gray): Physical obstacles the quadrotor must avoid - <strong>Info zones</strong> (yellow): Unknown regions with high entropy – the robot gains information by flying near them - <strong>Goal</strong> (red star): Target position the robot must reach - <strong>Start</strong> (green circle): Initial robot position</p>
-<p>The occupancy grid encodes uncertainty: 0.5 = unknown, 0.2 = known free, 0.9 = known occupied.</p>
-<div id="1c7619c7" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>grid_map_obj, grid_array, map_origin, map_resolution <span class="op">=</span> create_grid_map()fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">8</span>))plot_environment(ax, grid_array, map_resolution)ax.set_title(<span class="st">"Office Environment: Occupancy Grid"</span>)ax.legend(loc<span class="op">=</span><span class="st">"upper left"</span>)plt.colorbar(    ax.images[<span class="dv">0</span>],    ax<span class="op">=</span>ax,    label<span class="op">=</span><span class="st">"Occupancy (0=free, 0.5=unknown, 1=occupied)"</span>,)plt.tight_layout()plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-</section>
-<section id="interactive-parameter-configurationadjust-the-parameters-below-and-click-run-simulation-to-execute-the-i-mppi-controller.-parameter-description-effect---samples-number-of-mppi-rollout-samples-more-better-trajectories-slower-horizon-planning-horizon-steps-longer-further-look-ahead-lambda-mppi-temperature-lower-more-greedy-exploits-best-info-weight-uniform-fsmi-weight-in-layer-3-higher-more-exploration-driven-fsmi-beams-number-of-sensor-beams-layer-2-more-better-information-estimate-fsmi-range-max-sensor-range-layer-2-longer-wider-planning-scope" class="level2">
-<h2 class="anchored" data-anchor-id="interactive-parameter-configurationadjust-the-parameters-below-and-click-run-simulation-to-execute-the-i-mppi-controller.-parameter-description-effect---samples-number-of-mppi-rollout-samples-more-better-trajectories-slower-horizon-planning-horizon-steps-longer-further-look-ahead-lambda-mppi-temperature-lower-more-greedy-exploits-best-info-weight-uniform-fsmi-weight-in-layer-3-higher-more-exploration-driven-fsmi-beams-number-of-sensor-beams-layer-2-more-better-information-estimate-fsmi-range-max-sensor-range-layer-2-longer-wider-planning-scope">Interactive Parameter ConfigurationAdjust the parameters below and click <strong>Run Simulation</strong> to execute the I-MPPI controller.| Parameter | Description | Effect ||———–|————-|——–|| <strong>Samples</strong> | Number of MPPI rollout samples | More = better trajectories, slower || <strong>Horizon</strong> | Planning horizon (steps) | Longer = further look-ahead || <strong>Lambda</strong> | MPPI temperature | Lower = more greedy (exploits best) || <strong>Info Weight</strong> | Uniform-FSMI weight in Layer 3 | Higher = more exploration-driven || <strong>FSMI Beams</strong> | Number of sensor beams (Layer 2) | More = better information estimate || <strong>FSMI Range</strong> | Max sensor range (Layer 2) | Longer = wider planning scope |</h2>
-<div id="9b9d95dc" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ipywidgets <span class="im">as</span> widgetsfrom IPython.display <span class="im">import</span> clear_output, display<span class="co"># Global dict to hold results for the visualization cellsim_results = {}# System parametersw_start_x = widgets.FloatSlider(    value=1.0, min=0.5, max=12.0, step=0.5, description="Start X (m):")w_start_y = widgets.FloatSlider(    value=5.0, min=0.5, max=9.0, step=0.5, description="Start Y (m):")w_duration = widgets.FloatSlider(    value=30.0, min=5.0, max=60.0, step=5.0, description="Duration (s):")# Controller parametersw_samples = widgets.IntSlider(    value=1000, min=100, max=5000, step=100, description="Samples:")w_horizon = widgets.IntSlider(    value=40, min=10, max=80, step=5, description="Horizon:")w_lambda = widgets.FloatLogSlider(    value=0.1, min=-2, max=1, step=0.1, description="Lambda:")w_info_weight = widgets.FloatSlider(    value=5.0, min=0.0, max=20.0, step=1.0, description="Info Weight:")# FSMI parametersw_fsmi_beams = widgets.IntSlider(    value=12, min=4, max=24, step=2, description="FSMI Beams:")w_fsmi_range = widgets.FloatSlider(    value=5.0, min=2.0, max=10.0, step=0.5, description="FSMI Range:")run_button = widgets.Button(    description="Run Simulation",    button_style="success",    icon="play",    layout=widgets.Layout(width="200px", height="40px"),)output_area = widgets.Output()def run_simulation(button):    """Run I-MPPI simulation with current widget parameters."""    with output_area:        clear_output(wait=True)        # Read parameters        start_x = w_start_x.value        start_y = w_start_y.value        sim_duration = w_duration.value        num_samples = w_samples.value        horizon = w_horizon.value        lambda_ = w_lambda.value        info_weight = w_info_weight.value        fsmi_beams = w_fsmi_beams.value        fsmi_range = w_fsmi_range.value        sim_steps = int(round(sim_duration * CONTROL_HZ))        print("=" * 60)        print("I-MPPI Simulation")        print("=" * 60)        print(f"  Start: ({start_x}, {start_y})")        print(f"  Duration: {sim_duration}s ({sim_steps} steps)")        print(            f"  Samples: {num_samples}, Horizon: {horizon}, "            f"Lambda: {lambda_}"        )        print(f"  Info Weight: {info_weight}")        print(f"  FSMI Beams: {fsmi_beams}, Range: {fsmi_range}m")        print()        # Initial state        start_pos = jnp.array([start_x, start_y, -2.0])        info_init = jnp.array([100.0, 100.0, 100.0])        x0 = jnp.zeros(13)        x0 = x0.at[:3].set(start_pos)        x0 = x0.at[6].set(1.0)  # qw=1        state = jnp.concatenate([x0, info_init])        # Layer 2: FSMI config        fsmi_config = FSMIConfig(            use_grid_fsmi=True,            goal_pos=GOAL_POS,            fov_rad=1.57,            num_beams=fsmi_beams,            max_range=fsmi_range,            ray_step=0.15,            sigma_range=0.15,            gaussian_truncation_sigma=3.0,            trajectory_subsample_rate=8,            info_weight=25.0,            motion_weight=0.5,        )        fsmi_planner = FSMITrajectoryGenerator(            config=fsmi_config,            info_zones=INFO_ZONES,            grid_map=grid_map_obj,        )        # Layer 3: Uniform-FSMI config        uniform_fsmi_config = UniformFSMIConfig(            fov_rad=1.57,            num_beams=6,            max_range=2.5,            ray_step=0.2,            info_weight=info_weight,        )        uniform_fsmi = UniformFSMI(            uniform_fsmi_config,            map_origin,            map_resolution,        )        # MPPI config        config, ctrl_state = mppi.create(            nx=NX,            nu=NU,            noise_sigma=NOISE_SIGMA,            num_samples=num_samples,            horizon=horizon,            lambda_=lambda_,            u_min=U_MIN,            u_max=U_MAX,            u_init=U_INIT,            step_dependent_dynamics=True,        )        # Build simulation        sim_fn = build_sim_fn(            config,            fsmi_planner,            uniform_fsmi,            uniform_fsmi_config,            grid_map_obj,            horizon,            sim_steps,        )        # JIT compile + run        print("JIT compiling + running...")        t0 = time.perf_counter()        final_state, history_x, history_info, targets, actions, done_step = sim_fn(            state, ctrl_state        )        final_state.block_until_ready()        runtime = time.perf_counter() - t0        # Truncate history to actual simulation length        done_step_int = int(done_step)        if done_step_int &gt; 0:            n_active = done_step_int            actual_duration = n_active * DT            print(f"  Task completed at step {n_active} ({actual_duration:.1f}s)")        else:            n_active = sim_steps            actual_duration = sim_duration            print(f"  Timeout reached ({sim_duration}s)")        history_x = history_x[:n_active]        history_info = history_info[:n_active]        actions = actions[:n_active]        # Metrics        action_jerk, traj_jerk = compute_smoothness(actions, history_x, DT)        final_pos = final_state[:3]        goal_dist = float(jnp.linalg.norm(final_pos - GOAL_POS))        print(f"  Runtime: {runtime:.2f}s ({runtime / sim_duration:.2f}x realtime)")        print(f"  Goal distance: {goal_dist:.2f}m")        print(f"  Info levels: {final_state[13:]}")        print()        # Store results for the visualization cell        sim_results.update({            "history_x": history_x,            "history_info": history_info,            "actions": actions,            "runtime_s": runtime,            "action_jerk": float(action_jerk),            "traj_jerk": float(traj_jerk),            "goal_dist": goal_dist,            "final_state": final_state,            "done_step": done_step_int,            "actual_duration": actual_duration,        })        print("Done. Run the next cell to visualize results and generate GIF.")run_button.on_click(run_simulation)# Layoutsystem_box = widgets.VBox(    [        widgets.HTML("&lt;h3&gt;System Parameters&lt;/h3&gt;"),        w_start_x,        w_start_y,        w_duration,    ])controller_box = widgets.VBox(    [        widgets.HTML("&lt;h3&gt;Controller Parameters&lt;/h3&gt;"),        w_samples,        w_horizon,        w_lambda,        w_info_weight,    ])fsmi_box = widgets.VBox(    [        widgets.HTML("&lt;h3&gt;FSMI Parameters (Layer 2)&lt;/h3&gt;"),        w_fsmi_beams,        w_fsmi_range,    ])param_panel = widgets.HBox([system_box, controller_box, fsmi_box])display(widgets.VBox([param_panel, run_button, output_area]))</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div id="d0b6c126" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> sim_results, <span class="st">"No results yet — click 'Run Simulation' first."</span>r <span class="op">=</span> sim_resultshistory_x <span class="op">=</span> r[<span class="st">"history_x"</span>]history_info <span class="op">=</span> r[<span class="st">"history_info"</span>]actions <span class="op">=</span> r[<span class="st">"actions"</span>]fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">18</span>, <span class="dv">6</span>))<span class="co"># 2D trajectoryax = axes[0]plot_environment(ax, grid_array, map_resolution, show_labels=False)positions = np.array(history_x[:, :2])n_steps = len(positions)colors_traj = plt.cm.viridis(np.linspace(0, 1, n_steps))for i in range(n_steps - 1):    ax.plot(        positions[i : i + 2, 0],        positions[i : i + 2, 1],        color=colors_traj[i],        linewidth=2,    )ax.set_title("I-MPPI Trajectory")# Info level depletionplot_info_levels(axes[1], history_info, DT)axes[1].set_title("Information Zone Depletion")# Control inputsacts = np.array(actions)t_arr = np.arange(len(acts)) * DTax3 = axes[2]ax3.plot(t_arr, acts[:, 0], color="#1f77b4", linewidth=1, label="Thrust")ax3.plot(t_arr, acts[:, 1], color="#ff7f0e", linewidth=1, label="wx")ax3.plot(t_arr, acts[:, 2], color="#2ca02c", linewidth=1, label="wy")ax3.plot(t_arr, acts[:, 3], color="#d62728", linewidth=1, label="wz")ax3.set_ylabel("Control Input")ax3.set_xlabel("Time (s)")ax3.set_title("Control Inputs")ax3.legend(fontsize=8)ax3.grid(True, alpha=0.3)status = "Completed" if r["done_step"] &gt; 0 else "Timeout"plt.suptitle(    f"I-MPPI: Full FSMI (Layer 2) + "    f"Biased MPPI with Uniform-FSMI (Layer 3) [{status}]",    fontsize=14,)plt.tight_layout()plt.show()# Performance summaryprint()print("=" * 60)print(f"{'Metric':&lt;25} {'Value':&gt;15}")print("-" * 60)print(f"{'Status':&lt;25} {status:&gt;15}")print(f"{'Sim Duration (s)':&lt;25} {r['actual_duration']:&gt;15.1f}")print(f"{'Runtime (ms)':&lt;25} {r['runtime_s']*1000:&gt;15.1f}")print(f"{'Goal Distance (m)':&lt;25} {r['goal_dist']:&gt;15.2f}")print(f"{'Action Jerk':&lt;25} {r['action_jerk']:&gt;15.4f}")print(f"{'Trajectory Jerk':&lt;25} {r['traj_jerk']:&gt;15.4f}")print("=" * 60)# Generate trajectory animation GIFprint()print("Generating trajectory GIF...")gif_path = create_trajectory_gif(    history_x,    history_info,    grid_array,    map_resolution,    DT,    save_path="i_mppi_trajectory.gif",)print(f"Saved to: {gif_path}")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-
-
 </section>
 
 </main> <!-- /main -->
@@ -419,7 +369,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp("https:\/\/riccardo-enr\.github\.io\/jax_mppi\/");
+        var filterRegex = new RegExp('/' + window.location.host + '/');
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
