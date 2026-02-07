@@ -51,6 +51,7 @@ But `informative_running_cost` (Layer 3) has `info_weight=5.0` which is relative
 - [ ] Add optional info zone visit indicators (checkmarks when explored)
 
 **Files to modify:**
+
 - `examples/i_mppi/i_mppi_simulation.py` (lines 541-776)
 
 ### Step 2: Increase Exploration Incentive
@@ -68,6 +69,7 @@ But `informative_running_cost` (Layer 3) has `info_weight=5.0` which is relative
   - This allows reference trajectory (with info incentive) to override pure goal-seeking
 
 **Files to modify:**
+
 - `examples/i_mppi/i_mppi_simulation.py` (lines 200-232)
 - `src/jax_mppi/i_mppi/environment.py` (line 154, optionally line 231)
 
@@ -78,6 +80,7 @@ But `informative_running_cost` (Layer 3) has `info_weight=5.0` which is relative
 - [ ] Verify both visit 2+ info zones before goal
 
 **Files to modify:**
+
 - `examples/i_mppi/i_mppi_simulation.py` (line 509)
 
 ### Step 4: Validation
