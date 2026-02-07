@@ -12,16 +12,19 @@ The current `examples/i_mppi/i_mppi_simulation.py` has two main issues:
 ### Current Configuration (i_mppi_simulation.py:200-232)
 
 **Layer 2 (FSMI Analyzer, ~5 Hz):**
+
 - `info_weight=25.0` - information weight
 - `motion_weight=0.5` - motion cost weight
 - Ratio: 50:1 (info:motion)
 
 **Layer 3 (Uniform-FSMI, ~50 Hz):**
+
 - `info_weight=5.0` - local information weight
 
 ### Root Cause Analysis
 
 The issue is NOT the Layer 2/3 weights alone. Looking at `environment.py:146`:
+
 ```python
 info_cost = -10.0 * info_gain
 target_cost = 1.0 * dist_target
@@ -92,6 +95,7 @@ But `informative_running_cost` (Layer 3) has `info_weight=5.0` which is relative
 **DO NOT RUN SMPPI** - causes visualization/computation issues.
 
 Run command:
+
 ```bash
 uv run python examples/i_mppi/i_mppi_simulation.py
 ```
@@ -109,13 +113,14 @@ uv run python examples/i_mppi/i_mppi_simulation.py
 If exploration is still insufficient:
 
 | Parameter | Current | Try | Effect |
-|-----------|---------|-----|--------|
+| :--- | :--- | :--- | :--- |
 | Layer 2 info_weight | 25.0 | 100.0 | Stronger exploration in reference |
 | Layer 2 motion_weight | 0.5 | 0.05 | Allow longer detours |
 | Layer 3 info_weight | 5.0 | 25.0 | Stronger local info seeking |
 | target_cost (env) | 1.0 | 0.2 | Weaker goal pull |
 
 If robot gets stuck or oscillates:
+
 - Reduce info_weight
 - Increase motion_weight
 - Check for collision cost inflation near walls
@@ -125,6 +130,7 @@ If robot gets stuck or oscillates:
 ## Documentation
 
 After implementation, add brief explanation in code comments about:
+
 - Why SMPPI is excluded
 - Weight choices for exploration vs. goal-seeking trade-off
 - Visualization design rationale
