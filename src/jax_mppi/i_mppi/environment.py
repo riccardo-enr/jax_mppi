@@ -111,7 +111,12 @@ def _fov_coverage(pos_xy, yaw, zone_center, zone_size):
 def _fov_coverage_with_los(
     pos_xy, yaw, zone_center, zone_size, grid, grid_origin, grid_resolution
 ):
-    """Like ``_fov_coverage`` but each sample also requires line-of-sight."""
+    """Like ``_fov_coverage`` but each sample also requires line-of-sight.
+
+    Each sample point is weighted by the uncertainty (entropy proxy) of the
+    corresponding grid cell so that already-known cells (occupied or free)
+    do not contribute to information depletion.
+    """
     half = zone_size / 2.0
     n = _COV_SAMPLES
     ts = jnp.linspace(-1.0, 1.0, n)
@@ -122,6 +127,7 @@ def _fov_coverage_with_los(
     pts = jnp.stack([gx.ravel(), gy.ravel()], axis=-1)
 
     half_fov = SENSOR_FOV_RAD / 2.0
+    H, W = grid.shape
 
     def _visible(pt):
         vec = pt - pos_xy
@@ -133,7 +139,18 @@ def _fov_coverage_with_los(
         los = _line_of_sight_grid(
             pos_xy, pt, grid, grid_origin, grid_resolution
         )
-        return (in_fov & in_range).astype(jnp.float32) * los
+
+        # Weight by cell uncertainty: only unknown cells (p≈0.5) contribute.
+        # Known occupied (p≈0.9) and known free (p≈0.2) contribute little.
+        col = jnp.int32(jnp.floor((pt[0] - grid_origin[0]) / grid_resolution))
+        row = jnp.int32(jnp.floor((pt[1] - grid_origin[1]) / grid_resolution))
+        row = jnp.clip(row, 0, H - 1)
+        col = jnp.clip(col, 0, W - 1)
+        p = grid[row, col]
+        # Entropy proxy: 1.0 at p=0.5, 0.0 at p=0 or p=1
+        uncertainty = 4.0 * p * (1.0 - p)
+
+        return (in_fov & in_range).astype(jnp.float32) * los * uncertainty
 
     return jnp.mean(jax.vmap(_visible)(pts))
 
