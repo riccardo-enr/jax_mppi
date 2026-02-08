@@ -53,7 +53,7 @@ test:
 
 # Run linting
 lint:
-    uv run ruff check .
+    uv run ruff check . --fix
     uv run basedpyright .
 
 # Initialize and update git submodules (cuda-mppi)
