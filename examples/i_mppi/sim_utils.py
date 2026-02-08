@@ -8,7 +8,6 @@ import jax.numpy as jnp
 
 from jax_mppi.i_mppi.environment import (
     GOAL_POS,
-    augmented_dynamics,
     augmented_dynamics_with_grid,
     informative_running_cost,
 )
@@ -170,9 +169,7 @@ def build_sim_fn(
         goal_reached = goal_dist < GOAL_DONE_THRESHOLD
         newly_done = all_zones_visited & goal_reached
         # Record the step at which we first finish (0 means not done yet)
-        done_step = jnp.where(
-            (done_step == 0) & newly_done, t, done_step
-        )
+        done_step = jnp.where((done_step == 0) & newly_done, t, done_step)
         is_done = done_step > 0
 
         # --- Active step (when not done) ---

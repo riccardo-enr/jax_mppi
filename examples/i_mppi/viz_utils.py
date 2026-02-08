@@ -4,7 +4,6 @@ import matplotlib.animation as animation
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
-
 from matplotlib.patches import Polygon
 
 from jax_mppi.i_mppi.environment import (
@@ -20,15 +19,15 @@ _FOV_RAY_STEP = 0.1  # metres between samples along each ray
 _OCC_THRESHOLD = 0.7  # occupancy value considered an obstacle
 
 
-def _cast_ray(x, y, angle, grid, resolution, max_range):
+def _cast_ray(x, y, angle, grid, resolution, max_range, origin=(0.0, 0.0)):
     """Cast a single ray and return the endpoint (truncated by obstacles)."""
     steps = int(max_range / _FOV_RAY_STEP)
     for s in range(1, steps + 1):
         d = s * _FOV_RAY_STEP
         rx = x + d * np.cos(angle)
         ry = y + d * np.sin(angle)
-        col = int(rx / resolution)
-        row = int(ry / resolution)
+        col = int((rx - origin[0]) / resolution)
+        row = int((ry - origin[1]) / resolution)
         if row < 0 or row >= grid.shape[0] or col < 0 or col >= grid.shape[1]:
             return rx, ry
         if grid[row, col] >= _OCC_THRESHOLD:
@@ -37,13 +36,15 @@ def _cast_ray(x, y, angle, grid, resolution, max_range):
     return x + d * np.cos(angle), y + d * np.sin(angle)
 
 
-def _fov_polygon(x, y, yaw, grid, resolution, max_range=SENSOR_MAX_RANGE):
+def _fov_polygon(
+    x, y, yaw, grid, resolution, max_range=SENSOR_MAX_RANGE, origin=(0.0, 0.0)
+):
     """Return (N, 2) polygon vertices for the visible FOV wedge."""
     half_fov = SENSOR_FOV_RAD / 2.0
     angles = np.linspace(yaw - half_fov, yaw + half_fov, _FOV_NUM_RAYS)
     pts = [(x, y)]  # start at UAV
     for a in angles:
-        pts.append(_cast_ray(x, y, a, grid, resolution, max_range))
+        pts.append(_cast_ray(x, y, a, grid, resolution, max_range, origin))
     pts.append((x, y))  # close polygon
     return np.array(pts)
 
@@ -77,7 +78,7 @@ def plot_environment(ax, grid, resolution, show_labels=True):
         ax.add_patch(rect)
         if show_labels:
             ax.text(
-                cx, cy, f"Info {i+1}", ha="center", va="center", fontsize=8
+                cx, cy, f"Info {i + 1}", ha="center", va="center", fontsize=8
             )
 
     ax.plot(1.0, 5.0, "go", markersize=10, label="Start", zorder=5)
@@ -127,7 +128,7 @@ def plot_info_levels(ax, history_info, dt):
     info = np.array(history_info)
     t = np.arange(len(info)) * dt
     for i in range(info.shape[1]):
-        ax.plot(t, info[:, i], linewidth=2, label=f"Info Zone {i+1}")
+        ax.plot(t, info[:, i], linewidth=2, label=f"Info Zone {i + 1}")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Information Level")
     ax.set_title("Information Zone Depletion")
@@ -194,6 +195,7 @@ def create_trajectory_gif(
     save_path="i_mppi_trajectory.gif",
     fps=20,
     step_skip=5,
+    origin=(0.0, 0.0),
 ):
     """Create an animated GIF of the UAV trajectory.
 
@@ -206,6 +208,7 @@ def create_trajectory_gif(
         save_path: Output GIF file path.
         fps: Frames per second in the GIF.
         step_skip: Show every N-th simulation step as a frame.
+        origin: (x, y) world coordinates of the grid origin.
     """
     positions = np.array(history_x[:, :2])
     # Extract yaw from quaternion (indices 6-9: qw, qx, qy, qz)
@@ -279,8 +282,13 @@ def create_trajectory_gif(
     # FOV wedge (filled polygon, updated each frame)
     grid_np = np.array(grid)
     fov_patch = Polygon(
-        [[0, 0]], closed=True, facecolor="cyan", alpha=0.2,
-        edgecolor="cyan", linewidth=0.5, zorder=9,
+        [[0, 0]],
+        closed=True,
+        facecolor="cyan",
+        alpha=0.2,
+        edgecolor="cyan",
+        linewidth=0.5,
+        zorder=9,
     )
     ax_map.add_patch(fov_patch)
     title = ax_map.set_title("")
@@ -291,7 +299,7 @@ def create_trajectory_gif(
     info_lines = []
     for i in range(info.shape[1]):
         (line,) = ax_info.plot(
-            [], [], linewidth=2, color=zone_colors[i], label=f"Zone {i+1}"
+            [], [], linewidth=2, color=zone_colors[i], label=f"Zone {i + 1}"
         )
         info_lines.append(line)
     ax_info.set_xlim(0, t_all[-1])
@@ -319,7 +327,7 @@ def create_trajectory_gif(
         dy = arrow_len * np.sin(yaw)
         heading_arrow.set_positions((x, y), (x + dx, y + dy))
         # FOV wedge
-        fov_verts = _fov_polygon(x, y, yaw, grid_np, resolution)
+        fov_verts = _fov_polygon(x, y, yaw, grid_np, resolution, origin=origin)
         fov_patch.set_xy(fov_verts)
         # Title with time
         title.set_text(f"I-MPPI Trajectory  t = {k * dt:.1f}s")
@@ -330,7 +338,11 @@ def create_trajectory_gif(
         # Info level lines
         for i, line in enumerate(info_lines):
             line.set_data(t_all[: k + 1], info[: k + 1, i])
-        return [trail_line, uav_dot, heading_arrow, fov_patch, title] + zone_patches + info_lines
+        return (
+            [trail_line, uav_dot, heading_arrow, fov_patch, title]
+            + zone_patches
+            + info_lines
+        )
 
     anim = animation.FuncAnimation(
         fig, update, frames=len(frame_indices), interval=1000 // fps, blit=True
