@@ -45,9 +45,13 @@ def _make_augmented_state(x, y, z=-2.0, yaw=0.0, info_levels=None):
 
 
 def _make_test_grid():
-    """10x10 grid at 0.5m (5m x 5m) with a wall column at x=2.5."""
+    """10x10 grid at 0.5m (5m x 5m) with a wall column at x=2.5.
+
+    Non-wall cells are set to 0.5 (unknown) so that entropy-weighted
+    FOV coverage gives non-zero values for visible unknown areas.
+    """
     origin = jnp.array([0.0, 0.0])
-    grid = jnp.zeros((10, 10))
+    grid = 0.5 * jnp.ones((10, 10))
     # Wall column at col=5 (x=2.5m)
     grid = grid.at[:, 5].set(1.0)
     return grid, origin, 0.5
@@ -250,7 +254,8 @@ class TestLineOfSight:
 
 class TestFOVCoverageWithLOS:
     def test_no_wall_matches_basic(self):
-        grid = jnp.zeros((10, 10))
+        # Unknown cells (p=0.5) → entropy weight = 1.0, should match basic
+        grid = 0.5 * jnp.ones((10, 10))
         origin = jnp.array([0.0, 0.0])
         pos = jnp.array([0.5, 0.5])
         yaw = 0.0
@@ -261,6 +266,27 @@ class TestFOVCoverageWithLOS:
             pos, yaw, zone_center, zone_size, grid, origin, 0.5
         )
         assert jnp.isclose(cov_basic, cov_los, atol=0.05)
+
+    def test_known_cells_reduce_coverage(self):
+        """Known-free cells (p=0.2) produce less coverage than unknown (p=0.5)."""
+        origin = jnp.array([0.0, 0.0])
+        pos = jnp.array([0.5, 0.5])
+        yaw = 0.0
+        zone_center = jnp.array([1.5, 0.5])
+        zone_size = jnp.array([0.5, 0.5])
+
+        grid_unknown = 0.5 * jnp.ones((10, 10))
+        cov_unknown = _fov_coverage_with_los(
+            pos, yaw, zone_center, zone_size, grid_unknown, origin, 0.5
+        )
+
+        grid_known = 0.2 * jnp.ones((10, 10))
+        cov_known = _fov_coverage_with_los(
+            pos, yaw, zone_center, zone_size, grid_known, origin, 0.5
+        )
+
+        assert cov_unknown > 0
+        assert cov_known < cov_unknown
 
     def test_wall_blocks(self):
         grid, origin, res = _make_test_grid()
@@ -398,9 +424,10 @@ class TestAugmentedDynamicsWithGrid:
         )
         assert ns[13] < 100.0
 
-    def test_matches_basic_on_empty_grid(self):
-        # Empty grid → LOS never blocked → same as augmented_dynamics
-        grid = jnp.zeros((20, 20))
+    def test_matches_basic_on_unknown_grid(self):
+        # Unknown grid (p=0.5) with no walls → LOS never blocked,
+        # entropy weight = 1.0 → same depletion as augmented_dynamics
+        grid = 0.5 * jnp.ones((20, 20))
         origin = jnp.array([0.0, 0.0])
         state = _make_augmented_state(2.5, 6.0, yaw=0.0)
         action = jnp.array([9.81, 0.0, 0.0, 0.0])
@@ -410,6 +437,18 @@ class TestAugmentedDynamicsWithGrid:
             grid=grid, grid_origin=origin, grid_resolution=0.5,
         )
         assert jnp.allclose(ns_basic[13:], ns_grid[13:], atol=0.05)
+
+    def test_known_grid_no_depletion(self):
+        # Known-free grid (p=0.0) → entropy weight = 0 → no depletion
+        grid = jnp.zeros((20, 20))
+        origin = jnp.array([0.0, 0.0])
+        state = _make_augmented_state(2.5, 6.0, yaw=0.0)
+        action = jnp.array([9.81, 0.0, 0.0, 0.0])
+        ns = augmented_dynamics_with_grid(
+            state, action, dt=0.05,
+            grid=grid, grid_origin=origin, grid_resolution=0.5,
+        )
+        assert jnp.allclose(ns[13:], state[13:], atol=1e-5)
 
 
 # ---------------------------------------------------------------------------
