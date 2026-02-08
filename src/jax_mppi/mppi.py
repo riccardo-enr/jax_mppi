@@ -210,11 +210,13 @@ def _compute_noise_cost(
 ) -> jax.Array:
     if noise_abs_cost:
         abs_noise = jnp.abs(noise)
-        quad = jnp.einsum(
-            "ktd,df,ktf->kt", abs_noise, jnp.abs(noise_sigma_inv), abs_noise
-        )
+        # Optimized batched quadratic cost: x^T * M * x
+        # This is faster than einsum on most backends
+        weighted_noise = jnp.dot(abs_noise, jnp.abs(noise_sigma_inv))
+        quad = jnp.sum(weighted_noise * abs_noise, axis=-1)
     else:
-        quad = jnp.einsum("ktd,df,ktf->kt", noise, noise_sigma_inv, noise)
+        weighted_noise = jnp.dot(noise, noise_sigma_inv)
+        quad = jnp.sum(weighted_noise * noise, axis=-1)
     return 0.5 * jnp.sum(quad, axis=1)
 
 
