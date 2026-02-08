@@ -32,6 +32,14 @@ INFO_ZONES = jnp.array([
 
 GOAL_POS = jnp.array([9.0, 5.0, -2.0])  # x, y, z (z is neg altitude)
 
+# Sensor parameters for FOV-aware depletion
+SENSOR_FOV_RAD = 1.57  # 90 degrees, matches FSMI configs
+SENSOR_MAX_RANGE = 2.5  # metres, matches Layer 3 uniform FSMI
+
+_LOS_RAY_STEPS = 16  # fixed sample count for line-of-sight check
+_LOS_RAY_STEP = 0.2  # metres between LOS samples
+_COV_SAMPLES = 5  # NxN grid for FOV coverage estimation
+
 
 def dist_rect(p, center, size):
     """Calculate distance to a rectangle (0 if inside)."""
@@ -40,6 +48,101 @@ def dist_rect(p, center, size):
     d = jnp.abs(p - center) - half_size
     # exterior distance
     return jnp.linalg.norm(jnp.maximum(d, 0.0))
+
+
+def quat_to_yaw(q):
+    """Extract yaw from quaternion [qw, qx, qy, qz]."""
+    qw, qx, qy, qz = q[0], q[1], q[2], q[3]
+    return jnp.arctan2(
+        2.0 * (qw * qz + qx * qy),
+        1.0 - 2.0 * (qy * qy + qz * qz),
+    )
+
+
+def _fov_coverage(pos_xy, yaw, zone_center, zone_size):
+    """Fraction of zone area within the sensor FOV cone and range.
+
+    Samples a grid of points inside the zone and checks each against
+    the FOV half-angle and max range.  Returns a scalar in [0, 1].
+    """
+    half = zone_size / 2.0
+    n = _COV_SAMPLES
+    # Sample points uniformly across the zone
+    ts = jnp.linspace(-1.0, 1.0, n)
+    gx, gy = jnp.meshgrid(
+        zone_center[0] + ts * half[0],
+        zone_center[1] + ts * half[1],
+    )
+    pts = jnp.stack([gx.ravel(), gy.ravel()], axis=-1)  # (n*n, 2)
+
+    half_fov = SENSOR_FOV_RAD / 2.0
+
+    def _visible(pt):
+        vec = pt - pos_xy
+        d = jnp.linalg.norm(vec)
+        bearing = jnp.arctan2(vec[1], vec[0])
+        ang = jnp.arctan2(jnp.sin(bearing - yaw), jnp.cos(bearing - yaw))
+        in_fov = jnp.abs(ang) <= half_fov
+        in_range = d <= SENSOR_MAX_RANGE
+        return (in_fov & in_range).astype(jnp.float32)
+
+    return jnp.mean(jax.vmap(_visible)(pts))
+
+
+def _fov_coverage_with_los(pos_xy, yaw, zone_center, zone_size,
+                           grid, grid_origin, grid_resolution):
+    """Like ``_fov_coverage`` but each sample also requires line-of-sight."""
+    half = zone_size / 2.0
+    n = _COV_SAMPLES
+    ts = jnp.linspace(-1.0, 1.0, n)
+    gx, gy = jnp.meshgrid(
+        zone_center[0] + ts * half[0],
+        zone_center[1] + ts * half[1],
+    )
+    pts = jnp.stack([gx.ravel(), gy.ravel()], axis=-1)
+
+    half_fov = SENSOR_FOV_RAD / 2.0
+
+    def _visible(pt):
+        vec = pt - pos_xy
+        d = jnp.linalg.norm(vec)
+        bearing = jnp.arctan2(vec[1], vec[0])
+        ang = jnp.arctan2(jnp.sin(bearing - yaw), jnp.cos(bearing - yaw))
+        in_fov = jnp.abs(ang) <= half_fov
+        in_range = d <= SENSOR_MAX_RANGE
+        los = _line_of_sight_grid(pos_xy, pt, grid, grid_origin, grid_resolution)
+        return (in_fov & in_range).astype(jnp.float32) * los
+
+    return jnp.mean(jax.vmap(_visible)(pts))
+
+
+def _line_of_sight_grid(p, q, grid, origin, resolution):
+    """Check line of sight from *p* to *q* on the occupancy grid.
+
+    Samples the grid along a straight ray. Returns 1.0 if clear,
+    0.0 if any sample hits an obstacle cell (occupancy >= 0.7).
+    """
+    direction = q - p
+    dist = jnp.linalg.norm(direction)
+    safe_dist = jnp.maximum(dist, 1e-6)
+    dir_norm = direction / safe_dist
+
+    # Fixed-size sample array; mask out samples past the target
+    step_dists = jnp.arange(_LOS_RAY_STEPS) * _LOS_RAY_STEP
+    valid = step_dists < dist
+
+    xs = p[0] + dir_norm[0] * step_dists
+    ys = p[1] + dir_norm[1] * step_dists
+
+    cols = jnp.int32(jnp.floor((xs - origin[0]) / resolution))
+    rows = jnp.int32(jnp.floor((ys - origin[1]) / resolution))
+    rows = jnp.clip(rows, 0, grid.shape[0] - 1)
+    cols = jnp.clip(cols, 0, grid.shape[1] - 1)
+
+    occupancy = grid[rows, cols]
+    blocked = (occupancy >= 0.7) & valid
+
+    return jnp.where(jnp.any(blocked), 0.0, 1.0)
 
 
 @partial(jax.jit, static_argnames=["dt"])
@@ -55,7 +158,6 @@ def augmented_dynamics(
     info_levels = state[13:]
 
     # Quadrotor dynamics
-    # Quadrotor params
     mass = 1.0
     gravity = 9.81
     tau_omega = 0.05
@@ -69,22 +171,67 @@ def augmented_dynamics(
     next_quat = normalize_quaternion(next_quad_state[6:10])
     next_quad_state = next_quad_state.at[6:10].set(next_quat)
 
-    # Info Dynamics
-    # Info depletes if robot is close
+    # Info Dynamics — deplete proportionally to FOV coverage of the zone
     pos = quad_state[:3]
+    yaw = quat_to_yaw(quad_state[6:10])
 
     def update_info(info_val, zone_idx):
-        zone_center = INFO_ZONES[zone_idx, :2]  # cx, cy
-        zone_size = INFO_ZONES[zone_idx, 2:4]  # w, h
+        zone_center = INFO_ZONES[zone_idx, :2]
+        zone_size = INFO_ZONES[zone_idx, 2:4]
 
-        dist = dist_rect(pos[:2], zone_center, zone_size)
+        coverage = _fov_coverage(pos[:2], yaw, zone_center, zone_size)
+        return info_val * (1.0 - coverage)
 
-        # Simple depletion: if inside or close
-        # Use smooth falloff outside, constant max inside
-        rate = 20.0  # info per second
-        # Falloff scale 1.0
-        depletion = rate * dt * jnp.exp(-(dist**2) / (0.5 * 1.0) ** 2)
-        return jnp.maximum(0.0, info_val - depletion)
+    next_info_levels = jax.vmap(update_info)(
+        info_levels, jnp.arange(len(INFO_ZONES))
+    )
+
+    return jnp.concatenate([next_quad_state, next_info_levels])
+
+
+def augmented_dynamics_with_grid(
+    state: jax.Array,
+    action: jax.Array,
+    t: Optional[jax.Array] = None,
+    *,
+    dt: float = 0.05,
+    grid: jax.Array,
+    grid_origin: jax.Array,
+    grid_resolution: float,
+) -> jax.Array:
+    """Dynamics for Quadrotor + Info levels with grid-based LOS check.
+
+    Same as ``augmented_dynamics`` but rays that hit an obstacle cell
+    (occupancy >= 0.7) in *grid* block information depletion.
+    """
+    quad_state = state[:13]
+    info_levels = state[13:]
+
+    mass = 1.0
+    gravity = 9.81
+    tau_omega = 0.05
+    u_min = jnp.array([0.0, -10.0, -10.0, -10.0])
+    u_max = jnp.array([4.0 * 9.81, 10.0, 10.0, 10.0])
+
+    action_clipped = jnp.clip(action, u_min, u_max)
+    next_quad_state = rk4_step(
+        quad_state, action_clipped, dt, mass, gravity, tau_omega
+    )
+    next_quat = normalize_quaternion(next_quad_state[6:10])
+    next_quad_state = next_quad_state.at[6:10].set(next_quat)
+
+    pos = quad_state[:3]
+    yaw = quat_to_yaw(quad_state[6:10])
+
+    def update_info(info_val, zone_idx):
+        zone_center = INFO_ZONES[zone_idx, :2]
+        zone_size = INFO_ZONES[zone_idx, 2:4]
+
+        coverage = _fov_coverage_with_los(
+            pos[:2], yaw, zone_center, zone_size,
+            grid, grid_origin, grid_resolution,
+        )
+        return info_val * (1.0 - coverage)
 
     next_info_levels = jax.vmap(update_info)(
         info_levels, jnp.arange(len(INFO_ZONES))
@@ -125,25 +272,23 @@ def running_cost(
 
     coll_cost = wall_cost_fn(pos)
 
-    # Info Cost (Reward)
-    def get_info_rate(p, inf):
-        rate_sum = 0.0
+    # Info Cost (Reward) — FOV-aware (matches dynamics)
+    yaw = quat_to_yaw(state[6:10])
+
+    def get_info_reward(p, inf):
+        reward = 0.0
         for i in range(len(INFO_ZONES)):
             zone_center = INFO_ZONES[i, :2]
             zone_size = INFO_ZONES[i, 2:4]
 
-            dist = dist_rect(p[:2], zone_center, zone_size)
-
-            # Depletion rate (matches dynamics)
-            dr = 20.0 * jnp.exp(-(dist**2) / (0.5 * 1.0) ** 2)
-            # Soft check if info exists
+            coverage = _fov_coverage(p[:2], yaw, zone_center, zone_size)
             has_info = jnp.tanh(inf[i])
-            rate_sum += has_info * dr
+            reward += has_info * coverage
 
-        return rate_sum
+        return reward
 
-    info_gain = get_info_rate(pos, info)
-    info_cost = -10.0 * info_gain
+    info_gain = get_info_reward(pos, info)
+    info_cost = -50.0 * info_gain
 
     # Target Attraction
     if target.ndim == 2:

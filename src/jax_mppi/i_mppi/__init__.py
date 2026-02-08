@@ -19,6 +19,7 @@ from .environment import (
     INFO_ZONES,
     WALLS,
     augmented_dynamics,
+    augmented_dynamics_with_grid,
     informative_running_cost,
     running_cost,
 )
@@ -44,6 +45,7 @@ __all__ = [
     "INFO_ZONES",
     "WALLS",
     "augmented_dynamics",
+    "augmented_dynamics_with_grid",
     "informative_running_cost",
     "running_cost",
     # Biased MPPI commands
