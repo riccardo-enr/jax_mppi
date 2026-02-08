@@ -1,6 +1,7 @@
 
 from jax_mppi import cuda_mppi
 
+
 def main():
     print("Testing CUDA MPPI Config...")
     config = cuda_mppi.MPPIConfig(

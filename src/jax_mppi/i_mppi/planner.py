@@ -4,6 +4,28 @@ from typing import Callable, Optional, Tuple
 import jax
 import jax.numpy as jnp
 
+from jax_mppi.kmppi import (
+    KMPPIConfig,
+    KMPPIState,
+    TimeKernel,
+    _kernel_interpolate,
+    _shift_control_points,
+)
+from jax_mppi.kmppi import (
+    _bound_action as _bound_action_kmppi,
+)
+from jax_mppi.kmppi import (
+    _compute_noise_cost as _compute_noise_cost_kmppi,
+)
+from jax_mppi.kmppi import (
+    _compute_rollout_costs as _compute_rollout_costs_kmppi,
+)
+from jax_mppi.kmppi import (
+    _compute_weights as _compute_weights_kmppi,
+)
+from jax_mppi.kmppi import (
+    _sample_noise as _sample_noise_kmppi,
+)
 from jax_mppi.mppi import (
     MPPIConfig,
     MPPIState,
@@ -19,37 +41,21 @@ from jax_mppi.smppi import (
     SMPPIState,
     _compute_perturbed_actions_and_noise,
     _compute_smoothness_cost,
-    _sample_noise as _sample_noise_smppi,
-    _shift_nominal as _shift_nominal_smppi,
-)
-from jax_mppi.smppi import (
-    _compute_rollout_costs as _compute_rollout_costs_smppi,
 )
 from jax_mppi.smppi import (
     _compute_noise_cost as _compute_noise_cost_smppi,
 )
 from jax_mppi.smppi import (
+    _compute_rollout_costs as _compute_rollout_costs_smppi,
+)
+from jax_mppi.smppi import (
     _compute_weights as _compute_weights_smppi,
 )
-from jax_mppi.kmppi import (
-    KMPPIConfig,
-    KMPPIState,
-    TimeKernel,
-    _kernel_interpolate,
-    _sample_noise as _sample_noise_kmppi,
-    _shift_control_points,
+from jax_mppi.smppi import (
+    _sample_noise as _sample_noise_smppi,
 )
-from jax_mppi.kmppi import (
-    _bound_action as _bound_action_kmppi,
-)
-from jax_mppi.kmppi import (
-    _compute_rollout_costs as _compute_rollout_costs_kmppi,
-)
-from jax_mppi.kmppi import (
-    _compute_noise_cost as _compute_noise_cost_kmppi,
-)
-from jax_mppi.kmppi import (
-    _compute_weights as _compute_weights_kmppi,
+from jax_mppi.smppi import (
+    _shift_nominal as _shift_nominal_smppi,
 )
 
 

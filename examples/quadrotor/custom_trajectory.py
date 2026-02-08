@@ -188,7 +188,7 @@ def run_quadrotor_custom_trajectory(
     pos_errors = jnp.linalg.norm(states[:-1, 0:3] - reference[:, 0:3], axis=1)
     vel_errors = jnp.linalg.norm(states[:-1, 3:6] - reference[:, 3:6], axis=1)
 
-    print(f"\nTracking performance:")
+    print("\nTracking performance:")
     print(f"  Mean position error: {jnp.mean(pos_errors):.4f}m")
     print(f"  Max position error: {jnp.max(pos_errors):.4f}m")
     print(f"  RMS position error: {jnp.sqrt(jnp.mean(pos_errors**2)):.4f}m")
@@ -196,7 +196,7 @@ def run_quadrotor_custom_trajectory(
     print(f"  Total cost: {jnp.sum(costs_history):.2f}")
 
     # Check waypoint passage
-    print(f"\nWaypoint passage errors:")
+    print("\nWaypoint passage errors:")
     steps_per_segment = int(segment_duration / dt)
     for i in range(waypoints.shape[0]):
         step_idx = min(i * steps_per_segment, num_steps - 1)

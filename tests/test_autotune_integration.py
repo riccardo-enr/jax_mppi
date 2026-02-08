@@ -1,9 +1,7 @@
 """Integration tests for autotune with MPPI variants."""
 
-import jax
 import jax.numpy as jnp
 import numpy as np
-import pytest
 
 from jax_mppi import autotune, mppi
 

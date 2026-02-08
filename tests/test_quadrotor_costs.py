@@ -2,7 +2,6 @@
 
 import jax
 import jax.numpy as jnp
-import pytest
 
 from jax_mppi.costs.quadrotor import (
     create_hover_cost,
