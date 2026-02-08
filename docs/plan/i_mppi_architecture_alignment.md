@@ -8,6 +8,7 @@ The current I-MPPI implementation is missing the **informative term in Layer 3 (
 2. **Layer 3 (I-MPPI Controller):** ~50 Hz - Fast control with **Uniform-FSMI** for local reactivity
 
 Currently, Layer 3 only does trajectory tracking (`running_cost`), which reduces I-MPPI to standard MPPI with a biased reference. This loses:
+
 - Reactive viewpoint maintenance during disturbances
 - Handling of occlusions detected between Layer 2 updates
 - True informative control behavior
@@ -32,6 +33,7 @@ class UniformFSMI:
 ```
 
 Key differences from full FSMI:
+
 - Sensor noise is uniform (constant sigma)
 - Ray range limited to 2-3m (local)
 - Reduced beam count (4-8 vs 16)
@@ -79,7 +81,7 @@ cost_fn = partial(
 
 Reorganize `examples/i_mppi/` to clearly show the architecture:
 
-```
+```text
 examples/i_mppi/
 ├── __init__.py
 ├── i_mppi_simulation.py      # Main: Layer 2 (FSMI) + Layer 3 (I-MPPI with Uniform-FSMI)
@@ -92,32 +94,38 @@ examples/i_mppi/
 ## Implementation Steps
 
 ### Step 1: Implement Uniform-FSMI
+
 - [ ] Add `UniformFSMI` class to `fsmi.py`
 - [ ] Implement O(n) MI computation
 - [ ] Add configuration parameters (short_range, few_beams)
 - [ ] Benchmark vs full FSMI
 
 ### Step 2: Update Cost Functions
+
 - [ ] Add `informative_running_cost()` to environment.py
 - [ ] Make grid_map accessible in cost function (via closure or state)
 - [ ] Handle yaw extraction from state
 
 ### Step 3: Update I-MPPI Simulation
+
 - [ ] Integrate Uniform-FSMI into Layer 3 cost
 - [ ] Add config parameters for local info weight
 - [ ] Maintain backward compatibility flag
 
 ### Step 4: Add Demonstration Examples
+
 - [ ] Create `uniform_fsmi_demo.py`
 - [ ] Create `architecture_comparison.py` showing the difference
 
 ### Step 5: Documentation
+
 - [ ] Update README in examples/i_mppi/
 - [ ] Document the two-layer architecture
 
 ## Configuration Parameters
 
 ### Layer 2 (Full FSMI) - Slow Path
+
 ```python
 FSMIConfig(
     use_grid_fsmi=True,
@@ -130,6 +138,7 @@ FSMIConfig(
 ```
 
 ### Layer 3 (Uniform-FSMI) - Fast Path
+
 ```python
 UniformFSMIConfig(
     num_beams=6,          # Reduced
@@ -142,7 +151,7 @@ UniformFSMIConfig(
 ## Expected Performance
 
 | Component | Rate | Computation |
-|-----------|------|-------------|
+| --- | --- | --- |
 | Layer 2 (Full FSMI) | 5 Hz | ~40-50ms |
 | Layer 3 (Uniform-FSMI per sample) | 50 Hz | ~0.5ms |
 | Total control cycle | 50 Hz | <20ms |
@@ -154,6 +163,7 @@ UniformFSMIConfig(
 3. **True I-MPPI:** Not just biased trajectory tracking
 
 ## Status
+
 - [x] Step 1: Uniform-FSMI implementation (UniformFSMI class in fsmi.py)
 - [x] Step 2: Cost function update (informative_running_cost in environment.py)
 - [x] Step 3: Simulation integration (i_mppi_simulation.py updated)
