@@ -1,6 +1,7 @@
 name: Lint
 
 on:
+    workflow_dispatch:
     push:
         branches: [main]
         paths:
@@ -31,8 +32,11 @@ jobs:
                   uv venv
                   uv pip install -e ".[dev]"
 
+            - name: Run ruff check
+              run: uv run ruff check .
+
             - name: Run ruff format
-              run: uv run ruff format .
+              run: uv run ruff format --check .
 
             - name: Install and Run Markdown Lint
               run: |

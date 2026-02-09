@@ -7,8 +7,12 @@ requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Riccardo Enrico" }]
 keywords = [
-  "jax", "mppi", "model-predictive-control", "robotics",
-  "optimal-control", "trajectory-optimization",
+  "jax",
+  "mppi",
+  "model-predictive-control",
+  "robotics",
+  "optimal-control",
+  "trajectory-optimization",
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -19,26 +23,20 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering",
 ]
-dependencies = [
-  "jax[cuda13]",
-  "numpy",
-  "jaxtyping",
-  "chex"
-]
+dependencies = ["jax[cuda13]", "numpy", "jaxtyping", "chex", "pyyaml>=6.0.3"]
 
 [project.optional-dependencies]
 dev = [
   "pytest",
+  "lark",
   "gymnasium[classic_control]",
   "matplotlib",
   "ipywidgets",
+  "tqdm",
   "basedpyright",
   "ruff>=0.14.14",
 ]
-autotuning = [
-  "cma>=3.3.0",
-  "evosax>=0.1.0",
-]
+autotuning = ["cma>=3.3.0", "evosax>=0.1.0"]
 autotuning-extra = [
   "ray[tune]>=2.0.0",
   "hyperopt>=0.2.7",

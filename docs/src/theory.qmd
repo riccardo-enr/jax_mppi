@@ -1,0 +1,208 @@
+---
+title: "Theoretical Background"
+format:
+  html:
+    math: true
+---
+
+This section provides the mathematical foundations for the Model Predictive Path Integral (MPPI) control algorithm and its variants implemented in `jax_mppi`.
+
+## Standard MPPI
+
+Model Predictive Path Integral (MPPI) control is a sampling-based model predictive control algorithm derived from information-theoretic principles. It solves the stochastic optimal control problem by simulating multiple trajectories and updating the control policy based on their costs.
+
+### Stochastic Optimal Control Problem
+
+We consider a discrete-time dynamical system with dynamics:
+
+$$
+\mathbf{x}_{t+1} = f(\mathbf{x}_t, \mathbf{u}_t) + \mathbf{v}_t
+$$
+
+where $\mathbf{x}_t \in \mathbb{R}^{n_x}$ is the state, $\mathbf{u}_t \in \mathbb{R}^{n_u}$ is the control input, and $\mathbf{v}_t \sim \mathcal{N}(0, \Sigma)$ is Gaussian noise.
+
+The objective is to find the control sequence $U = \{\mathbf{u}_0, \dots, \mathbf{u}_{T-1}\}$ that minimizes the expected cost:
+
+$$
+J(U) = \mathbb{E} \left[ \phi(\mathbf{x}_T) + \sum_{t=0}^{T-1} \left( q(\mathbf{x}_t) + \frac{1}{2} \mathbf{u}_t^T \Sigma^{-1} \mathbf{u}_t \right) \right]
+$$
+
+where $\phi(\mathbf{x}_T)$ is the terminal cost and $q(\mathbf{x}_t)$ is the state-dependent running cost. The term $\frac{1}{2} \mathbf{u}_t^T \Sigma^{-1} \mathbf{u}_t$ represents the control effort cost.
+
+### Information Theoretic Derivation
+
+MPPI relies on the duality between free energy and relative entropy (KL divergence). The optimal control distribution $p^*$ is proportional to the exponential of the trajectory cost:
+
+$$
+p^*(\tau) \propto \exp\left(-\frac{1}{\lambda} S(\tau)\right)
+$$
+
+where $S(\tau)$ is the cost of a trajectory $\tau$ and $\lambda$ is a temperature parameter.
+
+### Update Law
+
+In practice, we approximate the optimal control by sampling $K$ trajectories around a nominal control sequence $\mathbf{u}_{nom}$. For each sample $k$, we apply a perturbation $\epsilon_k \sim \mathcal{N}(0, \Sigma)$:
+
+$$
+\mathbf{u}_{t, k} = \mathbf{u}_{nom, t} + \epsilon_{t, k}
+$$
+
+The cost for the $k$-th trajectory is computed as:
+
+$$
+S_k = \phi(\mathbf{x}_{T, k}) + \sum_{t=0}^{T-1} \left( q(\mathbf{x}_{t, k}) + \lambda \mathbf{u}_{nom, t}^T \Sigma^{-1} \epsilon_{t, k} \right)
+$$
+
+The weights for each trajectory are computed using the softmax function:
+
+$$
+w_k = \frac{\exp(-\frac{1}{\lambda} (S_k - \beta))}{\sum_{j=1}^K \exp(-\frac{1}{\lambda} (S_j - \beta))}
+$$
+
+where $\beta = \min_k S_k$ for numerical stability.
+
+The control sequence is then updated by computing the weighted average of the perturbations:
+
+$$
+\mathbf{u}_{new, t} = \mathbf{u}_{nom, t} + \sum_{k=1}^K w_k \epsilon_{t, k}
+$$
+
+## Smooth MPPI (SMPPI)
+
+Standard MPPI assumes the control inputs are independent across time steps, which can lead to jerky or non-smooth control signals. Smooth MPPI (SMPPI) addresses this by lifting the control problem to a higher-order space (e.g., controlling acceleration instead of velocity).
+
+### Lifted Control Space
+
+In SMPPI, the optimizer works in a **lifted control space** where the nominal trajectory $\mathbf{U} = \{\mathbf{u}_0, \dots, \mathbf{u}_{T-1}\}$ represents the *derivative* of the actual action (e.g., jerk when controlling acceleration, or acceleration when controlling velocity). The actual action $\mathbf{a}_t$ applied to the plant is obtained by numerical integration:
+
+$$
+\mathbf{a}_{t+1} = \mathbf{a}_t + \mathbf{u}_t \, \Delta t
+$$
+
+This ensures temporal coherence: even large perturbations $\epsilon_t$ in $\mathbf{u}$-space produce smooth changes in $\mathbf{a}$-space because they are integrated.
+
+### Perturbation and Effective Noise
+
+Noise is sampled in the lifted space $\epsilon_t^{(k)} \sim \mathcal{N}(\mathbf{0}, \Sigma)$, producing perturbed commands:
+
+$$
+\tilde{\mathbf{u}}_t^{(k)} = \text{clip}\!\left(\mathbf{u}_t + \epsilon_t^{(k)},\; \mathbf{u}_{\min},\; \mathbf{u}_{\max}\right)
+$$
+
+The corresponding perturbed actions are:
+
+$$
+\tilde{\mathbf{a}}_t^{(k)} = \text{clip}\!\left(\mathbf{a}_t + \tilde{\mathbf{u}}_t^{(k)} \Delta t,\; \mathbf{a}_{\min},\; \mathbf{a}_{\max}\right)
+$$
+
+Because clipping may alter the perturbation, the **effective noise** used for importance weighting is back-computed:
+
+$$
+\hat{\epsilon}_t^{(k)} = \frac{\tilde{\mathbf{a}}_t^{(k)} - \mathbf{a}_t}{\Delta t} - \mathbf{u}_t
+$$
+
+This ensures the noise cost term $\hat{\epsilon}^T \Sigma^{-1} \hat{\epsilon}$ reflects the actual perturbation applied to the system.
+
+### Smoothness Cost
+
+SMPPI adds an explicit penalty on temporal changes in the action sequence:
+
+$$
+J_{\text{smooth}}^{(k)} = w_s \sum_{t=0}^{T-2} \left\| \tilde{\mathbf{a}}_{t+1}^{(k)} - \tilde{\mathbf{a}}_t^{(k)} \right\|^2
+$$
+
+where $w_s$ (`w_action_seq_cost` in code) controls the smoothness weight.
+
+### Total Cost Decomposition
+
+The total cost for the $k$-th sample combines three terms:
+
+$$
+J_{\text{total}}^{(k)} = \underbrace{J_{\text{rollout}}^{(k)}}_{\text{state + terminal}} + \underbrace{J_{\text{noise}}^{(k)}}_{\hat{\epsilon}^T \Sigma^{-1} \hat{\epsilon}} + \underbrace{J_{\text{smooth}}^{(k)}}_{w_s \|\Delta \mathbf{a}\|^2}
+$$
+
+Importance weights and the update law remain identical to standard MPPI:
+
+$$
+w_k = \text{softmax}\!\left(-\frac{1}{\lambda} J_{\text{total}}^{(k)}\right), \qquad
+\mathbf{u}_{t}^{new} = \mathbf{u}_t + \sum_k w_k \hat{\epsilon}_t^{(k)}
+$$
+
+After updating $\mathbf{U}$, the action sequence is re-integrated: $\mathbf{a}_t^{new} = \mathbf{a}_t + \mathbf{u}_t^{new} \Delta t$.
+
+## Kernel MPPI (KMPPI)
+
+Kernel MPPI (KMPPI) parameterizes the control trajectory using a set of basis functions defined by a kernel, rather than optimizing the control input at every time step independently. This reduces the dimensionality of the optimization problem and implicitly enforces smoothness.
+
+### RKHS Formulation
+
+We assume the control trajectory $\mathbf{u}(t)$ lies in a Reproducing Kernel Hilbert Space (RKHS) defined by a kernel $k(t, t')$. The control is represented through $M$ **support points** $\{t_1, \dots, t_M\}$ with associated parameters $\boldsymbol{\theta} \in \mathbb{R}^{M \times n_u}$.
+
+The full trajectory is recovered via kernel interpolation:
+
+$$
+\mathbf{u}(t) = \mathbf{W}(t) \, \boldsymbol{\theta}
+$$
+
+where $\mathbf{W}$ is the **interpolation matrix**:
+
+$$
+\mathbf{W} = \mathbf{K}(t, t_k) \, \mathbf{K}(t_k, t_k)^{-1} \in \mathbb{R}^{T \times M}
+$$
+
+Here:
+
+- $\mathbf{K}(t, t_k) \in \mathbb{R}^{T \times M}$: kernel evaluated between all trajectory times and support point times
+- $\mathbf{K}(t_k, t_k) \in \mathbb{R}^{M \times M}$: kernel evaluated between support points (Gram matrix)
+
+In practice, the linear system $\mathbf{K}(t_k,t_k) \, \mathbf{w}^T = \mathbf{K}(t,t_k)^T$ is solved using a Cholesky factorization (positive-definite kernel).
+
+### RBF Kernel
+
+The default kernel is the Radial Basis Function (Gaussian) kernel:
+
+$$
+k(t, t') = \exp\!\left(-\frac{\|t - t'\|^2}{2\sigma^2}\right)
+$$
+
+The bandwidth parameter $\sigma$ controls the smoothness of the interpolated trajectory:
+
+- **Small $\sigma$**: each support point only influences nearby time steps, allowing higher-frequency content
+- **Large $\sigma$**: broad influence, producing very smooth (low-frequency) trajectories
+
+### Sampling in Parameter Space
+
+Instead of perturbing the full control trajectory $\mathbf{u} \in \mathbb{R}^{T \times n_u}$, KMPPI samples perturbations in the reduced parameter space $\boldsymbol{\theta} \in \mathbb{R}^{M \times n_u}$:
+
+$$
+\delta\boldsymbol{\theta}^{(k)} \sim \mathcal{N}(\mathbf{0}, \Sigma_\theta), \qquad
+\tilde{\boldsymbol{\theta}}^{(k)} = \boldsymbol{\theta} + \delta\boldsymbol{\theta}^{(k)}
+$$
+
+Each perturbed parameter set is interpolated back to trajectory space:
+
+$$
+\tilde{\mathbf{U}}^{(k)} = \mathbf{W} \, \tilde{\boldsymbol{\theta}}^{(k)}
+$$
+
+Rollout costs are computed using $\tilde{\mathbf{U}}^{(k)}$, while the noise cost is evaluated in parameter space:
+
+$$
+J_{\text{noise}}^{(k)} = \sum_{m=1}^{M} \delta\boldsymbol{\theta}_m^{(k) T} \Sigma_\theta^{-1} \, \delta\boldsymbol{\theta}_m^{(k)}
+$$
+
+The update is also applied in parameter space:
+
+$$
+\boldsymbol{\theta}^{new} = \boldsymbol{\theta} + \sum_k w_k \, \delta\boldsymbol{\theta}^{(k)}
+$$
+
+### Dimensionality Reduction
+
+The key advantage of KMPPI is that $M \ll T$. For example, with $T = 30$ horizon steps and $M = 15$ support points, the number of parameters to optimize is halved. This:
+
+1. **Reduces variance** of the MPPI estimator (fewer dimensions to explore)
+2. **Implicitly enforces smoothness** through the kernel bandwidth
+3. **Lowers computational cost** of noise sampling and weight computation
+
+The trade-off is representational capacity: the kernel determines which trajectory shapes are reachable. The default choice $M = T/2$ with RBF kernel $\sigma = 1.0$ provides a good balance between expressivity and smoothness.

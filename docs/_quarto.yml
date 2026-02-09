@@ -9,11 +9,13 @@ website:
       - text: "Home"
         href: index.qmd
       - text: "Theory"
-        href: theory.md
+        href: src/theory.qmd
+      - text: "Dynamics"
+        href: src/dynamics.qmd
+      - text: "I-MPPI"
+        href: src/i_mppi.qmd
       - text: "Autotuning"
         href: autotuning.md
-      - text: "I-MPPI"
-        href: i_mppi.qmd
       - text: "Plans"
         href: plan/index.md
   sidebar:
@@ -23,11 +25,14 @@ website:
       - section: "Introduction"
         contents:
           - index.qmd
-          - theory.md
+      - section: "Theory"
+        contents:
+          - src/theory.qmd
+          - src/dynamics.qmd
       - section: "Algorithms"
         contents:
+          - src/i_mppi.qmd
           - autotuning.md
-          - i_mppi.qmd
       - section: "Examples"
         contents:
           - examples/pendulum.md

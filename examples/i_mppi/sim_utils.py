@@ -8,7 +8,7 @@ import jax.numpy as jnp
 
 from jax_mppi.i_mppi.environment import (
     GOAL_POS,
-    augmented_dynamics,
+    augmented_dynamics_with_grid,
     informative_running_cost,
 )
 from jax_mppi.i_mppi.planner import biased_mppi_command
@@ -129,6 +129,7 @@ def build_sim_fn(
     grid_map_obj,
     horizon,
     sim_steps,
+    progress_callback=None,
 ):
     """Build a JIT-compiled simulation function.
 
@@ -140,6 +141,8 @@ def build_sim_fn(
         grid_map_obj: GridMap object for the environment.
         horizon: Planning horizon.
         sim_steps: Number of simulation steps.
+        progress_callback: Optional callable(step) invoked each step
+            via ``jax.debug.callback`` for progress reporting.
     """
     info_zones = fsmi_planner.info_zones
     initial_grid = grid_map_obj.grid
@@ -156,6 +159,9 @@ def build_sim_fn(
     def step_fn(carry, t):
         current_state, current_ctrl_state, ref_traj, grid, done_step = carry
 
+        if progress_callback is not None:
+            jax.debug.callback(progress_callback, t)
+
         # Check if simulation is already done
         current_info = current_state[13:]
         all_zones_visited = jnp.all(current_info < INFO_DONE_THRESHOLD)
@@ -163,9 +169,7 @@ def build_sim_fn(
         goal_reached = goal_dist < GOAL_DONE_THRESHOLD
         newly_done = all_zones_visited & goal_reached
         # Record the step at which we first finish (0 means not done yet)
-        done_step = jnp.where(
-            (done_step == 0) & newly_done, t, done_step
-        )
+        done_step = jnp.where((done_step == 0) & newly_done, t, done_step)
         is_done = done_step > 0
 
         # --- Active step (when not done) ---
@@ -207,11 +211,20 @@ def build_sim_fn(
 
         U_ref_local = make_u_ref_from_traj(current_state, new_ref_traj)
 
+        # Dynamics with grid-based line-of-sight for info depletion
+        dynamics_fn = partial(
+            augmented_dynamics_with_grid,
+            dt=DT,
+            grid=updated_grid,
+            grid_origin=grid_map_obj.origin,
+            grid_resolution=grid_map_obj.resolution,
+        )
+
         action, next_ctrl_state = biased_mppi_command(
             config,
             current_ctrl_state,
             current_state,
-            augmented_dynamics,
+            dynamics_fn,
             cost_fn,
             U_ref_local,
             bias_alpha=0.2,
@@ -221,7 +234,7 @@ def build_sim_fn(
         hover_action = U_INIT
         action = jnp.where(is_done, hover_action, action)
 
-        next_state = augmented_dynamics(current_state, action, dt=DT)
+        next_state = dynamics_fn(current_state, action)
         # When done, keep current state
         next_state = jnp.where(is_done, current_state, next_state)
 

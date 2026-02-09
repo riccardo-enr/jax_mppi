@@ -1,6 +1,8 @@
 
-from jax_mppi import cuda_mppi
 import numpy as np
+
+from jax_mppi import cuda_mppi
+
 
 def main():
     print("Testing CUDA MPPI Controller Binding...")
