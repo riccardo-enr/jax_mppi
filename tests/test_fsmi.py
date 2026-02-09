@@ -10,8 +10,13 @@ from jax_mppi.i_mppi.fsmi import (
     UniformFSMI,
     UniformFSMIConfig,
     _entropy_proxy,
+    _fov_cell_masks,
+    _yaws_from_trajectory,
     cast_ray_fsmi,
     compute_fsmi_gain,
+    fsmi_trajectory_direct,
+    fsmi_trajectory_discounted,
+    fsmi_trajectory_filtered,
 )
 from jax_mppi.i_mppi.map import (
     GridMap,
@@ -513,3 +518,261 @@ class TestMapModule:
         p_back = grid_to_world(floored, origin, res)
         # Should be within one cell
         assert jnp.all(jnp.abs(p - p_back) < res)
+
+
+# ---------------------------------------------------------------------------
+# TestComputeFSMIBatch
+# ---------------------------------------------------------------------------
+
+class TestComputeFSMIBatch:
+    def test_shape(self):
+        gm = _make_simple_grid()
+        mod = _default_fsmi_module()
+        positions = jnp.array([[1.0, 2.5], [4.0, 4.0], [0.5, 0.5]])
+        yaws = jnp.array([0.0, 1.0, -0.5])
+        vals = mod.compute_fsmi_batch(gm.grid, positions, yaws)
+        assert vals.shape == (3,)
+
+    def test_matches_individual(self):
+        gm = _make_simple_grid()
+        mod = _default_fsmi_module()
+        positions = jnp.array([[1.0, 2.5], [4.0, 4.0], [0.5, 0.5]])
+        yaws = jnp.array([0.0, 1.0, -0.5])
+        batch_vals = mod.compute_fsmi_batch(gm.grid, positions, yaws)
+        for i in range(3):
+            individual = mod.compute_fsmi(gm.grid, positions[i], yaws[i])
+            assert jnp.isclose(batch_vals[i], individual, atol=1e-5)
+
+    def test_jit_compatible(self):
+        gm = _make_simple_grid()
+        mod = _default_fsmi_module()
+        positions = jnp.array([[1.0, 2.5], [4.0, 4.0]])
+        yaws = jnp.array([0.0, 1.0])
+        eager = mod.compute_fsmi_batch(gm.grid, positions, yaws)
+        jitted = jax.jit(mod.compute_fsmi_batch)(gm.grid, positions, yaws)
+        assert jnp.allclose(eager, jitted, atol=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# TestYawsFromTrajectory
+# ---------------------------------------------------------------------------
+
+class TestYawsFromTrajectory:
+    def test_straight_right(self):
+        traj = jnp.array([[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]])
+        yaws = _yaws_from_trajectory(traj)
+        assert jnp.allclose(yaws, 0.0, atol=1e-5)
+
+    def test_straight_up(self):
+        traj = jnp.array([[0.0, 0.0], [0.0, 1.0], [0.0, 2.0]])
+        yaws = _yaws_from_trajectory(traj)
+        assert jnp.allclose(yaws, jnp.pi / 2, atol=1e-5)
+
+    def test_last_reuses_previous(self):
+        traj = jnp.array([[0.0, 0.0], [1.0, 1.0], [3.0, 3.0]])
+        yaws = _yaws_from_trajectory(traj)
+        assert jnp.isclose(yaws[-1], yaws[-2], atol=1e-5)
+
+    def test_shape(self):
+        traj = jnp.array([[0.0, 0.0], [1.0, 0.0], [2.0, 1.0], [3.0, 2.0]])
+        yaws = _yaws_from_trajectory(traj)
+        assert yaws.shape == (4,)
+
+
+# ---------------------------------------------------------------------------
+# TestFovCellMasks
+# ---------------------------------------------------------------------------
+
+class TestFovCellMasks:
+    def test_shape(self):
+        positions = jnp.array([[2.5, 2.5], [1.0, 1.0]])
+        yaws = jnp.array([0.0, jnp.pi / 2])
+        masks = _fov_cell_masks(
+            positions, yaws,
+            fov_rad=1.57, max_range=2.0,
+            grid_shape=(20, 20),
+            grid_origin=jnp.array([0.0, 0.0]),
+            grid_resolution=0.25,
+        )
+        assert masks.shape == (2, 20, 20)
+        assert masks.dtype == jnp.bool_
+
+    def test_empty_fov(self):
+        """Pose looking away from all cells should see very few."""
+        # Position at corner, looking outward
+        positions = jnp.array([[0.0, 0.0]])
+        yaws = jnp.array([jnp.pi])  # looking left (outside grid)
+        masks = _fov_cell_masks(
+            positions, yaws,
+            fov_rad=0.5, max_range=2.0,
+            grid_shape=(20, 20),
+            grid_origin=jnp.array([0.0, 0.0]),
+            grid_resolution=0.25,
+        )
+        # Should see very few cells (maybe edge cells at most)
+        assert jnp.sum(masks[0]) < 20
+
+
+# ---------------------------------------------------------------------------
+# TestTrajectoryFSMI
+# ---------------------------------------------------------------------------
+
+def _make_trajectory_test_setup():
+    """Helper: grid with unknown zone + straight-line trajectory through it."""
+    walls = jnp.array([[5.0, 0.0, 5.0, 5.0]])
+    info_zones = jnp.array([[2.0, 2.5, 2.0, 2.0, 100.0]])
+    origin = jnp.array([0.0, 0.0])
+    gm = rasterize_environment(walls, info_zones, origin, 20, 20, 0.25)
+    cfg = FSMIConfig(num_beams=8, max_range=3.0, ray_step=0.1, fov_rad=1.57)
+    mod = FSMIModule(cfg, origin, 0.25)
+
+    # Trajectory passing through the unknown zone
+    traj = jnp.column_stack([
+        jnp.linspace(0.5, 3.5, 20),
+        jnp.full(20, 2.5),
+        jnp.full(20, -2.0),
+    ])
+    return mod, gm, traj
+
+
+class TestTrajectoryFSMIDirect:
+    def test_positive_for_unknown(self):
+        mod, gm, traj = _make_trajectory_test_setup()
+        mi = fsmi_trajectory_direct(mod, traj, gm.grid, subsample_rate=5, dt=0.1)
+        assert mi > 0
+
+    def test_zero_for_free(self):
+        """Large free grid → MI should be near zero."""
+        cfg = FSMIConfig(num_beams=8, max_range=3.0, ray_step=0.1, fov_rad=1.57)
+        origin = jnp.array([0.0, 0.0])
+        mod = FSMIModule(cfg, origin, 0.25)
+        free_grid = jnp.zeros((80, 80))
+        traj = jnp.column_stack([
+            jnp.linspace(5.0, 15.0, 20),
+            jnp.full(20, 10.0),
+            jnp.full(20, -2.0),
+        ])
+        mi = fsmi_trajectory_direct(mod, traj, free_grid, subsample_rate=5, dt=0.1)
+        # Should be very small (not exactly 0 due to boundary effects)
+        assert mi < 0.1
+
+    def test_jit_compatible(self):
+        mod, gm, traj = _make_trajectory_test_setup()
+        fn = lambda g, t: fsmi_trajectory_direct(mod, t, g, subsample_rate=5, dt=0.1)
+        eager = fn(gm.grid, traj)
+        jitted = jax.jit(fn)(gm.grid, traj)
+        assert jnp.isclose(eager, jitted, atol=1e-4)
+
+
+class TestTrajectoryFSMIDiscount:
+    def test_leq_direct(self):
+        """Discounted MI should be <= direct MI for overlapping trajectory."""
+        mod, gm, traj = _make_trajectory_test_setup()
+        mi_direct = fsmi_trajectory_direct(mod, traj, gm.grid, subsample_rate=2, dt=0.1)
+        mi_discount = fsmi_trajectory_discounted(
+            mod, traj, gm.grid, subsample_rate=2, dt=0.1, decay=0.7
+        )
+        assert mi_discount <= mi_direct + 1e-6
+
+    def test_zero_decay_equals_direct(self):
+        """With decay=0, discount weights are all 1 → same as direct."""
+        mod, gm, traj = _make_trajectory_test_setup()
+        mi_direct = fsmi_trajectory_direct(mod, traj, gm.grid, subsample_rate=5, dt=0.1)
+        mi_discount = fsmi_trajectory_discounted(
+            mod, traj, gm.grid, subsample_rate=5, dt=0.1, decay=0.0
+        )
+        assert jnp.isclose(mi_direct, mi_discount, atol=1e-4)
+
+    def test_jit_compatible(self):
+        mod, gm, traj = _make_trajectory_test_setup()
+        fn = lambda g, t: fsmi_trajectory_discounted(
+            mod, t, g, subsample_rate=5, dt=0.1, decay=0.7
+        )
+        eager = fn(gm.grid, traj)
+        jitted = jax.jit(fn)(gm.grid, traj)
+        assert jnp.isclose(eager, jitted, atol=1e-4)
+
+
+class TestTrajectoryFSMIFiltered:
+    def test_leq_direct(self):
+        """Filtered MI should be <= direct MI."""
+        mod, gm, traj = _make_trajectory_test_setup()
+        mi_direct = fsmi_trajectory_direct(mod, traj, gm.grid, subsample_rate=2, dt=0.1)
+        mi_filtered = fsmi_trajectory_filtered(
+            mod, traj, gm.grid, subsample_rate=2, dt=0.1
+        )
+        assert mi_filtered <= mi_direct + 1e-6
+
+    def test_equals_direct_for_single_pose(self):
+        """With only one pose, filtered == direct (no overlap possible)."""
+        mod, gm, traj = _make_trajectory_test_setup()
+        # subsample_rate large enough to get just 1 pose
+        mi_direct = fsmi_trajectory_direct(
+            mod, traj, gm.grid, subsample_rate=100, dt=0.1
+        )
+        mi_filtered = fsmi_trajectory_filtered(
+            mod, traj, gm.grid, subsample_rate=100, dt=0.1
+        )
+        assert jnp.isclose(mi_direct, mi_filtered, atol=1e-4)
+
+    def test_jit_compatible(self):
+        mod, gm, traj = _make_trajectory_test_setup()
+        fn = lambda g, t: fsmi_trajectory_filtered(
+            mod, t, g, subsample_rate=5, dt=0.1
+        )
+        eager = fn(gm.grid, traj)
+        jitted = jax.jit(fn)(gm.grid, traj)
+        assert jnp.isclose(eager, jitted, atol=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# TestInfoGainGridDispatch
+# ---------------------------------------------------------------------------
+
+class TestInfoGainGridDispatch:
+    """Test that _info_gain_grid dispatches to the correct method."""
+
+    def _make_gen_with_method(self, method="direct"):
+        walls = jnp.array([[5.0, 0.0, 5.0, 5.0]])
+        info_zones = jnp.array([[2.0, 2.5, 2.0, 2.0, 100.0]])
+        origin = jnp.array([0.0, 0.0])
+        gm = rasterize_environment(walls, info_zones, origin, 20, 20, 0.25)
+        cfg = FSMIConfig(
+            num_beams=8,
+            max_range=3.0,
+            ray_step=0.1,
+            fov_rad=1.57,
+            trajectory_subsample_rate=5,
+            trajectory_ig_method=method,
+        )
+        return FSMITrajectoryGenerator(cfg, info_zones, gm), gm
+
+    def test_direct_positive(self):
+        gen, gm = self._make_gen_with_method("direct")
+        traj = jnp.column_stack([
+            jnp.linspace(0.5, 3.5, 20),
+            jnp.full(20, 2.5),
+            jnp.full(20, -2.0),
+        ])
+        mi = gen._info_gain_grid(traj, jnp.array([1.0, 0.0]), gm.grid, 0.1)
+        assert mi > 0
+
+    def test_discount_positive(self):
+        gen, gm = self._make_gen_with_method("discount")
+        traj = jnp.column_stack([
+            jnp.linspace(0.5, 3.5, 20),
+            jnp.full(20, 2.5),
+            jnp.full(20, -2.0),
+        ])
+        mi = gen._info_gain_grid(traj, jnp.array([1.0, 0.0]), gm.grid, 0.1)
+        assert mi > 0
+
+    def test_filtered_positive(self):
+        gen, gm = self._make_gen_with_method("filtered")
+        traj = jnp.column_stack([
+            jnp.linspace(0.5, 3.5, 20),
+            jnp.full(20, 2.5),
+            jnp.full(20, -2.0),
+        ])
+        mi = gen._info_gain_grid(traj, jnp.array([1.0, 0.0]), gm.grid, 0.1)
+        assert mi > 0

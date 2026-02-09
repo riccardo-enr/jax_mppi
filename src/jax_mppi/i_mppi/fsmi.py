@@ -56,6 +56,13 @@ class FSMIConfig:
     gaussian_truncation_sigma: float = 3.0  # Truncate G_kj beyond 3σ
     trajectory_subsample_rate: int = 5  # Evaluate FSMI every N steps
 
+    # Trajectory-level FSMI method selection
+    # "direct": sum per-pose MI (Method 1)
+    # "discount": exponential decay for overlapping FOVs (Method 3)
+    # "filtered": conservative first-hit filtering (Method 2)
+    trajectory_ig_method: str = "direct"
+    trajectory_ig_decay: float = 0.7  # Decay rate for discount method
+
     # Legacy geometric parameters (kept for backward compatibility)
     sensor_range: float = 6.0
     fov_half_angle_deg: float = 60.0
@@ -282,6 +289,24 @@ class FSMIModule:
         )
 
         return jnp.sum(info_per_beam)
+
+    def compute_fsmi_batch(
+        self, grid_map: jax.Array, positions: jax.Array, yaws: jax.Array
+    ) -> jax.Array:
+        """
+        Compute FSMI for a batch of poses.
+
+        Args:
+            grid_map: (H, W) occupancy probability grid [0, 1]
+            positions: (N, 2) world positions
+            yaws: (N,) headings in radians
+
+        Returns:
+            (N,) mutual information for each pose
+        """
+        return jax.vmap(self.compute_fsmi, in_axes=(None, 0, 0))(
+            grid_map, positions, yaws
+        )
 
 
 class UniformFSMI:
@@ -580,6 +605,225 @@ def _update_grid_zones(
     return new_vals.reshape(height, width)
 
 
+# ---------------------------------------------------------------------------
+# Trajectory-level FSMI methods (Part A of parallel trajectory IG plan)
+# ---------------------------------------------------------------------------
+
+
+def _yaws_from_trajectory(traj_xy: jax.Array) -> jax.Array:
+    """Compute per-pose yaw from consecutive trajectory positions.
+
+    Args:
+        traj_xy: (N, 2) trajectory positions
+
+    Returns:
+        (N,) yaw angles in radians
+    """
+    N = traj_xy.shape[0]
+    # Single point: default yaw = 0
+    if N == 1:
+        return jnp.zeros(1)
+    # Forward differences; last point reuses previous yaw
+    dx = jnp.diff(traj_xy[:, 0])
+    dy = jnp.diff(traj_xy[:, 1])
+    yaws_diff = jnp.arctan2(dy, dx)
+    return jnp.concatenate([yaws_diff, yaws_diff[-1:]])
+
+
+def _fov_cell_masks(
+    positions: jax.Array,
+    yaws: jax.Array,
+    fov_rad: float,
+    max_range: float,
+    grid_shape: tuple[int, int],
+    grid_origin: jax.Array,
+    grid_resolution: float,
+) -> jax.Array:
+    """Compute dense boolean FOV masks for multiple poses.
+
+    For each pose, marks which grid cells fall within the sensor FOV and range.
+
+    Args:
+        positions: (N, 2) world positions
+        yaws: (N,) headings
+        fov_rad: Field of view in radians
+        max_range: Maximum sensor range in meters
+        grid_shape: (H, W)
+        grid_origin: (2,) world coords of grid origin
+        grid_resolution: meters per cell
+
+    Returns:
+        (N, H, W) boolean masks
+    """
+    H, W = grid_shape
+    # Build world coordinates for all cell centers
+    rows = jnp.arange(H)
+    cols = jnp.arange(W)
+    Y, X = jnp.meshgrid(rows, cols, indexing="ij")
+    cell_x = grid_origin[0] + (X + 0.5) * grid_resolution  # (H, W)
+    cell_y = grid_origin[1] + (Y + 0.5) * grid_resolution  # (H, W)
+
+    def mask_for_pose(pos, yaw):
+        dx = cell_x - pos[0]  # (H, W)
+        dy = cell_y - pos[1]
+        dist = jnp.sqrt(dx**2 + dy**2)
+        bearing = jnp.arctan2(dy, dx)
+        # Angle difference wrapped to [-pi, pi]
+        angle_diff = jnp.arctan2(
+            jnp.sin(bearing - yaw), jnp.cos(bearing - yaw)
+        )
+        in_fov = jnp.abs(angle_diff) <= (fov_rad / 2.0)
+        in_range = dist <= max_range
+        return in_fov & in_range
+
+    return jax.vmap(mask_for_pose)(positions, yaws)  # (N, H, W)
+
+
+def fsmi_trajectory_direct(
+    fsmi_module: "FSMIModule",
+    ref_traj: jax.Array,
+    grid_map: jax.Array,
+    subsample_rate: int,
+    dt: float,
+) -> jax.Array:
+    """Method 1: Direct summation of per-pose true FSMI.
+
+    Args:
+        fsmi_module: FSMIModule instance
+        ref_traj: (horizon, 3) trajectory [x, y, z]
+        grid_map: (H, W) occupancy grid
+        subsample_rate: evaluate every N steps
+        dt: time step
+
+    Returns:
+        Total MI along trajectory (scalar)
+    """
+    sampled = ref_traj[::subsample_rate, :2]
+    yaws = _yaws_from_trajectory(sampled)
+    mi_per_pose = fsmi_module.compute_fsmi_batch(grid_map, sampled, yaws)
+    return jnp.sum(mi_per_pose) * dt * subsample_rate
+
+
+def fsmi_trajectory_discounted(
+    fsmi_module: "FSMIModule",
+    ref_traj: jax.Array,
+    grid_map: jax.Array,
+    subsample_rate: int,
+    dt: float,
+    decay: float = 0.7,
+) -> jax.Array:
+    """Method 3: Discount factor for overlapping FOVs.
+
+    Each pose's MI is discounted by how many earlier poses already observed
+    the same cells.
+
+    Args:
+        fsmi_module: FSMIModule instance
+        ref_traj: (horizon, 3) trajectory [x, y, z]
+        grid_map: (H, W) occupancy grid
+        subsample_rate: evaluate every N steps
+        dt: time step
+        decay: exponential decay rate (higher = more aggressive discounting)
+
+    Returns:
+        Discounted total MI (scalar)
+    """
+    sampled = ref_traj[::subsample_rate, :2]
+    yaws = _yaws_from_trajectory(sampled)
+
+    # Per-pose MI
+    mi_per_pose = fsmi_module.compute_fsmi_batch(grid_map, sampled, yaws)
+
+    # FOV cell masks: (N, H, W)
+    H, W = grid_map.shape
+    masks = _fov_cell_masks(
+        sampled,
+        yaws,
+        fsmi_module.cfg.fov_rad,
+        fsmi_module.cfg.max_range,
+        (H, W),
+        fsmi_module.map_origin,
+        fsmi_module.map_res,
+    )
+    masks_f = masks.astype(jnp.float32)
+
+    # Cumulative views before each pose: cumsum(masks, axis=0) - masks
+    cum_views = jnp.cumsum(masks_f, axis=0) - masks_f  # (N, H, W)
+
+    # Mean previous views over cells within this pose's FOV
+    mask_count = jnp.sum(masks_f, axis=(1, 2))  # (N,)
+    mean_prev = jnp.sum(cum_views * masks_f, axis=(1, 2)) / jnp.maximum(
+        mask_count, 1.0
+    )  # (N,)
+
+    # Discount weights
+    weights = jnp.exp(-decay * mean_prev)
+
+    return jnp.sum(mi_per_pose * weights) * dt * subsample_rate
+
+
+def fsmi_trajectory_filtered(
+    fsmi_module: "FSMIModule",
+    ref_traj: jax.Array,
+    grid_map: jax.Array,
+    subsample_rate: int,
+    dt: float,
+) -> jax.Array:
+    """Method 2: Conservative parallel filtering (first-hit mask).
+
+    Each cell is attributed to the first pose that observes it.
+    A pose's MI is scaled by the fraction of its FOV cells that are first-hits.
+
+    Args:
+        fsmi_module: FSMIModule instance
+        ref_traj: (horizon, 3) trajectory [x, y, z]
+        grid_map: (H, W) occupancy grid
+        subsample_rate: evaluate every N steps
+        dt: time step
+
+    Returns:
+        Filtered total MI (scalar)
+    """
+    sampled = ref_traj[::subsample_rate, :2]
+    yaws = _yaws_from_trajectory(sampled)
+
+    # Per-pose MI
+    mi_per_pose = fsmi_module.compute_fsmi_batch(grid_map, sampled, yaws)
+
+    # FOV cell masks: (N, H, W)
+    H, W = grid_map.shape
+    masks = _fov_cell_masks(
+        sampled,
+        yaws,
+        fsmi_module.cfg.fov_rad,
+        fsmi_module.cfg.max_range,
+        (H, W),
+        fsmi_module.map_origin,
+        fsmi_module.map_res,
+    )
+
+    # For cells seen by any pose, find the first pose that sees them.
+    # any_seen: (H, W) — whether any pose sees the cell
+    any_seen = jnp.any(masks, axis=0)
+
+    # first_pose[h, w] = index of first pose seeing cell (h,w)
+    # For unseen cells, argmax returns 0 but we mask those out anyway
+    first_pose = jnp.argmax(masks, axis=0)  # (H, W)
+
+    N = sampled.shape[0]
+    pose_indices = jnp.arange(N)
+
+    # first_hit[i, h, w] = True iff pose i is the first to see cell (h,w)
+    first_hit = (first_pose[None, :, :] == pose_indices[:, None, None]) & any_seen[None, :, :]
+
+    # Independent fraction: of this pose's FOV cells, how many are first-hits
+    n_fov = jnp.sum(masks, axis=(1, 2)).astype(jnp.float32)  # (N,)
+    n_first = jnp.sum(first_hit & masks, axis=(1, 2)).astype(jnp.float32)  # (N,)
+    independent_fraction = n_first / jnp.maximum(n_fov, 1.0)  # (N,)
+
+    return jnp.sum(mi_per_pose * independent_fraction) * dt * subsample_rate
+
+
 @register_pytree_node_class
 @dataclass
 class FSMITrajectoryGenerator:
@@ -782,45 +1026,49 @@ class FSMITrajectoryGenerator:
         dt: float,
     ) -> jax.Array:
         """
-        Grid-based FSMI info gain (true algorithm).
+        Grid-based FSMI info gain using true Theorem 1 FSMI.
 
-        Computes mutual information along trajectory using the FSMI module.
-        Subsamples trajectory points to maintain MPPI speed.
+        Dispatches to one of three trajectory-level FSMI methods based on
+        ``config.trajectory_ig_method``:
+
+        - ``"direct"``: Simple sum of per-pose MI (Method 1)
+        - ``"discount"``: Exponential decay for overlapping FOVs (Method 3)
+        - ``"filtered"``: Conservative first-hit filtering (Method 2)
 
         Args:
             ref_traj: (horizon, 3) trajectory waypoints
-            view_dir_xy: (2,) viewing direction (for yaw calculation)
+            view_dir_xy: (2,) viewing direction (unused, yaw derived from traj)
             grid_map: (H, W) occupancy probability grid
             dt: Time step
 
         Returns:
             Total expected information gain
         """
-        # Subsample trajectory to reduce computation
+        fsmi_mod = FSMIModule(
+            self.config,
+            self.grid_map.origin,
+            self.grid_map.resolution,
+        )
         subsample = self.config.trajectory_subsample_rate
-        sampled_traj = ref_traj[::subsample]
+        method = self.config.trajectory_ig_method
 
-        # Note: self.fsmi_module requires config.use_grid_fsmi=True
-        # In this merged version, we need to ensure self.fsmi_module exists.
-        # But this class initialization logic in merged version relies on
-        # self.fsmi_module.
-        # I will assume `self.fsmi_module` is NOT available in my version.
-        # So `_info_gain_grid` cannot work as is.
-        # I should use `compute_fsmi_gain` instead.
-
-        step_gains = jax.vmap(
-            lambda pos: compute_fsmi_gain(
-                pos,
+        if method == "discount":
+            return fsmi_trajectory_discounted(
+                fsmi_mod,
+                ref_traj,
                 grid_map,
-                self.grid_map.origin,
-                self.grid_map.resolution,
-                self.config.num_rays,
-                self.config.ray_max_steps,
+                subsample,
+                dt,
+                decay=self.config.trajectory_ig_decay,
             )
-        )(sampled_traj[:, :2])
-
-        # Scale by subsampling and dt
-        return jnp.sum(step_gains) * dt * subsample
+        elif method == "filtered":
+            return fsmi_trajectory_filtered(
+                fsmi_mod, ref_traj, grid_map, subsample, dt
+            )
+        else:  # "direct" (default)
+            return fsmi_trajectory_direct(
+                fsmi_mod, ref_traj, grid_map, subsample, dt
+            )
 
     def _target_cost(
         self,
