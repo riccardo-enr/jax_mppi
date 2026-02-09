@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>I-MPPI: Informative Model Predictive Path Integral – jax-mppi</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-0b802d246790ecd80511443f8ae76f95.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar docked nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">jax-mppi</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="../index.html" aria-current="page"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../src/theory.html"> 
+<span class="menu-text">Theory</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../src/dynamics.html"> 
+<span class="menu-text">Dynamics</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../src/i_mppi.html"> 
+<span class="menu-text">I-MPPI</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../autotuning.html"> 
+<span class="menu-text">Autotuning</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../plan/index.html"> 
+<span class="menu-text">Plans</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../src/i_mppi.html">Algorithms</a></li><li class="breadcrumb-item"><a href="../src/i_mppi.html">I-MPPI: Informative Model Predictive Path Integral</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Introduction</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">jax_mppi</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Theory</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../src/theory.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Theoretical Background</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../src/dynamics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Quadrotor Dynamics</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Algorithms</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../src/i_mppi.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">I-MPPI: Informative Model Predictive Path Integral</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../autotuning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autotuning Guide</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Examples</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../examples/pendulum.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Pendulum Swing-Up</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Development</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Testing Guide</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../releasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Releasing Guide</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction-the-evolution-of-autonomous-exploration" id="toc-introduction-the-evolution-of-autonomous-exploration" class="nav-link active" data-scroll-target="#introduction-the-evolution-of-autonomous-exploration">Introduction: The Evolution of Autonomous Exploration</a></li>
+  <li><a href="#theoretical-foundations-of-i-mppi" id="toc-theoretical-foundations-of-i-mppi" class="nav-link" data-scroll-target="#theoretical-foundations-of-i-mppi">Theoretical Foundations of I-MPPI</a>
+  <ul class="collapse">
+  <li><a href="#optimal-control-duality-free-energy" id="toc-optimal-control-duality-free-energy" class="nav-link" data-scroll-target="#optimal-control-duality-free-energy">Optimal Control Duality &amp; Free Energy</a></li>
+  </ul></li>
+  <li><a href="#occupancy-grid-map" id="toc-occupancy-grid-map" class="nav-link" data-scroll-target="#occupancy-grid-map">Occupancy Grid Map</a>
+  <ul class="collapse">
+  <li><a href="#representation" id="toc-representation" class="nav-link" data-scroll-target="#representation">Representation</a></li>
+  <li><a href="#coordinate-transforms" id="toc-coordinate-transforms" class="nav-link" data-scroll-target="#coordinate-transforms">Coordinate Transforms</a></li>
+  <li><a href="#rasterization" id="toc-rasterization" class="nav-link" data-scroll-target="#rasterization">Rasterization</a></li>
+  </ul></li>
+  <li><a href="#information-metrics-fsmi" id="toc-information-metrics-fsmi" class="nav-link" data-scroll-target="#information-metrics-fsmi">Information Metrics: FSMI</a>
+  <ul class="collapse">
+  <li><a href="#shannon-mutual-information" id="toc-shannon-mutual-information" class="nav-link" data-scroll-target="#shannon-mutual-information">Shannon Mutual Information</a>
+  <ul class="collapse">
+  <li><a href="#csqmi---measurement-model" id="toc-csqmi---measurement-model" class="nav-link" data-scroll-target="#csqmi---measurement-model">CSQMI - Measurement Model</a></li>
+  </ul></li>
+  <li><a href="#fast-shannon-mutual-information-fsmi" id="toc-fast-shannon-mutual-information-fsmi" class="nav-link" data-scroll-target="#fast-shannon-mutual-information-fsmi">Fast Shannon Mutual Information (FSMI)</a>
+  <ul class="collapse">
+  <li><a href="#beam-termination-probability" id="toc-beam-termination-probability" class="nav-link" data-scroll-target="#beam-termination-probability">Beam Termination Probability</a></li>
+  <li><a href="#information-gain-function" id="toc-information-gain-function" class="nav-link" data-scroll-target="#information-gain-function">Information Gain Function</a></li>
+  <li><a href="#information-potential" id="toc-information-potential" class="nav-link" data-scroll-target="#information-potential">Information Potential</a></li>
+  <li><a href="#sensor-noise-coupling" id="toc-sensor-noise-coupling" class="nav-link" data-scroll-target="#sensor-noise-coupling">Sensor Noise Coupling</a></li>
+  <li><a href="#full-fsmi-theorem-1" id="toc-full-fsmi-theorem-1" class="nav-link" data-scroll-target="#full-fsmi-theorem-1">Full FSMI (Theorem 1)</a></li>
+  <li><a href="#uniform-fsmi-on-approximation" id="toc-uniform-fsmi-on-approximation" class="nav-link" data-scroll-target="#uniform-fsmi-on-approximation">Uniform-FSMI (O(n) Approximation)</a></li>
+  </ul></li>
+  <li><a href="#csqmi-vs-fsmi-3d" id="toc-csqmi-vs-fsmi-3d" class="nav-link" data-scroll-target="#csqmi-vs-fsmi-3d">CSQMI vs FSMI for 3D Field of View</a>
+  <ul class="collapse">
+  <li><a href="#complexity-comparison" id="toc-complexity-comparison" class="nav-link" data-scroll-target="#complexity-comparison">Complexity Comparison</a></li>
+  <li><a href="#run-length-encoding-rle-for-sparse-maps" id="toc-run-length-encoding-rle-for-sparse-maps" class="nav-link" data-scroll-target="#run-length-encoding-rle-for-sparse-maps">Run-Length Encoding (RLE) for Sparse Maps</a></li>
+  <li><a href="#memory-footprint-3d-scan-b-300textk" id="toc-memory-footprint-3d-scan-b-300textk" class="nav-link" data-scroll-target="#memory-footprint-3d-scan-b-300textk">Memory Footprint (3D scan, <span class="math inline">\(B = 300\text{K}\)</span>)</a></li>
+  <li><a href="#gpu-parallelization" id="toc-gpu-parallelization" class="nav-link" data-scroll-target="#gpu-parallelization">GPU Parallelization</a></li>
+  <li><a href="#recommendations" id="toc-recommendations" class="nav-link" data-scroll-target="#recommendations">Recommendations</a></li>
+  </ul></li>
+  <li><a href="#trajectory-fsmi" id="toc-trajectory-fsmi" class="nav-link" data-scroll-target="#trajectory-fsmi">Trajectory-Based FSMI</a>
+  <ul class="collapse">
+  <li><a href="#assumption-2-beam-independence-decomposition" id="toc-assumption-2-beam-independence-decomposition" class="nav-link" data-scroll-target="#assumption-2-beam-independence-decomposition">Assumption 2: Beam Independence Decomposition</a></li>
+  <li><a href="#method-1-direct-summation-simple-fully-parallel" id="toc-method-1-direct-summation-simple-fully-parallel" class="nav-link" data-scroll-target="#method-1-direct-summation-simple-fully-parallel">Method 1: Direct Summation (Simple, Fully Parallel)</a></li>
+  <li><a href="#method-2-conservative-parallel-filtering-gpu-friendly" id="toc-method-2-conservative-parallel-filtering-gpu-friendly" class="nav-link" data-scroll-target="#method-2-conservative-parallel-filtering-gpu-friendly">Method 2: Conservative Parallel Filtering (GPU-Friendly)</a></li>
+  <li><a href="#method-3-discount-factor-approach-novel" id="toc-method-3-discount-factor-approach-novel" class="nav-link" data-scroll-target="#method-3-discount-factor-approach-novel">Method 3: Discount Factor Approach (Novel)</a></li>
+  <li><a href="#method-comparison" id="toc-method-comparison" class="nav-link" data-scroll-target="#method-comparison">Method Comparison</a></li>
+  <li><a href="#recommended-implementation-strategy" id="toc-recommended-implementation-strategy" class="nav-link" data-scroll-target="#recommended-implementation-strategy">Recommended Implementation Strategy</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#fov-coverage" id="toc-fov-coverage" class="nav-link" data-scroll-target="#fov-coverage">FOV Coverage &amp; Line-of-Sight</a>
+  <ul class="collapse">
+  <li><a href="#geometric-checks" id="toc-geometric-checks" class="nav-link" data-scroll-target="#geometric-checks">Geometric Checks</a></li>
+  <li><a href="#ray-march-line-of-sight" id="toc-ray-march-line-of-sight" class="nav-link" data-scroll-target="#ray-march-line-of-sight">Ray-March Line-of-Sight</a></li>
+  <li><a href="#entropy-weighted-coverage" id="toc-entropy-weighted-coverage" class="nav-link" data-scroll-target="#entropy-weighted-coverage">Entropy-Weighted Coverage</a></li>
+  </ul></li>
+  <li><a href="#information-zone-depletion" id="toc-information-zone-depletion" class="nav-link" data-scroll-target="#information-zone-depletion">Information Zone Depletion</a>
+  <ul class="collapse">
+  <li><a href="#self-regulating-feedback-loop" id="toc-self-regulating-feedback-loop" class="nav-link" data-scroll-target="#self-regulating-feedback-loop">Self-Regulating Feedback Loop</a></li>
+  </ul></li>
+  <li><a href="#cost-functions" id="toc-cost-functions" class="nav-link" data-scroll-target="#cost-functions">Cost Functions</a>
+  <ul class="collapse">
+  <li><a href="#collision-cost" id="toc-collision-cost" class="nav-link" data-scroll-target="#collision-cost">Collision Cost</a></li>
+  <li><a href="#information-cost-reward" id="toc-information-cost-reward" class="nav-link" data-scroll-target="#information-cost-reward">Information Cost (Reward)</a></li>
+  <li><a href="#target-attraction" id="toc-target-attraction" class="nav-link" data-scroll-target="#target-attraction">Target Attraction</a></li>
+  <li><a href="#bounds-and-height" id="toc-bounds-and-height" class="nav-link" data-scroll-target="#bounds-and-height">Bounds and Height</a></li>
+  <li><a href="#control-regularization" id="toc-control-regularization" class="nav-link" data-scroll-target="#control-regularization">Control Regularization</a></li>
+  </ul></li>
+  <li><a href="#hierarchical-architecture" id="toc-hierarchical-architecture" class="nav-link" data-scroll-target="#hierarchical-architecture">Hierarchical Architecture</a></li>
+  <li><a href="#target-selection" id="toc-target-selection" class="nav-link" data-scroll-target="#target-selection">Target Selection</a>
+  <ul class="collapse">
+  <li><a href="#score-based-zone-selection" id="toc-score-based-zone-selection" class="nav-link" data-scroll-target="#score-based-zone-selection">Score-Based Zone Selection</a></li>
+  <li><a href="#depletion-mask" id="toc-depletion-mask" class="nav-link" data-scroll-target="#depletion-mask">Depletion Mask</a></li>
+  <li><a href="#goal-fallback" id="toc-goal-fallback" class="nav-link" data-scroll-target="#goal-fallback">Goal Fallback</a></li>
+  </ul></li>
+  <li><a href="#biased-mppi-mixture-sampling" id="toc-biased-mppi-mixture-sampling" class="nav-link" data-scroll-target="#biased-mppi-mixture-sampling">Biased MPPI Mixture Sampling</a>
+  <ul class="collapse">
+  <li><a href="#mixture-distribution" id="toc-mixture-distribution" class="nav-link" data-scroll-target="#mixture-distribution">Mixture Distribution</a></li>
+  <li><a href="#mppi-variants" id="toc-mppi-variants" class="nav-link" data-scroll-target="#mppi-variants">MPPI Variants</a></li>
+  </ul></li>
+  <li><a href="#feedback-mppi-sensitivity-analysis" id="toc-feedback-mppi-sensitivity-analysis" class="nav-link" data-scroll-target="#feedback-mppi-sensitivity-analysis">Feedback-MPPI &amp; Sensitivity Analysis</a></li>
+  <li><a href="#parallel-imppi" id="toc-parallel-imppi" class="nav-link" data-scroll-target="#parallel-imppi">Parallel I-MPPI Architecture</a>
+  <ul class="collapse">
+  <li><a href="#architecture-overview" id="toc-architecture-overview" class="nav-link" data-scroll-target="#architecture-overview">Architecture Overview</a></li>
+  <li><a href="#information-potential-field" id="toc-information-potential-field" class="nav-link" data-scroll-target="#information-potential-field">Information Potential Field</a>
+  <ul class="collapse">
+  <li><a href="#field-definition" id="toc-field-definition" class="nav-link" data-scroll-target="#field-definition">Field Definition</a></li>
+  <li><a href="#field-computation-pseudocode" id="toc-field-computation-pseudocode" class="nav-link" data-scroll-target="#field-computation-pseudocode">Field Computation Pseudocode</a></li>
+  </ul></li>
+  <li><a href="#mppi-cost-with-field-lookup" id="toc-mppi-cost-with-field-lookup" class="nav-link" data-scroll-target="#mppi-cost-with-field-lookup">MPPI Cost with Field Lookup</a>
+  <ul class="collapse">
+  <li><a href="#combined-cost" id="toc-combined-cost" class="nav-link" data-scroll-target="#combined-cost">Combined Cost</a></li>
+  </ul></li>
+  <li><a href="#main-loop-pseudocode" id="toc-main-loop-pseudocode" class="nav-link" data-scroll-target="#main-loop-pseudocode">Main Loop Pseudocode</a>
+  <ul class="collapse">
+  <li><a href="#dual-rate-scheduling" id="toc-dual-rate-scheduling" class="nav-link" data-scroll-target="#dual-rate-scheduling">Dual-Rate Scheduling</a></li>
+  </ul></li>
+  <li><a href="#sequential-vs-parallel-comparison" id="toc-sequential-vs-parallel-comparison" class="nav-link" data-scroll-target="#sequential-vs-parallel-comparison">Sequential vs Parallel Comparison</a></li>
+  <li><a href="#relation-to-artificial-potential-fields" id="toc-relation-to-artificial-potential-fields" class="nav-link" data-scroll-target="#relation-to-artificial-potential-fields">Relation to Artificial Potential Fields</a>
+  <ul class="collapse">
+  <li><a href="#classical-apf-limitations-and-i-mppi-solutions" id="toc-classical-apf-limitations-and-i-mppi-solutions" class="nav-link" data-scroll-target="#classical-apf-limitations-and-i-mppi-solutions">Classical APF Limitations and I-MPPI Solutions</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#summary-information-as-energy" id="toc-summary-information-as-energy" class="nav-link" data-scroll-target="#summary-information-as-energy">Summary: Information as Energy</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../src/i_mppi.html">Algorithms</a></li><li class="breadcrumb-item"><a href="../src/i_mppi.html">I-MPPI: Informative Model Predictive Path Integral</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">I-MPPI: Informative Model Predictive Path Integral</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction-the-evolution-of-autonomous-exploration" class="level1">
+<h1>Introduction: The Evolution of Autonomous Exploration</h1>
+<p>The field of autonomous Unmanned Aerial Vehicle (UAV) exploration has transitioned from simple geometric coverage to complex, information-driven strategic maneuvers. In unstructured environments, a robot faces a fundamental duality: the global coverage problem (“where to go”) and the reactive control problem (“how to move safely”). Traditional approaches often decouple these modules, resulting in “myopic” local planners that fail to escape local minima of uncertainty, or deterministic global planners that produce coarse, “jagged” paths unsuitable for the high-speed, non-linear dynamics of agile flight.</p>
+<p>This document describes the <strong>Hierarchical Informative Model Predictive Path Integral (I-MPPI)</strong> framework. This architecture synthesizes global strategic planning, analytical viewpoint refinement via Fast Shannon Mutual Information (FSMI), and reactive Biased-MPPI control with sensitivity-based feedback.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Repository Scope
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The focus of this repository is the high-performance JAX implementation of <strong>Layer 2 (Local Refinement)</strong> and <strong>Layer 3/4 (Reactive Control)</strong>. The <strong>Global Planner (Layer 1)</strong>, such as FUEL, is considered an external input that provides the mission context and global waypoints.</p>
+</div>
+</div>
+</section>
+<section id="theoretical-foundations-of-i-mppi" class="level1">
+<h1>Theoretical Foundations of I-MPPI</h1>
+<p>Model Predictive Path Integral (MPPI) control is a sampling-based stochastic optimal control method that optimizes control sequences without requiring explicit gradients of the dynamics. Formally, the MPPI algorithm can be derived as a solution to an optimal control problem that minimizes the Kullback-Leibler (KL) divergence between a controlled trajectory distribution and an optimal distribution defined by the cost function.</p>
+<section id="optimal-control-duality-free-energy" class="level2">
+<h2 class="anchored" data-anchor-id="optimal-control-duality-free-energy">Optimal Control Duality &amp; Free Energy</h2>
+<p>The mathematical derivation of the MPPI algorithm is rooted in the definition of the <strong>free energy</strong> of the dynamical system. The value function <span class="math inline">\(V(x, t)\)</span> of a stochastic system can be linearized through a logarithmic transformation, leading to the Path Integral formulation. The <strong>Free Energy</strong> (<span class="math inline">\(\mathcal{F}\)</span>) of the dynamical system is defined as:</p>
+<p><span class="math display">\[ \mathcal{F}(x_0) = -\lambda \log \mathbb{E}_{\mathbb{P}} \left[ \exp \left( -\frac{1}{\lambda} S(\tau) \right) \right] \]</span></p>
+<ul>
+<li><span class="math inline">\(\tau\)</span>: The state-control trajectory <span class="math inline">\(\{x_0, u_0, x_1, u_1, \dots, x_T\}\)</span>.</li>
+<li><span class="math inline">\(\mathbb{P}\)</span>: The base distribution, representing the stochastic trajectories of the “passive” system.</li>
+<li><span class="math inline">\(S(\tau)\)</span>: The cumulative cost (Action) of a trajectory <span class="math inline">\(\tau\)</span>.</li>
+<li><span class="math inline">\(\lambda\)</span>: The temperature parameter, representing the noise variance.</li>
+</ul>
+<p>The “optimal trajectory” is the mean of the distribution <span class="math inline">\(\mathbb{Q}^*\)</span> that minimizes the KL-divergence to the distribution of “low-cost” paths, leading to the thermodynamic weight update rule:</p>
+<p><span class="math display">\[ \omega^k = \frac{\exp\left(-\frac{1}{\lambda}(J^k - \rho)\right)}{\sum_{j=1}^{K} \exp\left(-\frac{1}{\lambda}(J^j - \rho)\right)} \]</span></p>
+</section>
+</section>
+<section id="occupancy-grid-map" class="level1">
+<h1>Occupancy Grid Map</h1>
+<p>The environment is represented as a 2D occupancy probability grid <span class="math inline">\(\mathbf{G} \in [0,1]^{H \times W}\)</span>, where each cell stores the probability of being occupied.</p>
+<section id="representation" class="level2">
+<h2 class="anchored" data-anchor-id="representation">Representation</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Cell value</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(p = 0.0\)</span></td>
+<td>Known free</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(p = 0.5\)</span></td>
+<td>Unknown (maximum entropy)</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(p = 1.0\)</span></td>
+<td>Known occupied (wall)</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="coordinate-transforms" class="level2">
+<h2 class="anchored" data-anchor-id="coordinate-transforms">Coordinate Transforms</h2>
+<p>The grid is anchored at a world-frame origin <span class="math inline">\(\mathbf{o} = [o_x, o_y]\)</span> with resolution <span class="math inline">\(r\)</span> (meters per cell). Conversion between world coordinates <span class="math inline">\(\mathbf{p}_w\)</span> and grid indices <span class="math inline">\(\mathbf{p}_g\)</span>:</p>
+<p><span class="math display">\[
+\mathbf{p}_g = \frac{\mathbf{p}_w - \mathbf{o}}{r}, \qquad
+\mathbf{p}_w = \mathbf{o} + (\mathbf{p}_g + 0.5)\,r
+\]</span></p>
+</section>
+<section id="rasterization" class="level2">
+<h2 class="anchored" data-anchor-id="rasterization">Rasterization</h2>
+<p>The grid is constructed by rasterizing the environment:</p>
+<ol type="1">
+<li><strong>Walls</strong> are line segments <span class="math inline">\([x_1,y_1,x_2,y_2]\)</span>. Each cell within 0.2 m of a wall segment is set to <span class="math inline">\(p = 1.0\)</span>.</li>
+<li><strong>Information zones</strong> are axis-aligned rectangles <span class="math inline">\([c_x, c_y, w, h]\)</span>. Cells inside a zone are set to <span class="math inline">\(p = 0.5\)</span> (unknown).</li>
+<li><strong>Priority</strong>: walls override zones; zones override free space.</li>
+</ol>
+</section>
+</section>
+<section id="information-metrics-fsmi" class="level1">
+<h1>Information Metrics: FSMI</h1>
+<p>To quantify how future measurements will reduce map uncertainty, we define a Unified Cost Function <span class="math inline">\(J(\tau)\)</span> that balances dynamical effort with information reward:</p>
+<p><span class="math display">\[
+\begin{aligned}
+J(\tau) &amp;= \underbrace{\left[\phi(x_T) + \sum_{t=0}^{T-1} \mathcal{L}_{motion}(x_t, u_t)\right]}_{\text{Dynamical cost}} - \underbrace{\lambda_{info} \sum_{t=0}^{T-1} I(M; \mathcal{Z}_t \mid x_t)}_{\text{Information based cost}}
+\end{aligned}
+\]</span></p>
+<section id="shannon-mutual-information" class="level2">
+<h2 class="anchored" data-anchor-id="shannon-mutual-information">Shannon Mutual Information</h2>
+<p>The informative reward is the <strong>Shannon Mutual Information (MI)</strong> between the map <span class="math inline">\(M\)</span> and a future sensor measurement <span class="math inline">\(Z\)</span>: <span class="math display">\[ I(M; Z) = H(M) - H(M|Z) \]</span></p>
+<p>where <span class="math inline">\(H(M)\)</span> is the map entropy. High MI indicates regions of unknown space or uncertain areas.</p>
+<p>In <span class="citation" data-cites="Charrow2015-ub">(<a href="#ref-Charrow2015-ub" role="doc-biblioref">Charrow et al. 2015</a>)</span>, MI is approximated using the <strong>Cauchy-Swartz Quadratic Mutual Information (CSQMI)</strong>.</p>
+<p><span class="math display">\[
+I_{\text{CS}}[m; z_\tau] = -\log \frac{\left(\sum \int p(m, z_\tau) p(m) p(z_\tau) \, dz_\tau\right)^2}{\sum \int p^2(m, z_\tau) \, dz_\tau \sum \int p^2(m) p^2(z_\tau) \, dz_\tau}
+\]</span></p>
+<p>where <span class="math inline">\(p(m, z_\tau)\)</span> is the joint distribution of map and measurement, and <span class="math inline">\(p(m)\)</span>, <span class="math inline">\(p(z_\tau)\)</span> are the marginals.</p>
+<section id="csqmi---measurement-model" class="level3">
+<h3 class="anchored" data-anchor-id="csqmi---measurement-model">CSQMI - Measurement Model</h3>
+<p>A measurement at time <span class="math inline">\(k\)</span> consists of <span class="math inline">\(B\)</span> one-dimensional beams covering the sensor’s field of view.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This is for a <strong>2D</strong> occupancy grid. The UAV is assumed to have a <strong>3D</strong> field of view.</p>
+</div>
+</div>
+<p><span class="math display">\[
+z_k = [z_{k1}, \ldots, z_{kB}]
+\]</span></p>
+<p>Each beam returns the distance to the first occupied cell, perturbed by Gaussian noise:</p>
+<p><span class="math display">\[
+p(z|d) = \mathcal{N}(z-d, \sigma^2)
+\]</span></p>
+<p>For a beam intersecting cells <span class="math inline">\(c\)</span>, the measurement distribution is:</p>
+<p><span class="math display">\[
+p(z_t^b | x_t) = \sum_c p(c) \, p(z_t^b | x_t, c)
+\]</span></p>
+<p>This creates a Gaussian mixture model where each cell along the ray contributes a Gaussian component weighted by its occupancy probability.</p>
+</section>
+</section>
+<section id="fast-shannon-mutual-information-fsmi" class="level2">
+<h2 class="anchored" data-anchor-id="fast-shannon-mutual-information-fsmi">Fast Shannon Mutual Information (FSMI)</h2>
+<p>Computing Shannon MI analytically for a sensor beam involves casting rays through the occupancy grid and evaluating the expected information gain. The FSMI algorithm (<span class="citation" data-cites="Zhang2020-gi">Zhang et al. (<a href="#ref-Zhang2020-gi" role="doc-biblioref">2020</a>)</span>) provides a closed-form solution.</p>
+<section id="beam-termination-probability" class="level3">
+<h3 class="anchored" data-anchor-id="beam-termination-probability">Beam Termination Probability</h3>
+<p>For a ray passing through <span class="math inline">\(n\)</span> cells with occupancy probabilities <span class="math inline">\(o_1, \dots, o_n\)</span>, the probability that the beam terminates at cell <span class="math inline">\(j\)</span> (i.e., the first occupied cell along the ray) is:</p>
+<p><span class="math display">\[
+P(e_j) = o_j \prod_{\ell=1}^{j-1} (1 - o_\ell)
+\]</span></p>
+<p>This is computed efficiently via a cumulative product of <span class="math inline">\((1 - o_\ell)\)</span>.</p>
+</section>
+<section id="information-gain-function" class="level3">
+<h3 class="anchored" data-anchor-id="information-gain-function">Information Gain Function</h3>
+<p>The information gain from updating a cell with odds ratio <span class="math inline">\(r = p/(1-p)\)</span> using an inverse sensor model with odds ratio <span class="math inline">\(\Delta\)</span> is:</p>
+<p><span class="math display">\[
+f(r, \Delta) = \ln\frac{r + 1}{r + 1/\Delta} - \frac{\ln \Delta}{r\Delta + 1}
+\]</span></p>
+<p>Two instances are used:</p>
+<ul>
+<li><strong>Occupied measurement</strong>: <span class="math inline">\(\Delta_{\text{occ}} = \exp(0.85)\)</span>, giving <span class="math inline">\(f_{\text{occ}}(r)\)</span></li>
+<li><strong>Empty measurement</strong>: <span class="math inline">\(\Delta_{\text{emp}} = \exp(-0.4)\)</span>, giving <span class="math inline">\(f_{\text{emp}}(r)\)</span></li>
+</ul>
+</section>
+<section id="information-potential" class="level3">
+<h3 class="anchored" data-anchor-id="information-potential">Information Potential</h3>
+<p>The <strong>information potential</strong> <span class="math inline">\(C_k\)</span> represents the total information gained if a measurement falls at cell <span class="math inline">\(k\)</span>:</p>
+<p><span class="math display">\[
+C_k = f_{\text{occ}}(r_k) + \sum_{i=1}^{k-1} f_{\text{emp}}(r_i)
+\]</span></p>
+<p>The first term is the information from marking cell <span class="math inline">\(k\)</span> as occupied; the summation accounts for all cells before <span class="math inline">\(k\)</span> being marked as empty.</p>
+</section>
+<section id="sensor-noise-coupling" class="level3">
+<h3 class="anchored" data-anchor-id="sensor-noise-coupling">Sensor Noise Coupling</h3>
+<p>The geometry matrix <span class="math inline">\(G_{kj}\)</span> couples the true termination cell <span class="math inline">\(j\)</span> with the measured cell <span class="math inline">\(k\)</span> through the sensor noise model:</p>
+<p><span class="math display">\[
+G_{kj} = \Phi\!\left(\frac{l_{k+\frac{1}{2}} - \mu_j}{\sigma}\right) - \Phi\!\left(\frac{l_{k-\frac{1}{2}} - \mu_j}{\sigma}\right)
+\]</span></p>
+<p>where <span class="math inline">\(\Phi\)</span> is the standard normal CDF, <span class="math inline">\(l_{k \pm \frac{1}{2}}\)</span> are cell boundaries, <span class="math inline">\(\mu_j\)</span> is the distance to cell <span class="math inline">\(j\)</span>, and <span class="math inline">\(\sigma\)</span> is the sensor range noise standard deviation. A Gaussian truncation mask (default <span class="math inline">\(3\sigma\)</span>) zeroes out entries where <span class="math inline">\(|k - j|\)</span> exceeds the truncation radius for computational efficiency.</p>
+</section>
+<section id="full-fsmi-theorem-1" class="level3">
+<h3 class="anchored" data-anchor-id="full-fsmi-theorem-1">Full FSMI (Theorem 1)</h3>
+<p>The mutual information for a single beam is:</p>
+<p><span class="math display">\[
+I_{\text{FSMI}} = \sum_{j=1}^{n} \sum_{k=1}^{n} P(e_j) \, C_k \, G_{kj}
+\]</span></p>
+<p>This is <span class="math inline">\(O(n^2)\)</span> per beam due to the double summation. In the implementation, the contraction is computed via <code>jnp.einsum("j,k,kj-&gt;", P_e, C_k, G_kj)</code>.</p>
+<p>The total information for a viewpoint sums over all beams across the sensor FOV.</p>
+</section>
+<section id="uniform-fsmi-on-approximation" class="level3">
+<h3 class="anchored" data-anchor-id="uniform-fsmi-on-approximation">Uniform-FSMI (O(n) Approximation)</h3>
+<p>For short-range measurements where the sensor noise <span class="math inline">\(\sigma\)</span> is small relative to the cell size, the coupling matrix approaches the identity: <span class="math inline">\(G_{kj} \approx \delta_{kj}\)</span>. This yields the <strong>Uniform-FSMI</strong> approximation:</p>
+<p><span class="math display">\[
+I_{\text{Uniform}} \approx \sum_{j=1}^{n} P(e_j) \, C_j
+\]</span></p>
+<p>This reduces complexity from <span class="math inline">\(O(n^2)\)</span> to <span class="math inline">\(O(n)\)</span> per beam, making it suitable for the Layer 3 reactive controller running at 50 Hz.</p>
+</section>
+</section>
+<section id="csqmi-vs-fsmi-3d" class="level2">
+<h2 class="anchored" data-anchor-id="csqmi-vs-fsmi-3d">CSQMI vs FSMI for 3D Field of View</h2>
+<p>When the sensor provides a <strong>3D field of view</strong> (e.g., RGB-D camera, 3D lidar), the number of beams <span class="math inline">\(B\)</span> scales dramatically compared to a planar 2D scan:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Sensor</th>
+<th>Beams per scan</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2D lidar (Hokuyo)</td>
+<td>~1,080</td>
+</tr>
+<tr class="even">
+<td>3D lidar (VLP-16)</td>
+<td>~28,800</td>
+</tr>
+<tr class="odd">
+<td>3D lidar (OS1-64)</td>
+<td>~131,072</td>
+</tr>
+<tr class="even">
+<td>RGB-D camera (640×480)</td>
+<td>~307,200</td>
+</tr>
+</tbody>
+</table>
+<p>This scaling from ~<span class="math inline">\(10^3\)</span> to ~<span class="math inline">\(10^5\)</span> beams fundamentally changes the computational trade-offs.</p>
+<section id="complexity-comparison" class="level3">
+<h3 class="anchored" data-anchor-id="complexity-comparison">Complexity Comparison</h3>
+<p>Let <span class="math inline">\(B\)</span> denote the number of beams, <span class="math inline">\(n\)</span> the cells intersected per beam, and <span class="math inline">\(n_r\)</span> the number of run-length encoded (RLE) segments per beam.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 23%">
+<col style="width: 26%">
+<col style="width: 31%">
+<col style="width: 18%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variant</th>
+<th>Per-beam</th>
+<th>Total (3D)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>CSQMI</td>
+<td><span class="math inline">\(O(n)\)</span></td>
+<td><span class="math inline">\(O(Bn)\)</span></td>
+<td>Independence filtering via spatial hashing</td>
+</tr>
+<tr class="even">
+<td>FSMI</td>
+<td><span class="math inline">\(O(n^2)\)</span></td>
+<td><span class="math inline">\(O(Bn^2)\)</span></td>
+<td>Dominated by <span class="math inline">\(G_{kj}\)</span> contraction</td>
+</tr>
+<tr class="odd">
+<td>FSMI-RLE</td>
+<td><span class="math inline">\(O(n_r^2)\)</span></td>
+<td><span class="math inline">\(O(Bn_r^2)\)</span></td>
+<td>Exploits map sparsity</td>
+</tr>
+<tr class="even">
+<td>Approx-FSMI</td>
+<td><span class="math inline">\(O(nD)\)</span></td>
+<td><span class="math inline">\(O(BnD)\)</span></td>
+<td><span class="math inline">\(D\)</span> = truncation radius</td>
+</tr>
+<tr class="odd">
+<td>Uniform-FSMI</td>
+<td><span class="math inline">\(O(n)\)</span></td>
+<td><span class="math inline">\(O(Bn)\)</span></td>
+<td><span class="math inline">\(G_{kj} \approx \delta_{kj}\)</span></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="run-length-encoding-rle-for-sparse-maps" class="level3">
+<h3 class="anchored" data-anchor-id="run-length-encoding-rle-for-sparse-maps">Run-Length Encoding (RLE) for Sparse Maps</h3>
+<p>FSMI-RLE compresses consecutive cells with the same occupancy state into segments, exploiting the sparsity of 3D occupancy grids where most of space is empty. For a beam traversing <span class="math inline">\(n = 50\)</span> cells that compress to <span class="math inline">\(n_r = 5\)</span> RLE segments, the per-beam cost drops from <span class="math inline">\(O(n^2) = 2{,}500\)</span> to <span class="math inline">\(O(n_r^2) = 25\)</span> — a <strong>100× speedup</strong>.</p>
+<p>Empirical compression ratios from 3D environments <span class="citation" data-cites="Zhang2020-fsmi">(<a href="#ref-Zhang2020-fsmi" role="doc-biblioref"><strong>Zhang2020-fsmi?</strong></a>)</span>:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Environment</th>
+<th>Cells/beam (<span class="math inline">\(n\)</span>)</th>
+<th>RLE segments (<span class="math inline">\(n_r\)</span>)</th>
+<th>Compression</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Indoor corridor</td>
+<td>45</td>
+<td>6</td>
+<td>7.5×</td>
+</tr>
+<tr class="even">
+<td>Outdoor plaza</td>
+<td>80</td>
+<td>12</td>
+<td>6.7×</td>
+</tr>
+<tr class="odd">
+<td>Cluttered room</td>
+<td>35</td>
+<td>8</td>
+<td>4.4×</td>
+</tr>
+</tbody>
+</table>
+<p>Average compression of ~6× yields a ~36× speedup (<span class="math inline">\(6^2\)</span> reduction in the double summation).</p>
+</section>
+<section id="memory-footprint-3d-scan-b-300textk" class="level3">
+<h3 class="anchored" data-anchor-id="memory-footprint-3d-scan-b-300textk">Memory Footprint (3D scan, <span class="math inline">\(B = 300\text{K}\)</span>)</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Variant</th>
+<th>Per-beam</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>CSQMI</td>
+<td><span class="math inline">\(O(n)\)</span></td>
+<td>~60 MB</td>
+</tr>
+<tr class="even">
+<td>FSMI</td>
+<td><span class="math inline">\(O(n^2)\)</span></td>
+<td>~3 GB</td>
+</tr>
+<tr class="odd">
+<td>FSMI-RLE</td>
+<td><span class="math inline">\(O(n_r^2)\)</span></td>
+<td>~30 MB</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="gpu-parallelization" class="level3">
+<h3 class="anchored" data-anchor-id="gpu-parallelization">GPU Parallelization</h3>
+<p>Both CSQMI and FSMI variants are <strong>embarrassingly parallel over beams</strong>: each beam’s information gain is independent, enabling direct <code>vmap</code> over <span class="math inline">\(B\)</span> beams. CSQMI achieves slightly higher GPU utilization because its per-beam kernel is purely linear (<span class="math inline">\(O(n)\)</span>), whereas FSMI-RLE still contains a small nested loop over <span class="math inline">\(n_r^2\)</span> elements.</p>
+</section>
+<section id="recommendations" class="level3">
+<h3 class="anchored" data-anchor-id="recommendations">Recommendations</h3>
+<p><strong>For 2D occupancy grids</strong> (even with 3D sensors projected to a plane): CSQMI is preferred due to simpler implementation and linear per-beam cost.</p>
+<p><strong>For 3D occupancy grids</strong> (voxel/OctoMap representations): FSMI-RLE becomes competitive or superior, offering exact Shannon MI with lower memory and comparable speed on sparse maps.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Implementation Strategy
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A <strong>two-stage approach</strong> can combine both: use CSQMI for fast trajectory ranking across many candidates, then refine the top-<span class="math inline">\(k\)</span> with FSMI-RLE for more accurate final selection.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="trajectory-fsmi" class="level2">
+<h2 class="anchored" data-anchor-id="trajectory-fsmi">Trajectory-Based FSMI</h2>
+<p>Both FSMI and CSQMI can be extended from single-viewpoint evaluation to trajectory evaluation. The key is <strong>Assumption 2</strong> from <span class="citation" data-cites="Charrow2015-ub">(<a href="#ref-Charrow2015-ub" role="doc-biblioref">Charrow et al. 2015</a>)</span>:</p>
+<section id="assumption-2-beam-independence-decomposition" class="level3">
+<h3 class="anchored" data-anchor-id="assumption-2-beam-independence-decomposition">Assumption 2: Beam Independence Decomposition</h3>
+<p><span class="math display">\[
+I(M; Z_t | x_{1:t}, z_{1:t}) \approx \sum_{j=1}^{n_z} I(M_i; Z_t^j | x_{1:t}, z_{1:t})
+\]</span></p>
+<p><strong>Translation:</strong> The MI between the map and all beams in a scan ≈ sum of MI for each individual beam.</p>
+<p><strong>Both CSQMI and FSMI use this approximation!</strong> The difference:</p>
+<ul>
+<li><strong>CSQMI:</strong> Explicitly filters dependent beams with <code>isIndependent()</code> spatial hashing</li>
+<li><strong>FSMI:</strong> Implicitly assumes independence (no explicit filtering in base algorithm)</li>
+</ul>
+</section>
+<section id="method-1-direct-summation-simple-fully-parallel" class="level3">
+<h3 class="anchored" data-anchor-id="method-1-direct-summation-simple-fully-parallel">Method 1: Direct Summation (Simple, Fully Parallel)</h3>
+<p>The simplest trajectory extension:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="at">@jax.jit</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fsmi_trajectory_simple(trajectory_poses, occupancy_grid):</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Direct summation across trajectory</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Assumption: Beams are approximately independent</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> fsmi_at_single_pose(pose):</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        beam_directions <span class="op">=</span> get_beam_directions()  <span class="co"># (B, 3)</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> fsmi_single_beam(beam_dir):</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>            rle_beam <span class="op">=</span> raycast_with_rle(beam_dir, pose, occupancy_grid)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> compute_fsmi_rle(rle_beam)  <span class="co"># O(n_r²) per beam</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> vmap(fsmi_single_beam)(beam_directions).<span class="bu">sum</span>()</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Fully parallel over all poses</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    info_per_pose <span class="op">=</span> vmap(fsmi_at_single_pose)(trajectory_poses)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jnp.<span class="bu">sum</span>(info_per_pose)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Complexity:</strong> <span class="math inline">\(O(T \cdot B \cdot n_r^2)\)</span> where <span class="math inline">\(T\)</span> is trajectory length, <span class="math inline">\(B\)</span> is beams per scan.</p>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>✅ Fully parallelizable (perfect for GPU)</li>
+<li>✅ Simple implementation</li>
+<li>✅ Fast with RLE compression</li>
+</ul>
+<p><strong>Limitations:</strong></p>
+<ul>
+<li>⚠️ May over-count information from overlapping views</li>
+<li>⚠️ No explicit handling of beam dependencies</li>
+</ul>
+</section>
+<section id="method-2-conservative-parallel-filtering-gpu-friendly" class="level3">
+<h3 class="anchored" data-anchor-id="method-2-conservative-parallel-filtering-gpu-friendly">Method 2: Conservative Parallel Filtering (GPU-Friendly)</h3>
+<p>A parallelizable independence criterion:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="at">@jax.jit</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fsmi_trajectory_parallel_filtered(trajectory_poses, occupancy_grid):</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">    FSMI with parallelizable conservative independence filtering</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> compute_all_beams(pose):</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        beam_dirs <span class="op">=</span> get_beam_directions()</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> compute_beam_data(beam_dir):</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>            rle_beam <span class="op">=</span> raycast_with_rle(beam_dir, pose, occupancy_grid)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> {</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>                <span class="st">'mi'</span>: compute_fsmi_rle(rle_beam),</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>                <span class="st">'cell_mask'</span>: create_cell_mask(rle_beam, occupancy_grid),</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> vmap(compute_beam_data)(beam_dirs)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Parallel over all poses: (T, B, data)</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    all_beams <span class="op">=</span> vmap(compute_all_beams)(trajectory_poses)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Conservative independence mask (parallel)</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    flat_mi <span class="op">=</span> all_beams[<span class="st">'mi'</span>].reshape(<span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    flat_masks <span class="op">=</span> all_beams[<span class="st">'cell_mask'</span>].reshape(<span class="op">-</span><span class="dv">1</span>, num_cells)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Mark beam as independent if it's the FIRST to hit each cell</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    independent_mask <span class="op">=</span> compute_first_hit_mask(flat_masks)</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jnp.<span class="bu">sum</span>(flat_mi <span class="op">*</span> independent_mask)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>✅ Fully parallelizable</li>
+<li>✅ Conservative (won’t over-count)</li>
+<li>✅ Maintains GPU efficiency</li>
+</ul>
+<p><strong>Limitations:</strong></p>
+<ul>
+<li>⚠️ May be too conservative (under-count some valid independent beams)</li>
+</ul>
+</section>
+<section id="method-3-discount-factor-approach-novel" class="level3">
+<h3 class="anchored" data-anchor-id="method-3-discount-factor-approach-novel">Method 3: Discount Factor Approach (Novel)</h3>
+<p>Apply viewing-based discount without sequential bottleneck:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="at">@jax.jit</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fsmi_trajectory_with_discount(trajectory_poses, occupancy_grid):</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Apply discount factor based on viewing overlap</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> compute_pose_beams(pose_idx):</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        pose <span class="op">=</span> trajectory_poses[pose_idx]</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>        beam_dirs <span class="op">=</span> get_beam_directions()</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> compute_beam_with_discount(beam_dir):</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>            rle_beam <span class="op">=</span> raycast_with_rle(beam_dir, pose, occupancy_grid)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>            cells <span class="op">=</span> rle_beam.cell_ids</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Base MI from FSMI</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>            mi <span class="op">=</span> compute_fsmi_rle(rle_beam)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Discount based on previous views of these cells</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>            total_previous_views <span class="op">=</span> count_previous_views(</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>                cells, pose_idx, trajectory_poses</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Exponential decay: 1st view = 1.0, 2nd = 0.5, 3rd = 0.25</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>            discount <span class="op">=</span> jnp.exp(<span class="op">-</span><span class="fl">0.7</span> <span class="op">*</span> total_previous_views)</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> mi <span class="op">*</span> jnp.mean(discount)</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> vmap(compute_beam_with_discount)(beam_dirs).<span class="bu">sum</span>()</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> vmap(compute_pose_beams)(jnp.arange(<span class="bu">len</span>(trajectory_poses))).<span class="bu">sum</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>✅ Fully parallelizable</li>
+<li>✅ Gracefully handles overlaps</li>
+<li>✅ Tunable discount parameter</li>
+</ul>
+<p><strong>Limitations:</strong></p>
+<ul>
+<li>⚠️ Not theoretically exact (empirical approximation)</li>
+</ul>
+</section>
+<section id="method-comparison" class="level3">
+<h3 class="anchored" data-anchor-id="method-comparison">Method Comparison</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 22%">
+<col style="width: 34%">
+<col style="width: 17%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Parallelization</th>
+<th>Theoretical Correctness</th>
+<th>Complexity</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Direct Sum</td>
+<td>✅✅ Perfect</td>
+<td>⚠️ May over-count</td>
+<td><span class="math inline">\(O(T \cdot B \cdot n_r^2)\)</span></td>
+<td>Fast prototyping</td>
+</tr>
+<tr class="even">
+<td>Conservative Filter</td>
+<td>✅✅ Perfect</td>
+<td>✅ Conservative</td>
+<td><span class="math inline">\(O(T \cdot B \cdot n_r^2)\)</span></td>
+<td>GPU, large scale</td>
+</tr>
+<tr class="odd">
+<td>Discount Factor</td>
+<td>✅✅ Perfect</td>
+<td>⚠️ Approximate</td>
+<td><span class="math inline">\(O(T \cdot B \cdot n_r^2)\)</span></td>
+<td>Balance speed/accuracy</td>
+</tr>
+<tr class="even">
+<td>Sequential Filter*</td>
+<td>⚠️ Bottleneck</td>
+<td>✅✅ Exact</td>
+<td><span class="math inline">\(O(T \cdot B \cdot n_r^2)\)</span> + sequential</td>
+<td>Accuracy critical</td>
+</tr>
+</tbody>
+</table>
+<p>*Sequential filtering (CSQMI-style) omitted above due to GPU incompatibility.</p>
+</section>
+<section id="recommended-implementation-strategy" class="level3">
+<h3 class="anchored" data-anchor-id="recommended-implementation-strategy">Recommended Implementation Strategy</h3>
+<p><strong>Phase 1: Prototype</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Start with Method 1 (Direct Sum)</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>mi_trajectory <span class="op">=</span> fsmi_trajectory_simple(trajectory, <span class="bu">map</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Phase 2: Validate</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare with conservative filtering</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>mi_filtered <span class="op">=</span> fsmi_trajectory_parallel_filtered(trajectory, <span class="bu">map</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>overcounting_ratio <span class="op">=</span> mi_trajectory <span class="op">/</span> mi_filtered</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> overcounting_ratio <span class="op">&lt;</span> <span class="fl">1.2</span>:</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Method 1 is sufficient</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    use_simple <span class="op">=</span> <span class="va">True</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Phase 3: Optimize</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># If overcounting is significant, use discount factor</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>mi_discounted <span class="op">=</span> fsmi_trajectory_with_discount(trajectory, <span class="bu">map</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>FSMI vs CSQMI for Trajectories
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>FSMI is <strong>inherently more parallelizable</strong> for trajectory evaluation because independence filtering is <strong>optional</strong> (approximation quality vs.&nbsp;speed trade-off). CSQMI <strong>requires</strong> sequential filtering for correctness, creating a GPU bottleneck for trajectory-based planning.</p>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="fov-coverage" class="level1">
+<h1>FOV Coverage &amp; Line-of-Sight</h1>
+<p>The FOV coverage model determines what fraction of an information zone is visible from the UAV’s current pose, and is used both in the dynamics (depletion) and cost function (reward).</p>
+<section id="geometric-checks" class="level2">
+<h2 class="anchored" data-anchor-id="geometric-checks">Geometric Checks</h2>
+<p>For each sample point in a zone, three conditions must hold:</p>
+<ol type="1">
+<li><strong>In FOV</strong>: the bearing from the UAV to the point, relative to the UAV yaw, must be within <span class="math inline">\(\pm \frac{\theta_{\text{FOV}}}{2}\)</span></li>
+<li><strong>In range</strong>: the distance must be <span class="math inline">\(\leq r_{\max}\)</span></li>
+<li><strong>Line-of-sight</strong> (optional): a ray from UAV to the point must not pass through any occupied cell (<span class="math inline">\(p \geq 0.7\)</span>) in the grid</li>
+</ol>
+<p>The basic coverage without LOS is:</p>
+<p><span class="math display">\[
+c_j = \frac{1}{N} \sum_{i=1}^{N} \mathbb{1}\!\left[|\angle(\mathbf{s}_i - \mathbf{p}, \psi)| \leq \tfrac{\theta_{\text{FOV}}}{2}\right] \cdot \mathbb{1}\!\left[\|\mathbf{s}_i - \mathbf{p}\| \leq r_{\max}\right]
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{s}_i\)</span> are <span class="math inline">\(N = 25\)</span> sample points uniformly distributed across the zone, <span class="math inline">\(\mathbf{p}\)</span> is the UAV position, and <span class="math inline">\(\psi\)</span> is yaw.</p>
+</section>
+<section id="ray-march-line-of-sight" class="level2">
+<h2 class="anchored" data-anchor-id="ray-march-line-of-sight">Ray-March Line-of-Sight</h2>
+<p>When LOS checking is enabled, the grid is sampled along a straight ray from the UAV to each sample point at fixed intervals (0.2 m). If any sample hits a cell with <span class="math inline">\(p \geq 0.7\)</span>, the point is considered occluded:</p>
+<p><span class="math display">\[
+\text{LOS}(\mathbf{p}, \mathbf{s}) = \prod_{l=0}^{L-1} \mathbb{1}\!\left[G[\mathbf{p} + l \cdot \Delta \hat{\mathbf{d}}] &lt; 0.7\right]
+\]</span></p>
+</section>
+<section id="entropy-weighted-coverage" class="level2">
+<h2 class="anchored" data-anchor-id="entropy-weighted-coverage">Entropy-Weighted Coverage</h2>
+<p>Raw FOV coverage treats all visible zone cells equally, meaning already-explored cells (<span class="math inline">\(p \approx 0.2\)</span>, known free) contribute the same as unknown cells (<span class="math inline">\(p = 0.5\)</span>). To create self-regulating depletion, each sample is weighted by an <strong>entropy proxy</strong>:</p>
+<p><span class="math display">\[
+w(p) = 4\,p\,(1 - p)
+\]</span></p>
+<p>This function peaks at <span class="math inline">\(w(0.5) = 1.0\)</span> (maximum uncertainty) and vanishes at <span class="math inline">\(w(0) = w(1) = 0\)</span>. The entropy-weighted coverage is:</p>
+<p><span class="math display">\[
+c_j^{\text{ew}} = \frac{1}{N} \sum_{i=1}^{N} \text{visible}(\mathbf{s}_i) \cdot \text{LOS}(\mathbf{p}, \mathbf{s}_i) \cdot w\!\left(G[\mathbf{s}_i]\right)
+\]</span></p>
+<p>As a zone is explored and its grid cells move from <span class="math inline">\(p = 0.5\)</span> toward <span class="math inline">\(p = 0.2\)</span>, the entropy weight drops (<span class="math inline">\(w(0.2) = 0.64 \to 0\)</span>), naturally slowing depletion without requiring explicit thresholds.</p>
+</section>
+</section>
+<section id="information-zone-depletion" class="level1">
+<h1>Information Zone Depletion</h1>
+<p>Each information zone <span class="math inline">\(j\)</span> carries a scalar level <span class="math inline">\(i_j \in [0, 100]\)</span> representing remaining information content. The depletion dynamics are:</p>
+<p><span class="math display">\[
+i_j^{(t+1)} = i_j^{(t)} \left(1 - \alpha \cdot c_j^{(t)}\right)
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(\alpha = 0.02\)</span> is the per-step depletion scaling factor</li>
+<li><span class="math inline">\(c_j^{(t)} \in [0, 1]\)</span> is the FOV coverage (optionally entropy-weighted)</li>
+</ul>
+<section id="self-regulating-feedback-loop" class="level3">
+<h3 class="anchored" data-anchor-id="self-regulating-feedback-loop">Self-Regulating Feedback Loop</h3>
+<p>With entropy-weighted coverage, the system exhibits a natural feedback loop:</p>
+<ol type="1">
+<li><strong>Unknown zone</strong> (<span class="math inline">\(p = 0.5\)</span>): <span class="math inline">\(w = 1.0\)</span>, full depletion rate <span class="math inline">\(\alpha\)</span></li>
+<li><strong>Partially explored</strong> (<span class="math inline">\(p = 0.35\)</span>): <span class="math inline">\(w = 0.91\)</span>, depletion slows</li>
+<li><strong>Mostly known</strong> (<span class="math inline">\(p = 0.2\)</span>): <span class="math inline">\(w = 0.64\)</span>, depletion significantly reduced</li>
+<li><strong>Fully known</strong> (<span class="math inline">\(p \approx 0\)</span>): <span class="math inline">\(w \approx 0\)</span>, depletion effectively stops</li>
+</ol>
+<p>This prevents “over-depletion” of zones that still contain uncertain cells behind obstacles.</p>
+</section>
+</section>
+<section id="cost-functions" class="level1">
+<h1>Cost Functions</h1>
+<p>The I-MPPI running cost combines several terms:</p>
+<p><span class="math display">\[
+J_t = J_{\text{collision}} + J_{\text{grid}} + J_{\text{target}} + J_{\text{bounds}} + J_{\text{height}} + J_{\text{info}} + J_{\text{control}}
+\]</span></p>
+<section id="collision-cost" class="level2">
+<h2 class="anchored" data-anchor-id="collision-cost">Collision Cost</h2>
+<p>Proximity to wall segments incurs a large penalty:</p>
+<p><span class="math display">\[
+J_{\text{collision}} = \sum_{w \in \text{walls}} \begin{cases} 1000 &amp; \text{if } \mathbf{p} \text{ within } r_{\text{robot}} \text{ of } w \\ 0 &amp; \text{otherwise} \end{cases}
+\]</span></p>
+<p>Additionally, when a grid map is available, the cell at the UAV position is checked:</p>
+<p><span class="math display">\[
+J_{\text{grid}} = \begin{cases} 1000 &amp; \text{if } G[\mathbf{p}] \geq 0.7 \\ 0 &amp; \text{otherwise} \end{cases}
+\]</span></p>
+</section>
+<section id="information-cost-reward" class="level2">
+<h2 class="anchored" data-anchor-id="information-cost-reward">Information Cost (Reward)</h2>
+<p>For the basic I-MPPI cost, information reward is based on FOV coverage of each zone weighted by remaining info:</p>
+<p><span class="math display">\[
+J_{\text{info}} = -50 \sum_{j} \tanh(i_j) \cdot c_j
+\]</span></p>
+<p>For the Layer 3 Uniform-FSMI variant, information is computed directly from the grid:</p>
+<p><span class="math display">\[
+J_{\text{info}} = -\lambda_{\text{info}} \cdot I_{\text{Uniform}}(\mathbf{p}, \psi)
+\]</span></p>
+</section>
+<section id="target-attraction" class="level2">
+<h2 class="anchored" data-anchor-id="target-attraction">Target Attraction</h2>
+<p><span class="math display">\[
+J_{\text{target}} = w_{\text{target}} \|\mathbf{p} - \mathbf{p}_{\text{ref}}(t)\|
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{p}_{\text{ref}}(t)\)</span> is either a static goal or a point on the Layer 2 reference trajectory.</p>
+</section>
+<section id="bounds-and-height" class="level2">
+<h2 class="anchored" data-anchor-id="bounds-and-height">Bounds and Height</h2>
+<p><span class="math display">\[
+J_{\text{bounds}} = 1000 \cdot \mathbb{1}[\mathbf{p} \notin \text{workspace}], \qquad
+J_{\text{height}} = w_h (p_z - p_z^*)^2
+\]</span></p>
+<p>where <span class="math inline">\(p_z^* = -2.0\)</span> m is the target altitude (NED convention: negative = up).</p>
+</section>
+<section id="control-regularization" class="level2">
+<h2 class="anchored" data-anchor-id="control-regularization">Control Regularization</h2>
+<p><span class="math display">\[
+J_{\text{control}} = \lambda_u \|\mathbf{u}\|^2
+\]</span></p>
+<p>with <span class="math inline">\(\lambda_u = 0.01\)</span>.</p>
+</section>
+</section>
+<section id="hierarchical-architecture" class="level1">
+<h1>Hierarchical Architecture</h1>
+<p>I-MPPI employs a three-layer GNC stack:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph TD
+    subgraph L1 [Layer 1: Global Guidance - FUEL ~1 Hz]
+        FIS[Frontier Information Structure] --&gt; TSP[TSP Solver]
+        TSP --&gt; Waypoints[Global Waypoints]
+    end
+
+    subgraph L2 [Layer 2: Local Refinement ~5-10 Hz]
+        Waypoints --&gt; VO[Viewpoint Optimization]
+        VO --&gt; FSMI_Metric[FSMI Reward]
+        FSMI_Metric --&gt; RefTraj[Informed Reference Trajectory τ_ref]
+    end
+
+    subgraph L3 [Layer 3: Reactive Control - Biased-MPPI ~50 Hz]
+        RefTraj --&gt; Mixture[Mixture Sampling Distribution]
+        Mixture --&gt; MPPI_Opt[Parallel Rollouts]
+        MPPI_Opt --&gt; NomControl[Optimal Control u*]
+    end
+
+    subgraph L4 [Feedback Layer: Feedback-MPPI ≥ 200 Hz]
+        MPPI_Opt --&gt; Sens[Sensitivity Analysis ∂u*/∂x₀]
+        Sens --&gt; Gains[Feedback Gains F]
+        Gains --&gt; FinalControl[Control Law: u* + FΔx]
+    end
+
+    %% Data Flow &amp; Environment
+    Map[(Occupancy Grid)] -.-&gt; FIS
+    Map -.-&gt; FSMI_Metric
+    State[UAV State x₀] --&gt; L3
+    State --&gt; L4
+    FinalControl --&gt; Actuators[/Motor Commands/]
+
+    %% Styling
+    style L1 fill:#e1f5fe,stroke:#01579b
+    style L2 fill:#e8f5e9,stroke:#1b5e20
+    style L3 fill:#fff3e0,stroke:#e65100
+    style L4 fill:#fce4ec,stroke:#880e4f
+    style Map fill:#f3e5f5,stroke:#4a148c
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<ol type="1">
+<li><strong>Layer 1: Global Guidance (FUEL)</strong>: Maintains a Frontier Information Structure (FIS) and generates global waypoints via TSP.</li>
+<li><strong>Layer 2: Local Refinement</strong>: Refines global paths into an Informed Reference Trajectory <span class="math inline">\((\tau_{ref})\)</span> maximizing info gain.</li>
+<li><strong>Layer 3: Reactive Control (Biased-MPPI)</strong>: Uses a mixture distribution to track <span class="math inline">\(\tau_{ref}\)</span> while maintaining local informativeness.</li>
+</ol>
+</section>
+<section id="target-selection" class="level1">
+<h1>Target Selection</h1>
+<p>Layer 2 selects the next target for the reference trajectory based on remaining information levels.</p>
+<section id="score-based-zone-selection" class="level2">
+<h2 class="anchored" data-anchor-id="score-based-zone-selection">Score-Based Zone Selection</h2>
+<p>Each information zone is scored by:</p>
+<p><span class="math display">\[
+\text{score}_j = i_j - w_d \cdot \|\mathbf{p}_j - \mathbf{p}_{\text{uav}}\|
+\]</span></p>
+<p>where <span class="math inline">\(i_j\)</span> is the remaining info level, <span class="math inline">\(\mathbf{p}_j\)</span> is the zone center, and <span class="math inline">\(w_d\)</span> is a distance penalty weight.</p>
+</section>
+<section id="depletion-mask" class="level2">
+<h2 class="anchored" data-anchor-id="depletion-mask">Depletion Mask</h2>
+<p>Zones with <span class="math inline">\(i_j &lt; i_{\text{threshold}}\)</span> are masked out (score set to <span class="math inline">\(-\infty\)</span>). The zone with the highest score is selected as the current target.</p>
+</section>
+<section id="goal-fallback" class="level2">
+<h2 class="anchored" data-anchor-id="goal-fallback">Goal Fallback</h2>
+<p>When no zone has remaining information above the threshold, the system falls back to the mission goal position <span class="math inline">\(\mathbf{p}_{\text{goal}}\)</span>, and the UAV proceeds directly to the goal.</p>
+</section>
+</section>
+<section id="biased-mppi-mixture-sampling" class="level1">
+<h1>Biased MPPI Mixture Sampling</h1>
+<p>Layer 3 uses <strong>biased MPPI</strong> to track the Layer 2 reference trajectory while maintaining reactive obstacle avoidance and local informativeness. The key idea is to use a mixture sampling distribution that biases a fraction of samples toward the reference.</p>
+<section id="mixture-distribution" class="level2">
+<h2 class="anchored" data-anchor-id="mixture-distribution">Mixture Distribution</h2>
+<p>The <span class="math inline">\(K\)</span> total samples are split into two groups:</p>
+<p><span class="math display">\[
+\mathbb{Q}_s = (1 - \alpha)\,\mathcal{N}(\bar{\mathbf{u}}, \Sigma) + \alpha\,\mathcal{N}(\bar{\mathbf{u}} + \delta_{\text{ref}}, \Sigma)
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(K_{\text{nom}} = \lfloor(1-\alpha) K\rfloor\)</span> samples from the nominal distribution centered on the current control sequence <span class="math inline">\(\bar{\mathbf{u}}\)</span></li>
+<li><span class="math inline">\(K_{\text{bias}} = K - K_{\text{nom}}\)</span> samples biased toward the reference trajectory</li>
+</ul>
+<p>The bias offset is:</p>
+<p><span class="math display">\[
+\delta_{\text{ref}} = \mathbf{U}_{\text{ref}} - \bar{\mathbf{U}}
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{U}_{\text{ref}}\)</span> is the reference control sequence from Layer 2.</p>
+</section>
+<section id="mppi-variants" class="level2">
+<h2 class="anchored" data-anchor-id="mppi-variants">MPPI Variants</h2>
+<p>Biased sampling is implemented for all three MPPI variants:</p>
+<ul>
+<li><strong>Biased MPPI</strong>: bias offset applied directly in control space</li>
+<li><strong>Biased SMPPI</strong>: reference converted to velocity space via <span class="math inline">\(\delta_{\text{ref}}^{vel} = (\mathbf{U}_{\text{ref}} - \mathbf{a}_{\text{seq}}) / \Delta t\)</span></li>
+<li><strong>Biased KMPPI</strong>: reference projected to control-point space by solving <span class="math inline">\(\boldsymbol{\theta}_{\text{ref}} = (\mathbf{K}^T\mathbf{K})^{-1}\mathbf{K}^T \mathbf{U}_{\text{ref}}\)</span>, then bias offset <span class="math inline">\(\delta_{\text{ref}} = \boldsymbol{\theta}_{\text{ref}} - \boldsymbol{\theta}\)</span></li>
+</ul>
+</section>
+</section>
+<section id="feedback-mppi-sensitivity-analysis" class="level1">
+<h1>Feedback-MPPI &amp; Sensitivity Analysis</h1>
+<p>To support agile maneuvers, F-MPPI computes local linear feedback gains <span class="math inline">\(F\)</span> derived from sensitivity analysis:</p>
+<p><span class="math display">\[ F = \frac{\partial u^*}{\partial x_0} = \sum_{k=0}^{K} \frac{\partial \pi}{\partial \theta} \Delta \theta^k \frac{\omega^k}{\lambda} \left(\frac{\partial J^k}{\partial x_0} - \sum_{j=1}^{K} \omega^j \frac{\partial J^j}{\partial x_0}\right) + \frac{\partial \pi}{\partial x_0} \]</span></p>
+<p>The control law becomes <span class="math inline">\(u = u^* + F(\hat{x} - x_{sp})\)</span>, allowing for high-bandwidth corrections (<span class="math inline">\(\ge 200\)</span> Hz).</p>
+</section>
+<section id="parallel-imppi" class="level1">
+<h1>Parallel I-MPPI Architecture</h1>
+<p>The hierarchical (sequential) I-MPPI architecture couples Layer 2 and Layer 3 through a <strong>reference trajectory</strong>: Layer 2 plans at 5 Hz, then Layer 3 tracks that trajectory at 50 Hz. This introduces two limitations:</p>
+<ol type="1">
+<li><strong>Latency</strong>: Layer 3 cannot act on new information until the next Layer 2 replan.</li>
+<li><strong>Tight coupling</strong>: Layer 3’s biased sampling is anchored to a single reference, limiting its ability to discover alternative informative paths.</li>
+</ol>
+<p>The <strong>Parallel I-MPPI</strong> architecture eliminates the reference trajectory entirely. Instead, a single MPPI controller runs at 50 Hz and consults an <strong>information potential field</strong> <span class="math inline">\(\mathcal{I}(x, y)\)</span> that is computed concurrently at a lower rate.</p>
+<section id="architecture-overview" class="level2">
+<h2 class="anchored" data-anchor-id="architecture-overview">Architecture Overview</h2>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph TD
+    subgraph FSMI_Loop ["FSMI Field Generator (5–10 Hz)"]
+        Grid[Occupancy Grid] --&gt; VP[Coarse Viewpoint Grid]
+        VP --&gt; FSMI_Eval["vmap: FSMI(x, y, ψ) over grid × yaws"]
+        FSMI_Eval --&gt; MaxYaw["max over ψ"]
+        MaxYaw --&gt; Field["Information Potential Field 𝓘(x, y)"]
+    end
+
+    subgraph MPPI_Loop ["MPPI Controller (50 Hz)"]
+        State["UAV State x₀"] --&gt; Rollouts["K Parallel Rollouts"]
+        Rollouts --&gt; CostEval["Cost Evaluation"]
+        CostEval --&gt; Weights["Importance Weights ω_k"]
+        Weights --&gt; Update["Weighted Average → u*"]
+    end
+
+    Field -.-&gt;|"cached read"| CostEval
+    State -.-&gt;|"latest state"| FSMI_Loop
+    Grid -.-&gt;|"latest grid"| MPPI_Loop
+    Update --&gt; Actuators[/Motor Commands/]
+
+    style FSMI_Loop fill:#e8f5e9,stroke:#1b5e20
+    style MPPI_Loop fill:#fff3e0,stroke:#e65100
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p><strong>Key difference from sequential I-MPPI</strong>: there is no reference trajectory <span class="math inline">\(\tau_{\text{ref}}\)</span> and no biased sampling. MPPI “discovers” informative paths by following the spatial gradient of <span class="math inline">\(\mathcal{I}\)</span>.</p>
+</section>
+<section id="information-potential-field" class="level2">
+<h2 class="anchored" data-anchor-id="information-potential-field">Information Potential Field</h2>
+<p>At low rate (5–10 Hz), the FSMI field generator evaluates FSMI at a coarse grid of candidate viewpoints in the local workspace around the UAV.</p>
+<section id="field-definition" class="level3">
+<h3 class="anchored" data-anchor-id="field-definition">Field Definition</h3>
+<p>For each grid position <span class="math inline">\((x, y)\)</span>, the information potential is the best achievable FSMI over all candidate yaw angles:</p>
+<p><span class="math display">\[
+\mathcal{I}(x, y) = \max_{\psi \in \Psi} \; I_{\text{FSMI}}(x, y, \psi)
+\]</span></p>
+<p>where <span class="math inline">\(\Psi = \{0, \frac{2\pi}{N_\psi}, \dots, \frac{2\pi(N_\psi - 1)}{N_\psi}\}\)</span> is a discrete set of yaw angles.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Yaw-dependent variant
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>When the UAV’s sensor has a limited azimuthal FOV (e.g., forward-facing camera), the field can retain yaw dependence: <span class="math inline">\(\mathcal{I}(x, y, \psi)\)</span>. MPPI rollouts then query with their heading angle, adding yaw-steering incentive to the cost.</p>
+</div>
+</div>
+</section>
+<section id="field-computation-pseudocode" class="level3">
+<h3 class="anchored" data-anchor-id="field-computation-pseudocode">Field Computation Pseudocode</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_info_field(grid_map, uav_pos, field_res, field_extent, yaw_angles):</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Compute information potential field over local workspace.</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co">        grid_map:     current occupancy grid (H, W)</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">        uav_pos:      UAV position (x, y)</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">        field_res:    grid spacing of the field [m]</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">        field_extent: half-width of the local workspace [m]</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">        yaw_angles:   (N_psi,) array of candidate yaw angles</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">        field: (Nx, Ny) information potential field</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">        field_origin: (x0, y0) world coordinates of field[0, 0]</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Build coarse grid of (x, y) positions centered on UAV</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    xs <span class="op">=</span> jnp.arange(<span class="op">-</span>field_extent, field_extent, field_res) <span class="op">+</span> uav_pos[<span class="dv">0</span>]</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    ys <span class="op">=</span> jnp.arange(<span class="op">-</span>field_extent, field_extent, field_res) <span class="op">+</span> uav_pos[<span class="dv">1</span>]</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    positions <span class="op">=</span> jnp.stack(jnp.meshgrid(xs, ys, indexing<span class="op">=</span><span class="st">"ij"</span>), axis<span class="op">=-</span><span class="dv">1</span>)  <span class="co"># (Nx, Ny, 2)</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Evaluate FSMI at every (position, yaw) pair</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># vmap over positions (flattened), then vmap over yaw angles</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    flat_pos <span class="op">=</span> positions.reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">2</span>)                <span class="co"># (Nx*Ny, 2)</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    fsmi_fn <span class="op">=</span> <span class="kw">lambda</span> pos, psi: compute_fsmi(grid_map, pos, psi)</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    fsmi_all <span class="op">=</span> vmap(vmap(fsmi_fn, in_axes<span class="op">=</span>(<span class="va">None</span>, <span class="dv">0</span>)), in_axes<span class="op">=</span>(<span class="dv">0</span>, <span class="va">None</span>))</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    gains <span class="op">=</span> fsmi_all(flat_pos, yaw_angles)             <span class="co"># (Nx*Ny, N_psi)</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Max over yaw → information potential</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    field <span class="op">=</span> gains.<span class="bu">max</span>(axis<span class="op">=-</span><span class="dv">1</span>).reshape(positions.shape[:<span class="dv">2</span>])  <span class="co"># (Nx, Ny)</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    field_origin <span class="op">=</span> jnp.array([xs[<span class="dv">0</span>], ys[<span class="dv">0</span>]])</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> field, field_origin</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Computational budget</strong>: For a <span class="math inline">\(10 \times 10\)</span> m workspace at 0.5 m resolution (<span class="math inline">\(20 \times 20 = 400\)</span> positions) with <span class="math inline">\(N_\psi = 8\)</span> yaw angles, the field requires 3,200 FSMI evaluations — parallelized via <code>vmap</code> on GPU.</p>
+</section>
+</section>
+<section id="mppi-cost-with-field-lookup" class="level2">
+<h2 class="anchored" data-anchor-id="mppi-cost-with-field-lookup">MPPI Cost with Field Lookup</h2>
+<p>The MPPI running cost incorporates the information field via bilinear interpolation at each rollout position:</p>
+<p><span class="math display">\[
+J_{\text{info}}(\mathbf{x}_t) = -\lambda_{\text{info}} \cdot \text{interp}_2\!\big(\mathcal{I},\; p_x(t),\; p_y(t)\big)
+\]</span></p>
+<p>where <span class="math inline">\(\text{interp}_2\)</span> performs bilinear interpolation of the cached field <span class="math inline">\(\mathcal{I}\)</span> at the rollout position <span class="math inline">\((p_x, p_y)\)</span>.</p>
+<section id="combined-cost" class="level3">
+<h3 class="anchored" data-anchor-id="combined-cost">Combined Cost</h3>
+<p>The total per-timestep cost combines the field-based information reward with standard terms:</p>
+<p><span class="math display">\[
+J(\mathbf{x}_t, \mathbf{u}_t) = \underbrace{J_{\text{obs}}}_{\text{obstacles}} + \underbrace{J_{\text{bounds}}}_{\text{workspace}} + \underbrace{J_{\text{control}}}_{\text{effort}} + \underbrace{J_{\text{info}}(\mathbf{x}_t)}_{\text{field lookup}} + \underbrace{J_{\text{local}}(\mathbf{x}_t)}_{\text{Uniform-FSMI}}
+\]</span></p>
+<p>The <strong>field lookup</strong> <span class="math inline">\(J_{\text{info}}\)</span> provides medium-range strategic guidance (which region to fly toward), while the <strong>Uniform-FSMI</strong> term <span class="math inline">\(J_{\text{local}}\)</span> provides immediate viewpoint-specific information (which way to look right now). Together they replace both the target attraction <span class="math inline">\(J_{\text{target}}\)</span> and the biased sampling of sequential I-MPPI.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Why bilinear interpolation?
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The field is computed on a coarse grid (0.5 m spacing), but MPPI rollouts have continuous positions. Bilinear interpolation is <span class="math inline">\(O(1)\)</span> per query — negligible compared to dynamics rollouts — and provides smooth gradients that MPPI can exploit through its importance-weighted averaging.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="main-loop-pseudocode" class="level2">
+<h2 class="anchored" data-anchor-id="main-loop-pseudocode">Main Loop Pseudocode</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> parallel_imppi_loop(state, grid_map, mppi, fsmi_module, config):</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Dual-rate parallel I-MPPI main loop.</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">    MPPI runs every step (50 Hz).</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">    FSMI field recomputes every N steps (5–10 Hz).</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    field <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    field_origin <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> step <span class="kw">in</span> <span class="bu">range</span>(config.max_steps):</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Low-rate: recompute information field ---</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> step <span class="op">%</span> config.field_update_interval <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>            field, field_origin <span class="op">=</span> compute_info_field(</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>                grid_map<span class="op">=</span>grid_map,</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>                uav_pos<span class="op">=</span>state.position[:<span class="dv">2</span>],</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>                field_res<span class="op">=</span>config.field_res,        <span class="co"># e.g., 0.5 m</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>                field_extent<span class="op">=</span>config.field_extent,   <span class="co"># e.g., 5.0 m</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>                yaw_angles<span class="op">=</span>config.yaw_angles,</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- High-rate: MPPI with cached field ---</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> cost_fn(x_traj):</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>            <span class="co">"""Per-rollout cost using cached information field."""</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>            obs_cost <span class="op">=</span> obstacle_cost(x_traj, grid_map)</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>            ctrl_cost <span class="op">=</span> control_cost(x_traj)</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Field lookup: bilinear interpolation at each (x, y)</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>            info_cost <span class="op">=</span> <span class="op">-</span>config.lambda_info <span class="op">*</span> interp2d(</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>                field, field_origin, config.field_res, x_traj[:, :<span class="dv">2</span>]</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Local Uniform-FSMI for immediate viewpoint reward</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>            local_cost <span class="op">=</span> <span class="op">-</span>config.lambda_local <span class="op">*</span> uniform_fsmi(</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>                grid_map, x_traj[<span class="op">-</span><span class="dv">1</span>, :<span class="dv">2</span>], x_traj[<span class="op">-</span><span class="dv">1</span>, <span class="dv">6</span>]  <span class="co"># final yaw</span></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> obs_cost <span class="op">+</span> ctrl_cost <span class="op">+</span> info_cost <span class="op">+</span> local_cost</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>        u_opt <span class="op">=</span> mppi.step(state, cost_fn)</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Apply control and update state ---</span></span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>        state <span class="op">=</span> dynamics(state, u_opt)</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>        grid_map <span class="op">=</span> update_grid_from_observation(grid_map, state)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="dual-rate-scheduling" class="level3">
+<h3 class="anchored" data-anchor-id="dual-rate-scheduling">Dual-Rate Scheduling</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Value</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>MPPI rate</td>
+<td>50 Hz</td>
+<td>Every control step</td>
+</tr>
+<tr class="even">
+<td>Field update rate</td>
+<td>5–10 Hz</td>
+<td>Every 5–10 MPPI steps</td>
+</tr>
+<tr class="odd">
+<td>Field resolution</td>
+<td>0.5 m</td>
+<td>Coarse enough for fast computation</td>
+</tr>
+<tr class="even">
+<td>Field extent</td>
+<td>5–10 m</td>
+<td>Local workspace around UAV</td>
+</tr>
+<tr class="odd">
+<td>Yaw discretization</td>
+<td>8 angles</td>
+<td><span class="math inline">\(45°\)</span> increments</td>
+</tr>
+</tbody>
+</table>
+<p>The field update is <strong>non-blocking</strong> in practice: on GPU, the field computation can overlap with the next MPPI step via asynchronous dispatch. The MPPI controller always reads the latest available field.</p>
+</section>
+</section>
+<section id="sequential-vs-parallel-comparison" class="level2">
+<h2 class="anchored" data-anchor-id="sequential-vs-parallel-comparison">Sequential vs Parallel Comparison</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 42%">
+<col style="width: 42%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Aspect</th>
+<th>Sequential (current)</th>
+<th>Parallel (proposed)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Architecture</strong></td>
+<td>L2 plans <span class="math inline">\(\tau_{\text{ref}}\)</span> → L3 tracks it</td>
+<td>Single MPPI + concurrent field</td>
+</tr>
+<tr class="even">
+<td><strong>Information coupling</strong></td>
+<td>Reference trajectory encodes info</td>
+<td>Spatial potential field <span class="math inline">\(\mathcal{I}(x,y)\)</span></td>
+</tr>
+<tr class="odd">
+<td><strong>MPPI sampling</strong></td>
+<td>Biased toward <span class="math inline">\(\tau_{\text{ref}}\)</span></td>
+<td>Unbiased; field shapes cost landscape</td>
+</tr>
+<tr class="even">
+<td><strong>Latency</strong></td>
+<td>L3 waits for L2 replan (200 ms)</td>
+<td>Field stale by <span class="math inline">\(\le\)</span> 1 update period</td>
+</tr>
+<tr class="odd">
+<td><strong>Path discovery</strong></td>
+<td>Constrained near reference</td>
+<td>MPPI explores full cost landscape</td>
+</tr>
+<tr class="even">
+<td><strong>Compute overlap</strong></td>
+<td>Sequential: L2 then L3</td>
+<td>Concurrent: field + MPPI on GPU</td>
+</tr>
+<tr class="odd">
+<td><strong>Failure mode</strong></td>
+<td>Bad reference → bad tracking</td>
+<td>Stale field → slightly suboptimal</td>
+</tr>
+<tr class="even">
+<td><strong>Yaw planning</strong></td>
+<td>Implicit in reference</td>
+<td>Explicit via field or <span class="math inline">\(J_{\text{local}}\)</span></td>
+</tr>
+<tr class="odd">
+<td><strong>Implementation</strong></td>
+<td>Requires trajectory generator + biased sampling</td>
+<td>Requires field computation + interpolation</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="relation-to-artificial-potential-fields" class="level2">
+<h2 class="anchored" data-anchor-id="relation-to-artificial-potential-fields">Relation to Artificial Potential Fields</h2>
+<p>The information potential field <span class="math inline">\(\mathcal{I}(x, y)\)</span> naturally evokes the <strong>Artificial Potential Field (APF)</strong> framework <span class="citation" data-cites="Khatib1986">(<a href="#ref-Khatib1986" role="doc-biblioref"><strong>Khatib1986?</strong></a>)</span>, where obstacles generate repulsive potentials and goals generate attractive potentials, guiding the robot via gradient descent. Parallel I-MPPI extends this paradigm in three key ways:</p>
+<ol type="1">
+<li><p><strong>Information-driven attraction</strong>: Rather than a fixed goal point, the attractive potential <span class="math inline">\(\mathcal{I}(x, y)\)</span> represents the <em>expected information gain</em> from visiting <span class="math inline">\((x, y)\)</span>, computed via FSMI. The “goal” is emergent — it is wherever the map is most uncertain.</p></li>
+<li><p><strong>Dynamic field evolution</strong>: Unlike static APFs, <span class="math inline">\(\mathcal{I}\)</span> is recomputed at 5–10 Hz as the occupancy grid updates, creating a time-varying potential landscape that naturally depletes as regions are explored. A visited region’s potential diminishes, preventing re-exploration.</p></li>
+<li><p><strong>Stochastic optimization over dynamics</strong>: Instead of instantaneous gradient descent (which is prone to local minima and ignores dynamics), MPPI performs trajectory optimization over the full UAV dynamics, escaping local minima through importance-weighted sampling while respecting control authority limits.</p></li>
+</ol>
+<section id="classical-apf-limitations-and-i-mppi-solutions" class="level3">
+<h3 class="anchored" data-anchor-id="classical-apf-limitations-and-i-mppi-solutions">Classical APF Limitations and I-MPPI Solutions</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 61%">
+<col style="width: 38%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Classical APF Limitation</th>
+<th>I-MPPI Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Local minima traps</td>
+<td>MPPI’s stochastic sampling escapes via exploration noise (<span class="math inline">\(\lambda\)</span>)</td>
+</tr>
+<tr class="even">
+<td>Static potential field</td>
+<td><span class="math inline">\(\mathcal{I}(x,y)\)</span> recomputed at 5–10 Hz as the map updates</td>
+</tr>
+<tr class="odd">
+<td>Oscillations in narrow passages</td>
+<td>Trajectory-level optimization with smooth KMPPI basis functions</td>
+</tr>
+<tr class="even">
+<td>No dynamics consideration</td>
+<td>MPPI rollouts respect full 6-DOF quadrotor dynamics</td>
+</tr>
+<tr class="odd">
+<td>Binary goal attraction</td>
+<td>Continuous information potential that depletes with exploration</td>
+</tr>
+</tbody>
+</table>
+<p>This formulation can be viewed as a <em>thermodynamic APF</em>, where the temperature parameter <span class="math inline">\(\lambda\)</span> controls exploration vs.&nbsp;exploitation, and the free energy <span class="math inline">\(\mathcal{F}\)</span> naturally balances kinetic cost (control effort) with potential cost (information opportunity).</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Intuition for Robotics Readers
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If you are familiar with APF-based planners, think of Parallel I-MPPI as replacing the fixed-goal attractive potential with a <em>learned, dynamic information landscape</em> — and replacing gradient descent with <em>stochastic trajectory sampling</em> that respects full vehicle dynamics. The “Summary: Information as Energy” framing below makes this analogy precise through statistical mechanics.</p>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="summary-information-as-energy" class="level1">
+<h1>Summary: Information as Energy</h1>
+<p>In <strong>I-MPPI</strong>, map uncertainty is treated as a <strong>High Potential Energy</strong> region. The solver naturally seeks to minimize free energy, causing the vehicle to “fall” into informative gravity wells. The information potential field <span class="math inline">\(\mathcal{I}(x, y)\)</span> makes this analogy concrete: it is literally a spatial energy landscape that MPPI descends through importance-weighted sampling.</p>
+<p>The key insight is that this <em>thermodynamic</em> potential field is richer than a classical APF:</p>
+<ul>
+<li>The <strong>temperature</strong> <span class="math inline">\(\lambda\)</span> controls the exploration–exploitation trade-off: high <span class="math inline">\(\lambda\)</span> → broader sampling → more exploration of the cost landscape; low <span class="math inline">\(\lambda\)</span> → greedy descent toward the nearest information well.</li>
+<li>The <strong>free energy</strong> <span class="math inline">\(\mathcal{F}\)</span> naturally balances kinetic cost (control effort, <span class="math inline">\(J_{\text{control}}\)</span>) with potential cost (negative information gain, <span class="math inline">\(J_{\text{info}}\)</span>), without requiring manual gain tuning between attractive and repulsive forces.</li>
+<li>The field <strong>evolves</strong> as the map is updated, so depleted regions lose their attractive pull — the robot is never drawn back to already-explored space.</li>
+</ul>
+<p>Calling it <strong>Informative MPPI</strong> separates the exploration objective from the underlying mathematical solver framework.</p>
+
+
+
+
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-Charrow2015-ub" class="csl-entry" role="listitem">
+Charrow, Benjamin, Gregory Kahn, Sachin Patil, Sikang Liu, Ken Goldberg, Pieter Abbeel, Nathan Michael, and Vijay Kumar. 2015. <span>“Information-Theoretic Planning with Trajectory Optimization for Dense <span>3D</span> Mapping.”</span> In <em>Robotics: Science and Systems XI</em>. Robotics: Science; Systems Foundation. <a href="https://doi.org/10.15607/rss.2015.xi.003">https://doi.org/10.15607/rss.2015.xi.003</a>.
+</div>
+<div id="ref-Zhang2020-gi" class="csl-entry" role="listitem">
+Zhang, Zhengdong, Theia Henderson, Sertac Karaman, and Vivienne Sze. 2020. <span>“<span>FSMI</span>: Fast Computation of Shannon Mutual Information for Information-Theoretic Mapping.”</span> <em>Int. J. Rob. Res.</em> 39 (9): 1155–77. <a href="https://doi.org/10.1177/0278364920921941">https://doi.org/10.1177/0278364920921941</a>.
+</div>
+</div></section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/riccardo-enr\.github\.io\/jax_mppi\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

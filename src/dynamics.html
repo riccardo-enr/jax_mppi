@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>I-MPPI: Informative Model Predictive Path Integral – jax-mppi</title>
+<title>Quadrotor Dynamics – jax-mppi</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -23,24 +23,24 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-0b802d246790ecd80511443f8ae76f95.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-0b802d246790ecd80511443f8ae76f95.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -68,9 +68,6 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
-<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
-<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
-<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
@@ -111,7 +108,7 @@ window.Quarto = {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">jax-mppi</span>
     </a>
   </div>
@@ -122,23 +119,27 @@ window.Quarto = {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link active" href="../index.html" aria-current="page"> 
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./theory.html"> 
+    <a class="nav-link" href="../src/theory.html"> 
 <span class="menu-text">Theory</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./autotuning.html"> 
-<span class="menu-text">Autotuning</span></a>
+    <a class="nav-link" href="../src/dynamics.html"> 
+<span class="menu-text">Dynamics</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./i_mppi.html"> 
+    <a class="nav-link" href="../src/i_mppi.html"> 
 <span class="menu-text">I-MPPI</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./plan/index.html"> 
+    <a class="nav-link" href="../autotuning.html"> 
+<span class="menu-text">Autotuning</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../plan/index.html"> 
 <span class="menu-text">Plans</span></a>
   </li>  
 </ul>
@@ -152,7 +153,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./autotuning.html">Algorithms</a></li><li class="breadcrumb-item"><a href="./i_mppi.html">I-MPPI: Informative Model Predictive Path Integral</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../src/theory.html">Theory</a></li><li class="breadcrumb-item"><a href="../src/dynamics.html">Quadrotor Dynamics</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -183,14 +184,8 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link">
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">jax_mppi</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./theory.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Theoretical Background</span></a>
   </div>
 </li>
       </ul>
@@ -198,7 +193,7 @@ window.Quarto = {
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">Algorithms</span></a>
+ <span class="menu-text">Theory</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -206,14 +201,14 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./autotuning.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Autotuning Guide</span></a>
+  <a href="../src/theory.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Theoretical Background</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./i_mppi.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">I-MPPI: Informative Model Predictive Path Integral</span></a>
+  <a href="../src/dynamics.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Quadrotor Dynamics</span></a>
   </div>
 </li>
       </ul>
@@ -221,7 +216,7 @@ window.Quarto = {
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Examples</span></a>
+ <span class="menu-text">Algorithms</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -229,8 +224,14 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./examples/pendulum.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Pendulum Swing-Up</span></a>
+  <a href="../src/i_mppi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I-MPPI: Informative Model Predictive Path Integral</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../autotuning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autotuning Guide</span></a>
   </div>
 </li>
       </ul>
@@ -238,7 +239,7 @@ window.Quarto = {
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
- <span class="menu-text">Development</span></a>
+ <span class="menu-text">Examples</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -246,13 +247,30 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./testing.html" class="sidebar-item-text sidebar-link">
+  <a href="../examples/pendulum.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Pendulum Swing-Up</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Development</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../testing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Testing Guide</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./releasing.html" class="sidebar-item-text sidebar-link">
+  <a href="../releasing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Releasing Guide</span></a>
   </div>
 </li>
@@ -268,36 +286,34 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#introduction-the-evolution-of-autonomous-exploration" id="toc-introduction-the-evolution-of-autonomous-exploration" class="nav-link active" data-scroll-target="#introduction-the-evolution-of-autonomous-exploration">Introduction: The Evolution of Autonomous Exploration</a></li>
-  <li><a href="#theoretical-foundations-of-i-mppi" id="toc-theoretical-foundations-of-i-mppi" class="nav-link" data-scroll-target="#theoretical-foundations-of-i-mppi">Theoretical Foundations of I-MPPI</a>
+  <li><a href="#state-and-control-spaces" id="toc-state-and-control-spaces" class="nav-link active" data-scroll-target="#state-and-control-spaces">State and Control Spaces</a>
   <ul class="collapse">
-  <li><a href="#optimal-control-duality-free-energy" id="toc-optimal-control-duality-free-energy" class="nav-link" data-scroll-target="#optimal-control-duality-free-energy">Optimal Control Duality &amp; Free Energy</a></li>
+  <li><a href="#state-vector-13d" id="toc-state-vector-13d" class="nav-link" data-scroll-target="#state-vector-13d">State Vector (13D)</a></li>
+  <li><a href="#control-vector-4d" id="toc-control-vector-4d" class="nav-link" data-scroll-target="#control-vector-4d">Control Vector (4D)</a></li>
   </ul></li>
-  <li><a href="#information-metrics-fsmi" id="toc-information-metrics-fsmi" class="nav-link" data-scroll-target="#information-metrics-fsmi">Information Metrics: FSMI</a>
+  <li><a href="#equations-of-motion" id="toc-equations-of-motion" class="nav-link" data-scroll-target="#equations-of-motion">Equations of Motion</a>
   <ul class="collapse">
-  <li><a href="#shannon-mutual-information" id="toc-shannon-mutual-information" class="nav-link" data-scroll-target="#shannon-mutual-information">Shannon Mutual Information</a></li>
-  <li><a href="#fast-shannon-mutual-information-fsmi" id="toc-fast-shannon-mutual-information-fsmi" class="nav-link" data-scroll-target="#fast-shannon-mutual-information-fsmi">Fast Shannon Mutual Information (FSMI)</a></li>
+  <li><a href="#translational-dynamics" id="toc-translational-dynamics" class="nav-link" data-scroll-target="#translational-dynamics">Translational Dynamics</a></li>
+  <li><a href="#quaternion-kinematics" id="toc-quaternion-kinematics" class="nav-link" data-scroll-target="#quaternion-kinematics">Quaternion Kinematics</a></li>
+  <li><a href="#rotation-matrix" id="toc-rotation-matrix" class="nav-link" data-scroll-target="#rotation-matrix">Rotation Matrix</a></li>
+  <li><a href="#rotational-dynamics" id="toc-rotational-dynamics" class="nav-link" data-scroll-target="#rotational-dynamics">Rotational Dynamics</a></li>
   </ul></li>
-  <li><a href="#hierarchical-architecture" id="toc-hierarchical-architecture" class="nav-link" data-scroll-target="#hierarchical-architecture">Hierarchical Architecture</a></li>
-  <li><a href="#feedback-mppi-sensitivity-analysis" id="toc-feedback-mppi-sensitivity-analysis" class="nav-link" data-scroll-target="#feedback-mppi-sensitivity-analysis">Feedback-MPPI &amp; Sensitivity Analysis</a></li>
-  <li><a href="#implementation-experimental-results" id="toc-implementation-experimental-results" class="nav-link" data-scroll-target="#implementation-experimental-results">Implementation &amp; Experimental Results</a>
+  <li><a href="#numerical-integration" id="toc-numerical-integration" class="nav-link" data-scroll-target="#numerical-integration">Numerical Integration</a>
   <ul class="collapse">
-  <li><a href="#exploration-campaign" id="toc-exploration-campaign" class="nav-link" data-scroll-target="#exploration-campaign">Exploration Campaign</a>
-  <ul class="collapse">
-  <li><a href="#hierarchical-architecture-specification" id="toc-hierarchical-architecture-specification" class="nav-link" data-scroll-target="#hierarchical-architecture-specification">Hierarchical Architecture Specification</a></li>
-  <li><a href="#performance-comparison" id="toc-performance-comparison" class="nav-link" data-scroll-target="#performance-comparison">Performance Comparison</a></li>
+  <li><a href="#rk4-step" id="toc-rk4-step" class="nav-link" data-scroll-target="#rk4-step">RK4 Step</a></li>
+  <li><a href="#quaternion-renormalization" id="toc-quaternion-renormalization" class="nav-link" data-scroll-target="#quaternion-renormalization">Quaternion Renormalization</a></li>
   </ul></li>
-  </ul></li>
-  <li><a href="#summary-information-as-energy" id="toc-summary-information-as-energy" class="nav-link" data-scroll-target="#summary-information-as-energy">Summary: Information as Energy</a></li>
+  <li><a href="#augmented-state-for-i-mppi" id="toc-augmented-state-for-i-mppi" class="nav-link" data-scroll-target="#augmented-state-for-i-mppi">Augmented State for I-MPPI</a></li>
+  <li><a href="#parameters" id="toc-parameters" class="nav-link" data-scroll-target="#parameters">Parameters</a></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./autotuning.html">Algorithms</a></li><li class="breadcrumb-item"><a href="./i_mppi.html">I-MPPI: Informative Model Predictive Path Integral</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../src/theory.html">Theory</a></li><li class="breadcrumb-item"><a href="../src/dynamics.html">Quadrotor Dynamics</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">I-MPPI: Informative Model Predictive Path Integral</h1>
+<h1 class="title">Quadrotor Dynamics</h1>
 </div>
 
 
@@ -314,159 +330,246 @@ window.Quarto = {
 </header>
 
 
-<section id="introduction-the-evolution-of-autonomous-exploration" class="level1">
-<h1>Introduction: The Evolution of Autonomous Exploration</h1>
-<p>The field of autonomous Unmanned Aerial Vehicle (UAV) exploration has transitioned from simple geometric coverage to complex, information-driven strategic maneuvers. In unstructured environments, a robot faces a fundamental duality: the global coverage problem (“where to go”) and the reactive control problem (“how to move safely”). Traditional approaches often decouple these modules, resulting in “myopic” local planners that fail to escape local minima of uncertainty, or deterministic global planners that produce coarse, “jagged” paths unsuitable for the high-speed, non-linear dynamics of agile flight.</p>
-<p>This document describes the <strong>Hierarchical Informative Model Predictive Path Integral (I-MPPI)</strong> framework. This architecture synthesizes global strategic planning, analytical viewpoint refinement via Fast Shannon Mutual Information (FSMI), and reactive Biased-MPPI control with sensitivity-based feedback.</p>
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Repository Scope
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>The focus of this repository is the high-performance CUDA implementation of <strong>Layer 2 (Local Refinement)</strong> and <strong>Layer 3/4 (Reactive Control)</strong>. The <strong>Global Planner (Layer 1)</strong>, such as FUEL, is considered an external input that provides the mission context and global waypoints.</p>
-</div>
-</div>
-</section>
-<section id="theoretical-foundations-of-i-mppi" class="level1">
-<h1>Theoretical Foundations of I-MPPI</h1>
-<p>Model Predictive Path Integral (MPPI) control is a sampling-based stochastic optimal control method that optimizes control sequences without requiring explicit gradients of the dynamics. Formally, the MPPI algorithm can be derived as a solution to an optimal control problem that minimizes the Kullback-Leibler (KL) divergence between a controlled trajectory distribution and an optimal distribution defined by the cost function.</p>
-<section id="optimal-control-duality-free-energy" class="level2">
-<h2 class="anchored" data-anchor-id="optimal-control-duality-free-energy">Optimal Control Duality &amp; Free Energy</h2>
-<p>The mathematical derivation of the MPPI algorithm is rooted in the definition of the <strong>free energy</strong> of the dynamical system. The value function <span class="math inline">\(V(x, t)\)</span> of a stochastic system can be linearized through a logarithmic transformation, leading to the Path Integral formulation. The <strong>Free Energy</strong> (<span class="math inline">\(\mathcal{F}\)</span>) of the dynamical system is defined as:</p>
-<p><span class="math display">\[ \mathcal{F}(x_0) = -\lambda \log \mathbb{E}_{\mathbb{P}} \left[ \exp \left( -\frac{1}{\lambda} S(\tau) \right) \right] \]</span></p>
+<p>This section documents the 6-DOF quadrotor dynamics model used for trajectory rollouts in <code>jax_mppi</code>. The implementation follows the <strong>NED-FRD</strong> convention:</p>
 <ul>
-<li><span class="math inline">\(\tau\)</span>: The state-control trajectory <span class="math inline">\(\{x_0, u_0, x_1, u_1, \dots, x_T\}\)</span>.</li>
-<li><span class="math inline">\(\mathbb{P}\)</span>: The base distribution, representing the stochastic trajectories of the “passive” system.</li>
-<li><span class="math inline">\(S(\tau)\)</span>: The cumulative cost (Action) of a trajectory <span class="math inline">\(\tau\)</span>.</li>
-<li><span class="math inline">\(\lambda\)</span>: The temperature parameter, representing the noise variance.</li>
+<li><strong>NED</strong> (North-East-Down): world/global frame where the Z-axis points downward</li>
+<li><strong>FRD</strong> (Forward-Right-Down): body frame where X points forward, Y right, Z down</li>
 </ul>
-<p>The “optimal trajectory” is the mean of the distribution <span class="math inline">\(\mathbb{Q}^*\)</span> that minimizes the KL-divergence to the distribution of “low-cost” paths, leading to the thermodynamic weight update rule:</p>
-<p><span class="math display">\[ \omega^k = \frac{\exp\left(-\frac{1}{\lambda}(J^k - \rho)\right)}{\sum_{j=1}^{K} \exp\left(-\frac{1}{\lambda}(J^j - \rho)\right)} \]</span></p>
+<section id="state-and-control-spaces" class="level2">
+<h2 class="anchored" data-anchor-id="state-and-control-spaces">State and Control Spaces</h2>
+<section id="state-vector-13d" class="level3">
+<h3 class="anchored" data-anchor-id="state-vector-13d">State Vector (13D)</h3>
+<p><span class="math display">\[
+\mathbf{x} = \begin{bmatrix} \mathbf{p} \\ \mathbf{v} \\ \mathbf{q} \\ \boldsymbol{\omega} \end{bmatrix} \in \mathbb{R}^{13}
+\]</span></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 16%">
+<col style="width: 22%">
+<col style="width: 14%">
+<col style="width: 26%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Symbol</th>
+<th>Dimension</th>
+<th>Frame</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Position</td>
+<td><span class="math inline">\(\mathbf{p} = [p_x, p_y, p_z]^T\)</span></td>
+<td>3</td>
+<td>NED world</td>
+<td>Cartesian position</td>
+</tr>
+<tr class="even">
+<td>Velocity</td>
+<td><span class="math inline">\(\mathbf{v} = [v_x, v_y, v_z]^T\)</span></td>
+<td>3</td>
+<td>NED world</td>
+<td>Linear velocity</td>
+</tr>
+<tr class="odd">
+<td>Quaternion</td>
+<td><span class="math inline">\(\mathbf{q} = [q_w, q_x, q_y, q_z]^T\)</span></td>
+<td>4</td>
+<td>Body→World</td>
+<td>Orientation (unit norm)</td>
+</tr>
+<tr class="even">
+<td>Angular velocity</td>
+<td><span class="math inline">\(\boldsymbol{\omega} = [\omega_x, \omega_y, \omega_z]^T\)</span></td>
+<td>3</td>
+<td>FRD body</td>
+<td>Angular rates</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="control-vector-4d" class="level3">
+<h3 class="anchored" data-anchor-id="control-vector-4d">Control Vector (4D)</h3>
+<p><span class="math display">\[
+\mathbf{u} = \begin{bmatrix} T \\ \omega_x^{cmd} \\ \omega_y^{cmd} \\ \omega_z^{cmd} \end{bmatrix} \in \mathbb{R}^4
+\]</span></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 27%">
+<col style="width: 32%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Description</th>
+<th>Default Bounds</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(T\)</span></td>
+<td>Thrust magnitude (acts in <span class="math inline">\(-\mathbf{z}_B\)</span> direction, i.e.&nbsp;upward in FRD)</td>
+<td><span class="math inline">\([0,\; 4mg]\)</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(\omega_x^{cmd}\)</span></td>
+<td>Roll rate command</td>
+<td><span class="math inline">\([-10,\; 10]\)</span> rad/s</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(\omega_y^{cmd}\)</span></td>
+<td>Pitch rate command</td>
+<td><span class="math inline">\([-10,\; 10]\)</span> rad/s</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(\omega_z^{cmd}\)</span></td>
+<td>Yaw rate command</td>
+<td><span class="math inline">\([-10,\; 10]\)</span> rad/s</td>
+</tr>
+</tbody>
+</table>
 </section>
 </section>
-<section id="information-metrics-fsmi" class="level1">
-<h1>Information Metrics: FSMI</h1>
-<p>To quantify how future measurements will reduce map uncertainty, we define a Unified Cost Function <span class="math inline">\(J(\tau)\)</span> that balances dynamical effort with information reward:</p>
+<section id="equations-of-motion" class="level2">
+<h2 class="anchored" data-anchor-id="equations-of-motion">Equations of Motion</h2>
+<section id="translational-dynamics" class="level3">
+<h3 class="anchored" data-anchor-id="translational-dynamics">Translational Dynamics</h3>
+<p>The translational acceleration in the NED world frame is:</p>
+<p><span class="math display">\[
+\dot{\mathbf{v}} = \frac{1}{m}\left(\mathbf{f}_g + \mathbf{R}(\mathbf{q})\,\mathbf{f}_T\right)
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(\mathbf{f}_g = [0,\; 0,\; mg]^T\)</span> is gravity (positive-<span class="math inline">\(z\)</span> = downward in NED)</li>
+<li><span class="math inline">\(\mathbf{f}_T = [0,\; 0,\; -T]^T\)</span> is thrust in the body frame (upward in FRD)</li>
+<li><span class="math inline">\(\mathbf{R}(\mathbf{q})\)</span> rotates from body FRD to world NED</li>
+</ul>
+<p>Position evolves as <span class="math inline">\(\dot{\mathbf{p}} = \mathbf{v}\)</span>.</p>
+</section>
+<section id="quaternion-kinematics" class="level3">
+<h3 class="anchored" data-anchor-id="quaternion-kinematics">Quaternion Kinematics</h3>
+<p>The quaternion derivative relates angular velocity in the body frame to orientation change:</p>
+<p><span class="math display">\[
+\dot{\mathbf{q}} = \frac{1}{2}\,\boldsymbol{\Omega}(\boldsymbol{\omega})\,\mathbf{q}
+\]</span></p>
+<p>where <span class="math inline">\(\boldsymbol{\Omega}(\boldsymbol{\omega})\)</span> is the quaternion multiplication matrix. Expanding component-wise:</p>
 <p><span class="math display">\[
 \begin{aligned}
-J(\tau) &amp;= \left[\phi(x_T) + \sum_{t=0}^{T-1} \mathcal{L}_{motion}(x_t, u_t)\right] - \lambda_{info} \sum_{t=0}^{T-1} I(M; \mathcal{Z}_t \mid x_t)
+\dot{q}_w &amp;= -\tfrac{1}{2}(\omega_x q_x + \omega_y q_y + \omega_z q_z) \\
+\dot{q}_x &amp;= \phantom{-}\tfrac{1}{2}(\omega_x q_w + \omega_z q_y - \omega_y q_z) \\
+\dot{q}_y &amp;= \phantom{-}\tfrac{1}{2}(\omega_y q_w - \omega_z q_x + \omega_x q_z) \\
+\dot{q}_z &amp;= \phantom{-}\tfrac{1}{2}(\omega_z q_w + \omega_y q_x - \omega_x q_y)
 \end{aligned}
 \]</span></p>
-<section id="shannon-mutual-information" class="level2">
-<h2 class="anchored" data-anchor-id="shannon-mutual-information">Shannon Mutual Information</h2>
-<p>The informative reward is the <strong>Shannon Mutual Information (MI)</strong> between the map <span class="math inline">\(M\)</span> and a future sensor measurement <span class="math inline">\(Z\)</span>: <span class="math display">\[ I(M; Z) = H(M) - H(M|Z) \]</span> where <span class="math inline">\(H(M)\)</span> is the map entropy. High MI indicates regions of unknown space or uncertain areas.</p>
 </section>
-<section id="fast-shannon-mutual-information-fsmi" class="level2">
-<h2 class="anchored" data-anchor-id="fast-shannon-mutual-information-fsmi">Fast Shannon Mutual Information (FSMI)</h2>
-<p>Computing Shannon MI analytically for a sensor beam involves:</p>
-<ol type="1">
-<li><strong>Raycasting</strong>: Cast a ray intersecting <span class="math inline">\(n\)</span> cells with occupancy <span class="math inline">\(o_i\)</span>.</li>
-<li><strong>Visibility (<span class="math inline">\(P(e_j)\)</span>)</strong>: Probability that the beam reaches cell <span class="math inline">\(j\)</span>: <span class="math display">\[ P(e_j) = o_j \prod_{k=1}^{j-1} (1 - o_k) \]</span></li>
-<li><strong>Information Density (<span class="math inline">\(C_k\)</span>)</strong>: Cumulative info gain based on inverse sensor model.</li>
-<li><strong>Analytic Summation</strong>: <span class="math display">\[ I_{FSMI} = \sum_{j=0}^{n} \sum_{k=1}^{n} P(e_j) C_k G_{k,j} \]</span></li>
-</ol>
-<p>The <strong>Uniform-FSMI</strong> variant simplifies this to <span class="math inline">\(O(n)\)</span> complexity: <span class="math display">\[ I \approx \sum_{j=0}^{n} P(e_j) \frac{D_{j+H} - D_{j-H-1}}{2H + 1} \]</span></p>
+<section id="rotation-matrix" class="level3">
+<h3 class="anchored" data-anchor-id="rotation-matrix">Rotation Matrix</h3>
+<p>The rotation matrix <span class="math inline">\(\mathbf{R}(\mathbf{q})\)</span> from body FRD to world NED is:</p>
+<p><span class="math display">\[
+\mathbf{R} = \begin{bmatrix}
+1 - 2(q_y^2 + q_z^2) &amp; 2(q_xq_y - q_wq_z) &amp; 2(q_xq_z + q_wq_y) \\
+2(q_xq_y + q_wq_z) &amp; 1 - 2(q_x^2 + q_z^2) &amp; 2(q_yq_z - q_wq_x) \\
+2(q_xq_z - q_wq_y) &amp; 2(q_yq_z + q_wq_x) &amp; 1 - 2(q_x^2 + q_y^2)
+\end{bmatrix}
+\]</span></p>
 </section>
-</section>
-<section id="hierarchical-architecture" class="level1">
-<h1>Hierarchical Architecture</h1>
-<p>I-MPPI employs a three-layer GNC stack:</p>
-<div class="cell" data-layout-align="default">
-<div class="cell-output-display">
-<div>
-<p></p><figure class="figure"><p></p>
-<div>
-<pre class="mermaid mermaid-js">graph TD
-    subgraph L1 [Layer 1: Global Guidance - FUEL ~1 Hz]
-        FIS[Frontier Information Structure] --&gt; TSP[TSP Solver]
-        TSP --&gt; Waypoints[Global Waypoints]
-    end
-
-    subgraph L2 [Layer 2: Local Refinement ~5-10 Hz]
-        Waypoints --&gt; VO[Viewpoint Optimization]
-        VO --&gt; FSMI_Metric[FSMI Reward]
-        FSMI_Metric --&gt; RefTraj[Informed Reference Trajectory τ_ref]
-    end
-
-    subgraph L3 [Layer 3: Reactive Control - Biased-MPPI ~50 Hz]
-        RefTraj --&gt; Mixture[Mixture Sampling Distribution]
-        Mixture --&gt; MPPI_Opt[Parallel CUDA Rollouts]
-        MPPI_Opt --&gt; NomControl[Optimal Control u*]
-    end
-
-    subgraph L4 [Feedback Layer: Feedback-MPPI ≥ 200 Hz]
-        MPPI_Opt --&gt; Sens[Sensitivity Analysis ∂u*/∂x₀]
-        Sens --&gt; Gains[Feedback Gains F]
-        Gains --&gt; FinalControl[Control Law: u* + FΔx]
-    end
-
-    %% Data Flow &amp; Environment
-    Map[(Occupancy Grid)] -.-&gt; FIS
-    Map -.-&gt; FSMI_Metric
-    State[UAV State x₀] --&gt; L3
-    State --&gt; L4
-    FinalControl --&gt; Actuators[/Motor Commands/]
-
-    %% Styling
-    style L1 fill:#e1f5fe,stroke:#01579b
-    style L2 fill:#e8f5e9,stroke:#1b5e20
-    style L3 fill:#fff3e0,stroke:#e65100
-    style L4 fill:#fce4ec,stroke:#880e4f
-    style Map fill:#f3e5f5,stroke:#4a148c
-</pre>
-</div>
-<p></p></figure><p></p>
-</div>
-</div>
-</div>
-<ol type="1">
-<li><strong>Layer 1: Global Guidance (FUEL)</strong>: Maintains a Frontier Information Structure (FIS) and generates global waypoints via TSP.</li>
-<li><strong>Layer 2: Local Refinement</strong>: Refines global paths into an Informed Reference Trajectory <span class="math inline">\((\tau_{ref})\)</span> maximizing info gain.</li>
-<li><strong>Layer 3: Reactive Control (Biased-MPPI)</strong>: Uses a mixture distribution: <span class="math display">\[ \mathbb{Q}_s = (1-\alpha)\mathcal{N}(\bar{u}, \Sigma) + \alpha \mathbb{Q}_{biased} \]</span> where <span class="math inline">\(\mathbb{Q}_{biased}\)</span> is centered on <span class="math inline">\(\tau_{ref}\)</span>.</li>
-</ol>
-</section>
-<section id="feedback-mppi-sensitivity-analysis" class="level1">
-<h1>Feedback-MPPI &amp; Sensitivity Analysis</h1>
-<p>To support agile maneuvers, F-MPPI computes local linear feedback gains <span class="math inline">\(F\)</span> derived from sensitivity analysis:</p>
-<p><span class="math display">\[ F = \frac{\partial u^*}{\partial x_0} = \sum_{k=0}^{K} \frac{\partial \pi}{\partial \theta} \Delta \theta^k \frac{\omega^k}{\lambda} \left(\frac{\partial J^k}{\partial x_0} - \sum_{j=1}^{K} \omega^j \frac{\partial J^j}{\partial x_0}\right) + \frac{\partial \pi}{\partial x_0} \]</span></p>
-<p>The control law becomes <span class="math inline">\(u = u^* + F(\hat{x} - x_{sp})\)</span>, allowing for high-bandwidth corrections (<span class="math inline">\(\ge 200\)</span> Hz).</p>
-</section>
-<section id="implementation-experimental-results" class="level1">
-<h1>Implementation &amp; Experimental Results</h1>
-<p>The I-MPPI controller is implemented in CUDA, leveraging parallel rollouts to evaluate hundreds of trajectories simultaneously. The <code>FSMICost</code> functor performs real-time raycasting against a GPU-resident occupancy grid.</p>
-<section id="exploration-campaign" class="level2">
-<h2 class="anchored" data-anchor-id="exploration-campaign">Exploration Campaign</h2>
-<p>To verify the effectiveness of the informative reward, we conducted a simulation campaign in a “corridor with a hole” scenario. Both controllers are tasked with reaching a common goal at <span class="math inline">\((9, 5)\)</span>. The map contains two high-entropy “unknown” zones located away from the direct path.</p>
-<section id="hierarchical-architecture-specification" class="level3">
-<h3 class="anchored" data-anchor-id="hierarchical-architecture-specification">Hierarchical Architecture Specification</h3>
-<p>The goal for the I-MPPI simulation is to verify the effectiveness of the implementation of layer 2 and layer 3 of the hierarchical architecture.</p>
-<p>A higher-level <strong>FSMI-driven trajectory generator</strong> should precede the I-MPPI module. - <strong>Frequency</strong>: Runs at a lower rate (1-5 Hz). - <strong>Logic</strong>: 1. <strong>Explore Area 1</strong>: Prioritize regions with high information interest and lower dynamical cost. 2. <strong>Transition</strong>: As Area 1 is explored, its information value drops to zero. 3. <strong>Explore Area 2</strong>: Move to the next area of interest. 4. <strong>Drive to Goal</strong>: When information cost is depleted, drive to the goal minimizing only the dynamical cost.</p>
-<ul>
-<li><p><strong>Standard MPPI</strong>: Simply moves towards the target, ignoring the high-entropy regions.</p></li>
-<li><p><strong>Informative MPPI</strong>: Proactively deviates from the shortest path to explore the unknown areas, gathering information before proceeding to the goal.</p></li>
-<li><p>The two zones are marked with <strong>Yellow Rectangles</strong>. They should have a high importance in the cost function. But after they get explored, their importance should decrease, thus the I-MPPI is free to move towards the goal. This should simulate the behaviour of the FSMI only trajectory refiner which gives a goal taking into account the uncertainty of the map.</p></li>
-</ul>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="../_media/imppi_campaign.png" class="img-fluid figure-img"></p>
-<figcaption>I-MPPI Exploration Campaign. The heatmap shows the cost field (darker is better). The <strong>Gold Star</strong> is the common goal. <strong>Yellow Rectangles</strong> denote high-interest (unknown) zones. The <strong>Cyan Lines</strong> represent walls. Standard MPPI (black dashed) goes direct, while Informative MPPI (white solid) deviates to explore both blobs before reaching the goal.</figcaption>
-</figure>
-</div>
-</section>
-<section id="performance-comparison" class="level3">
-<h3 class="anchored" data-anchor-id="performance-comparison">Performance Comparison</h3>
-<p>The Informative MPPI demonstrates a clear bias towards high-entropy regions of the map. By minimizing the Unified Cost Function, the controller naturally seeks out viewpoints that maximize sensor coverage of unknown space, effectively “falling” into informative gravity wells as predicted by the theory.</p>
+<section id="rotational-dynamics" class="level3">
+<h3 class="anchored" data-anchor-id="rotational-dynamics">Rotational Dynamics</h3>
+<p>The angular velocity is modeled as a <strong>first-order system</strong> tracking the commanded rates:</p>
+<p><span class="math display">\[
+\dot{\boldsymbol{\omega}} = \frac{\boldsymbol{\omega}^{cmd} - \boldsymbol{\omega}}{\tau_\omega}
+\]</span></p>
+<p>where <span class="math inline">\(\tau_\omega\)</span> is the angular velocity time constant (default 0.05 s). This simplified model abstracts away the full Euler equations and motor dynamics, assuming a fast inner-loop attitude controller.</p>
 </section>
 </section>
+<section id="numerical-integration" class="level2">
+<h2 class="anchored" data-anchor-id="numerical-integration">Numerical Integration</h2>
+<section id="rk4-step" class="level3">
+<h3 class="anchored" data-anchor-id="rk4-step">RK4 Step</h3>
+<p>The continuous-time dynamics <span class="math inline">\(\dot{\mathbf{x}} = g(\mathbf{x}, \mathbf{u})\)</span> are integrated using the classical 4th-order Runge-Kutta method:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\mathbf{k}_1 &amp;= g(\mathbf{x}_t, \mathbf{u}_t) \\
+\mathbf{k}_2 &amp;= g(\mathbf{x}_t + \tfrac{\Delta t}{2}\mathbf{k}_1, \mathbf{u}_t) \\
+\mathbf{k}_3 &amp;= g(\mathbf{x}_t + \tfrac{\Delta t}{2}\mathbf{k}_2, \mathbf{u}_t) \\
+\mathbf{k}_4 &amp;= g(\mathbf{x}_t + \Delta t\,\mathbf{k}_3, \mathbf{u}_t) \\[4pt]
+\mathbf{x}_{t+1} &amp;= \mathbf{x}_t + \frac{\Delta t}{6}(\mathbf{k}_1 + 2\mathbf{k}_2 + 2\mathbf{k}_3 + \mathbf{k}_4)
+\end{aligned}
+\]</span></p>
 </section>
-<section id="summary-information-as-energy" class="level1">
-<h1>Summary: Information as Energy</h1>
-<p>In <strong>I-MPPI</strong>, map uncertainty is treated as a <strong>High Potential Energy</strong> region. The solver naturally seeks to minimize free energy, causing the vehicle to “fall” into informative gravity wells. Calling it <strong>Informative MPPI</strong> separates the exploration objective from the underlying mathematical solver framework.</p>
+<section id="quaternion-renormalization" class="level3">
+<h3 class="anchored" data-anchor-id="quaternion-renormalization">Quaternion Renormalization</h3>
+<p>After each RK4 step, the quaternion component is renormalized to maintain the unit-norm constraint:</p>
+<p><span class="math display">\[
+\mathbf{q}_{t+1} \leftarrow \frac{\mathbf{q}_{t+1}}{\|\mathbf{q}_{t+1}\| + \varepsilon}
+\]</span></p>
+<p>with <span class="math inline">\(\varepsilon = 10^{-8}\)</span> for numerical safety. This is necessary because RK4 does not preserve the constraint <span class="math inline">\(\|\mathbf{q}\| = 1\)</span> exactly.</p>
+</section>
+</section>
+<section id="augmented-state-for-i-mppi" class="level2">
+<h2 class="anchored" data-anchor-id="augmented-state-for-i-mppi">Augmented State for I-MPPI</h2>
+<p>For informative path planning (I-MPPI), the quadrotor state is augmented with <strong>information zone levels</strong>, yielding a 16D state vector:</p>
+<p><span class="math display">\[
+\mathbf{x}_{\text{aug}} = \begin{bmatrix} \mathbf{x}_{\text{quad}} \\ \mathbf{i} \end{bmatrix} \in \mathbb{R}^{16}
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{i} = [i_1, i_2, i_3]^T\)</span> tracks the remaining information content of each zone (<span class="math inline">\(i_j \in [0, 100]\)</span>).</p>
+<p>The augmented dynamics are:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\mathbf{x}_{\text{quad}}^{(t+1)} &amp;= f_{\text{RK4}}(\mathbf{x}_{\text{quad}}^{(t)}, \mathbf{u}^{(t)}) \\
+i_j^{(t+1)} &amp;= i_j^{(t)} \left(1 - \alpha \cdot c_j^{(t)}\right)
+\end{aligned}
+\]</span></p>
+<p>where <span class="math inline">\(\alpha\)</span> is the depletion rate and <span class="math inline">\(c_j^{(t)} \in [0, 1]\)</span> is the FOV coverage of zone <span class="math inline">\(j\)</span> at time <span class="math inline">\(t\)</span>. See the <a href="../src/i_mppi.html#information-zone-depletion">I-MPPI documentation</a> for details on the coverage and depletion model.</p>
+</section>
+<section id="parameters" class="level2">
+<h2 class="anchored" data-anchor-id="parameters">Parameters</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 26%">
+<col style="width: 19%">
+<col style="width: 21%">
+<col style="width: 31%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Symbol</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Mass</td>
+<td><span class="math inline">\(m\)</span></td>
+<td>1.0 kg</td>
+<td>Quadrotor mass</td>
+</tr>
+<tr class="even">
+<td>Gravity</td>
+<td><span class="math inline">\(g\)</span></td>
+<td>9.81 m/s<span class="math inline">\(^2\)</span></td>
+<td>Gravitational acceleration (positive down in NED)</td>
+</tr>
+<tr class="odd">
+<td>Angular time constant</td>
+<td><span class="math inline">\(\tau_\omega\)</span></td>
+<td>0.05 s</td>
+<td>First-order rate tracking bandwidth</td>
+</tr>
+<tr class="even">
+<td>Integration step</td>
+<td><span class="math inline">\(\Delta t\)</span></td>
+<td>0.01 s</td>
+<td>RK4 time step</td>
+</tr>
+</tbody>
+</table>
 
 
 

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>theory – jax-mppi</title>
+<title>Theoretical Background – jax-mppi</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -23,24 +23,24 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-0b802d246790ecd80511443f8ae76f95.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-0b802d246790ecd80511443f8ae76f95.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -108,7 +108,7 @@ window.Quarto = {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">jax-mppi</span>
     </a>
   </div>
@@ -119,23 +119,27 @@ window.Quarto = {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link active" href="../index.html" aria-current="page"> 
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./theory.html"> 
+    <a class="nav-link" href="../src/theory.html"> 
 <span class="menu-text">Theory</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./autotuning.html"> 
-<span class="menu-text">Autotuning</span></a>
+    <a class="nav-link" href="../src/dynamics.html"> 
+<span class="menu-text">Dynamics</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./i_mppi.html"> 
+    <a class="nav-link" href="../src/i_mppi.html"> 
 <span class="menu-text">I-MPPI</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./plan/index.html"> 
+    <a class="nav-link" href="../autotuning.html"> 
+<span class="menu-text">Autotuning</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../plan/index.html"> 
 <span class="menu-text">Plans</span></a>
   </li>  
 </ul>
@@ -149,7 +153,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./theory.html">Theoretical Background</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../src/theory.html">Theory</a></li><li class="breadcrumb-item"><a href="../src/theory.html">Theoretical Background</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -180,14 +184,8 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link">
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">jax_mppi</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./theory.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Theoretical Background</span></a>
   </div>
 </li>
       </ul>
@@ -195,7 +193,7 @@ window.Quarto = {
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">Algorithms</span></a>
+ <span class="menu-text">Theory</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -203,14 +201,14 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./autotuning.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Autotuning Guide</span></a>
+  <a href="../src/theory.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Theoretical Background</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./i_mppi.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">I-MPPI: Informative Model Predictive Path Integral</span></a>
+  <a href="../src/dynamics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Quadrotor Dynamics</span></a>
   </div>
 </li>
       </ul>
@@ -218,7 +216,7 @@ window.Quarto = {
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Examples</span></a>
+ <span class="menu-text">Algorithms</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -226,8 +224,14 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./examples/pendulum.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Pendulum Swing-Up</span></a>
+  <a href="../src/i_mppi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I-MPPI: Informative Model Predictive Path Integral</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../autotuning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autotuning Guide</span></a>
   </div>
 </li>
       </ul>
@@ -235,7 +239,7 @@ window.Quarto = {
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
- <span class="menu-text">Development</span></a>
+ <span class="menu-text">Examples</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -243,13 +247,30 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./testing.html" class="sidebar-item-text sidebar-link">
+  <a href="../examples/pendulum.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Pendulum Swing-Up</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Development</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../testing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Testing Guide</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./releasing.html" class="sidebar-item-text sidebar-link">
+  <a href="../releasing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Releasing Guide</span></a>
   </div>
 </li>
@@ -265,9 +286,7 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#theoretical-background" id="toc-theoretical-background" class="nav-link active" data-scroll-target="#theoretical-background">Theoretical Background</a>
-  <ul class="collapse">
-  <li><a href="#standard-mppi" id="toc-standard-mppi" class="nav-link" data-scroll-target="#standard-mppi">Standard MPPI</a>
+  <li><a href="#standard-mppi" id="toc-standard-mppi" class="nav-link active" data-scroll-target="#standard-mppi">Standard MPPI</a>
   <ul class="collapse">
   <li><a href="#stochastic-optimal-control-problem" id="toc-stochastic-optimal-control-problem" class="nav-link" data-scroll-target="#stochastic-optimal-control-problem">Stochastic Optimal Control Problem</a></li>
   <li><a href="#information-theoretic-derivation" id="toc-information-theoretic-derivation" class="nav-link" data-scroll-target="#information-theoretic-derivation">Information Theoretic Derivation</a></li>
@@ -275,26 +294,43 @@ window.Quarto = {
   </ul></li>
   <li><a href="#smooth-mppi-smppi" id="toc-smooth-mppi-smppi" class="nav-link" data-scroll-target="#smooth-mppi-smppi">Smooth MPPI (SMPPI)</a>
   <ul class="collapse">
-  <li><a href="#state-augmentation" id="toc-state-augmentation" class="nav-link" data-scroll-target="#state-augmentation">State Augmentation</a></li>
+  <li><a href="#lifted-control-space" id="toc-lifted-control-space" class="nav-link" data-scroll-target="#lifted-control-space">Lifted Control Space</a></li>
+  <li><a href="#perturbation-and-effective-noise" id="toc-perturbation-and-effective-noise" class="nav-link" data-scroll-target="#perturbation-and-effective-noise">Perturbation and Effective Noise</a></li>
   <li><a href="#smoothness-cost" id="toc-smoothness-cost" class="nav-link" data-scroll-target="#smoothness-cost">Smoothness Cost</a></li>
+  <li><a href="#total-cost-decomposition" id="toc-total-cost-decomposition" class="nav-link" data-scroll-target="#total-cost-decomposition">Total Cost Decomposition</a></li>
   </ul></li>
   <li><a href="#kernel-mppi-kmppi" id="toc-kernel-mppi-kmppi" class="nav-link" data-scroll-target="#kernel-mppi-kmppi">Kernel MPPI (KMPPI)</a>
   <ul class="collapse">
   <li><a href="#rkhs-formulation" id="toc-rkhs-formulation" class="nav-link" data-scroll-target="#rkhs-formulation">RKHS Formulation</a></li>
-  <li><a href="#optimization" id="toc-optimization" class="nav-link" data-scroll-target="#optimization">Optimization</a></li>
-  </ul></li>
+  <li><a href="#rbf-kernel" id="toc-rbf-kernel" class="nav-link" data-scroll-target="#rbf-kernel">RBF Kernel</a></li>
+  <li><a href="#sampling-in-parameter-space" id="toc-sampling-in-parameter-space" class="nav-link" data-scroll-target="#sampling-in-parameter-space">Sampling in Parameter Space</a></li>
+  <li><a href="#dimensionality-reduction" id="toc-dimensionality-reduction" class="nav-link" data-scroll-target="#dimensionality-reduction">Dimensionality Reduction</a></li>
   </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introduction</a></li><li class="breadcrumb-item"><a href="./theory.html">Theoretical Background</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../src/theory.html">Theory</a></li><li class="breadcrumb-item"><a href="../src/theory.html">Theoretical Background</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Theoretical Background</h1>
+</div>
 
 
 
+<div class="quarto-title-meta">
 
-<section id="theoretical-background" class="level1">
-<h1>Theoretical Background</h1>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
 <p>This section provides the mathematical foundations for the Model Predictive Path Integral (MPPI) control algorithm and its variants implemented in <code>jax_mppi</code>.</p>
 <section id="standard-mppi" class="level2">
 <h2 class="anchored" data-anchor-id="standard-mppi">Standard MPPI</h2>
@@ -302,67 +338,159 @@ window.Quarto = {
 <section id="stochastic-optimal-control-problem" class="level3">
 <h3 class="anchored" data-anchor-id="stochastic-optimal-control-problem">Stochastic Optimal Control Problem</h3>
 <p>We consider a discrete-time dynamical system with dynamics:</p>
-<p>[ _{t+1} = f(_t, _t) + _t ]</p>
+<p><span class="math display">\[
+\mathbf{x}_{t+1} = f(\mathbf{x}_t, \mathbf{u}_t) + \mathbf{v}_t
+\]</span></p>
 <p>where <span class="math inline">\(\mathbf{x}_t \in \mathbb{R}^{n_x}\)</span> is the state, <span class="math inline">\(\mathbf{u}_t \in \mathbb{R}^{n_u}\)</span> is the control input, and <span class="math inline">\(\mathbf{v}_t \sim \mathcal{N}(0, \Sigma)\)</span> is Gaussian noise.</p>
 <p>The objective is to find the control sequence <span class="math inline">\(U = \{\mathbf{u}_0, \dots, \mathbf{u}_{T-1}\}\)</span> that minimizes the expected cost:</p>
-<p>[ J(U) = ]</p>
+<p><span class="math display">\[
+J(U) = \mathbb{E} \left[ \phi(\mathbf{x}_T) + \sum_{t=0}^{T-1} \left( q(\mathbf{x}_t) + \frac{1}{2} \mathbf{u}_t^T \Sigma^{-1} \mathbf{u}_t \right) \right]
+\]</span></p>
 <p>where <span class="math inline">\(\phi(\mathbf{x}_T)\)</span> is the terminal cost and <span class="math inline">\(q(\mathbf{x}_t)\)</span> is the state-dependent running cost. The term <span class="math inline">\(\frac{1}{2} \mathbf{u}_t^T \Sigma^{-1} \mathbf{u}_t\)</span> represents the control effort cost.</p>
 </section>
 <section id="information-theoretic-derivation" class="level3">
 <h3 class="anchored" data-anchor-id="information-theoretic-derivation">Information Theoretic Derivation</h3>
 <p>MPPI relies on the duality between free energy and relative entropy (KL divergence). The optimal control distribution <span class="math inline">\(p^*\)</span> is proportional to the exponential of the trajectory cost:</p>
-<p>[ p^*() (- S()) ]</p>
+<p><span class="math display">\[
+p^*(\tau) \propto \exp\left(-\frac{1}{\lambda} S(\tau)\right)
+\]</span></p>
 <p>where <span class="math inline">\(S(\tau)\)</span> is the cost of a trajectory <span class="math inline">\(\tau\)</span> and <span class="math inline">\(\lambda\)</span> is a temperature parameter.</p>
 </section>
 <section id="update-law" class="level3">
 <h3 class="anchored" data-anchor-id="update-law">Update Law</h3>
 <p>In practice, we approximate the optimal control by sampling <span class="math inline">\(K\)</span> trajectories around a nominal control sequence <span class="math inline">\(\mathbf{u}_{nom}\)</span>. For each sample <span class="math inline">\(k\)</span>, we apply a perturbation <span class="math inline">\(\epsilon_k \sim \mathcal{N}(0, \Sigma)\)</span>:</p>
-<p>[ <em>{t, k} = </em>{nom, t} + _{t, k} ]</p>
+<p><span class="math display">\[
+\mathbf{u}_{t, k} = \mathbf{u}_{nom, t} + \epsilon_{t, k}
+\]</span></p>
 <p>The cost for the <span class="math inline">\(k\)</span>-th trajectory is computed as:</p>
-<p>[ S_k = (<em>{T, k}) + </em>{t=0}^{T-1} ( q(<em>{t, k}) + </em>{nom, t}^T ^{-1} _{t, k} ) ]</p>
+<p><span class="math display">\[
+S_k = \phi(\mathbf{x}_{T, k}) + \sum_{t=0}^{T-1} \left( q(\mathbf{x}_{t, k}) + \lambda \mathbf{u}_{nom, t}^T \Sigma^{-1} \epsilon_{t, k} \right)
+\]</span></p>
 <p>The weights for each trajectory are computed using the softmax function:</p>
-<p>[ w_k = ]</p>
+<p><span class="math display">\[
+w_k = \frac{\exp(-\frac{1}{\lambda} (S_k - \beta))}{\sum_{j=1}^K \exp(-\frac{1}{\lambda} (S_j - \beta))}
+\]</span></p>
 <p>where <span class="math inline">\(\beta = \min_k S_k\)</span> for numerical stability.</p>
 <p>The control sequence is then updated by computing the weighted average of the perturbations:</p>
-<p>[ <em>{new, t} = </em>{nom, t} + <em>{k=1}^K w_k </em>{t, k} ]</p>
+<p><span class="math display">\[
+\mathbf{u}_{new, t} = \mathbf{u}_{nom, t} + \sum_{k=1}^K w_k \epsilon_{t, k}
+\]</span></p>
 </section>
 </section>
 <section id="smooth-mppi-smppi" class="level2">
 <h2 class="anchored" data-anchor-id="smooth-mppi-smppi">Smooth MPPI (SMPPI)</h2>
 <p>Standard MPPI assumes the control inputs are independent across time steps, which can lead to jerky or non-smooth control signals. Smooth MPPI (SMPPI) addresses this by lifting the control problem to a higher-order space (e.g., controlling acceleration instead of velocity).</p>
-<section id="state-augmentation" class="level3">
-<h3 class="anchored" data-anchor-id="state-augmentation">State Augmentation</h3>
-<p>In SMPPI, the nominal trajectory <span class="math inline">\(U\)</span> represents the derivative of the actual action (e.g., acceleration). The actual action <span class="math inline">\(\mathbf{a}_t\)</span> is part of the state or computed by integrating <span class="math inline">\(U\)</span>.</p>
-<p>Let <span class="math inline">\(\mathbf{u}_t\)</span> be the command at time <span class="math inline">\(t\)</span> (from the optimizer). The action applied to the system is <span class="math inline">\(\mathbf{a}_t\)</span>, updated as:</p>
-<p>[ _{t+1} = _t + _t t ]</p>
+<section id="lifted-control-space" class="level3">
+<h3 class="anchored" data-anchor-id="lifted-control-space">Lifted Control Space</h3>
+<p>In SMPPI, the optimizer works in a <strong>lifted control space</strong> where the nominal trajectory <span class="math inline">\(\mathbf{U} = \{\mathbf{u}_0, \dots, \mathbf{u}_{T-1}\}\)</span> represents the <em>derivative</em> of the actual action (e.g., jerk when controlling acceleration, or acceleration when controlling velocity). The actual action <span class="math inline">\(\mathbf{a}_t\)</span> applied to the plant is obtained by numerical integration:</p>
+<p><span class="math display">\[
+\mathbf{a}_{t+1} = \mathbf{a}_t + \mathbf{u}_t \, \Delta t
+\]</span></p>
+<p>This ensures temporal coherence: even large perturbations <span class="math inline">\(\epsilon_t\)</span> in <span class="math inline">\(\mathbf{u}\)</span>-space produce smooth changes in <span class="math inline">\(\mathbf{a}\)</span>-space because they are integrated.</p>
+</section>
+<section id="perturbation-and-effective-noise" class="level3">
+<h3 class="anchored" data-anchor-id="perturbation-and-effective-noise">Perturbation and Effective Noise</h3>
+<p>Noise is sampled in the lifted space <span class="math inline">\(\epsilon_t^{(k)} \sim \mathcal{N}(\mathbf{0}, \Sigma)\)</span>, producing perturbed commands:</p>
+<p><span class="math display">\[
+\tilde{\mathbf{u}}_t^{(k)} = \text{clip}\!\left(\mathbf{u}_t + \epsilon_t^{(k)},\; \mathbf{u}_{\min},\; \mathbf{u}_{\max}\right)
+\]</span></p>
+<p>The corresponding perturbed actions are:</p>
+<p><span class="math display">\[
+\tilde{\mathbf{a}}_t^{(k)} = \text{clip}\!\left(\mathbf{a}_t + \tilde{\mathbf{u}}_t^{(k)} \Delta t,\; \mathbf{a}_{\min},\; \mathbf{a}_{\max}\right)
+\]</span></p>
+<p>Because clipping may alter the perturbation, the <strong>effective noise</strong> used for importance weighting is back-computed:</p>
+<p><span class="math display">\[
+\hat{\epsilon}_t^{(k)} = \frac{\tilde{\mathbf{a}}_t^{(k)} - \mathbf{a}_t}{\Delta t} - \mathbf{u}_t
+\]</span></p>
+<p>This ensures the noise cost term <span class="math inline">\(\hat{\epsilon}^T \Sigma^{-1} \hat{\epsilon}\)</span> reflects the actual perturbation applied to the system.</p>
 </section>
 <section id="smoothness-cost" class="level3">
 <h3 class="anchored" data-anchor-id="smoothness-cost">Smoothness Cost</h3>
-<p>SMPPI explicitly penalizes changes in the action sequence to encourage smoothness. The cost function includes a term for the magnitude of the command <span class="math inline">\(\mathbf{u}_t\)</span> (which corresponds to the change in action):</p>
-<p>[ J_{smooth} = _{t=0}^{T-1} ||<em>t||^2 = </em>{t=0}^{T-1} ||||^2 ]</p>
-<p>This formulation ensures that the generated trajectories are smooth and feasible for systems with actuation limits or bandwidth constraints.</p>
+<p>SMPPI adds an explicit penalty on temporal changes in the action sequence:</p>
+<p><span class="math display">\[
+J_{\text{smooth}}^{(k)} = w_s \sum_{t=0}^{T-2} \left\| \tilde{\mathbf{a}}_{t+1}^{(k)} - \tilde{\mathbf{a}}_t^{(k)} \right\|^2
+\]</span></p>
+<p>where <span class="math inline">\(w_s\)</span> (<code>w_action_seq_cost</code> in code) controls the smoothness weight.</p>
+</section>
+<section id="total-cost-decomposition" class="level3">
+<h3 class="anchored" data-anchor-id="total-cost-decomposition">Total Cost Decomposition</h3>
+<p>The total cost for the <span class="math inline">\(k\)</span>-th sample combines three terms:</p>
+<p><span class="math display">\[
+J_{\text{total}}^{(k)} = \underbrace{J_{\text{rollout}}^{(k)}}_{\text{state + terminal}} + \underbrace{J_{\text{noise}}^{(k)}}_{\hat{\epsilon}^T \Sigma^{-1} \hat{\epsilon}} + \underbrace{J_{\text{smooth}}^{(k)}}_{w_s \|\Delta \mathbf{a}\|^2}
+\]</span></p>
+<p>Importance weights and the update law remain identical to standard MPPI:</p>
+<p><span class="math display">\[
+w_k = \text{softmax}\!\left(-\frac{1}{\lambda} J_{\text{total}}^{(k)}\right), \qquad
+\mathbf{u}_{t}^{new} = \mathbf{u}_t + \sum_k w_k \hat{\epsilon}_t^{(k)}
+\]</span></p>
+<p>After updating <span class="math inline">\(\mathbf{U}\)</span>, the action sequence is re-integrated: <span class="math inline">\(\mathbf{a}_t^{new} = \mathbf{a}_t + \mathbf{u}_t^{new} \Delta t\)</span>.</p>
 </section>
 </section>
 <section id="kernel-mppi-kmppi" class="level2">
 <h2 class="anchored" data-anchor-id="kernel-mppi-kmppi">Kernel MPPI (KMPPI)</h2>
-<p>Kernel MPPI (KMPPI) parameterizes the control trajectory using a set of basis functions or kernels, rather than optimizing the control input at every time step independently. This reduces the dimensionality of the optimization problem and implicitly enforces smoothness.</p>
+<p>Kernel MPPI (KMPPI) parameterizes the control trajectory using a set of basis functions defined by a kernel, rather than optimizing the control input at every time step independently. This reduces the dimensionality of the optimization problem and implicitly enforces smoothness.</p>
 <section id="rkhs-formulation" class="level3">
 <h3 class="anchored" data-anchor-id="rkhs-formulation">RKHS Formulation</h3>
-<p>We assume the control trajectory <span class="math inline">\(\mathbf{u}(t)\)</span> lies in a Reproducing Kernel Hilbert Space (RKHS) defined by a kernel <span class="math inline">\(k(t, t')\)</span>. The control is represented as a linear combination of basis functions centered at support points <span class="math inline">\(t_i\)</span>:</p>
-<p>[ (t) = _{i=1}^{M} _i k(t, t_i) ]</p>
-<p>where <span class="math inline">\(M\)</span> is the number of support points (often <span class="math inline">\(M &lt; T\)</span>), and <span class="math inline">\(\alpha_i\)</span> are the weights (parameters) to be optimized.</p>
+<p>We assume the control trajectory <span class="math inline">\(\mathbf{u}(t)\)</span> lies in a Reproducing Kernel Hilbert Space (RKHS) defined by a kernel <span class="math inline">\(k(t, t')\)</span>. The control is represented through <span class="math inline">\(M\)</span> <strong>support points</strong> <span class="math inline">\(\{t_1, \dots, t_M\}\)</span> with associated parameters <span class="math inline">\(\boldsymbol{\theta} \in \mathbb{R}^{M \times n_u}\)</span>.</p>
+<p>The full trajectory is recovered via kernel interpolation:</p>
+<p><span class="math display">\[
+\mathbf{u}(t) = \mathbf{W}(t) \, \boldsymbol{\theta}
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{W}\)</span> is the <strong>interpolation matrix</strong>:</p>
+<p><span class="math display">\[
+\mathbf{W} = \mathbf{K}(t, t_k) \, \mathbf{K}(t_k, t_k)^{-1} \in \mathbb{R}^{T \times M}
+\]</span></p>
+<p>Here:</p>
+<ul>
+<li><span class="math inline">\(\mathbf{K}(t, t_k) \in \mathbb{R}^{T \times M}\)</span>: kernel evaluated between all trajectory times and support point times</li>
+<li><span class="math inline">\(\mathbf{K}(t_k, t_k) \in \mathbb{R}^{M \times M}\)</span>: kernel evaluated between support points (Gram matrix)</li>
+</ul>
+<p>In practice, the linear system <span class="math inline">\(\mathbf{K}(t_k,t_k) \, \mathbf{w}^T = \mathbf{K}(t,t_k)^T\)</span> is solved using a Cholesky factorization (positive-definite kernel).</p>
 </section>
-<section id="optimization" class="level3">
-<h3 class="anchored" data-anchor-id="optimization">Optimization</h3>
-<p>Instead of perturbing the control inputs <span class="math inline">\(\mathbf{u}_t\)</span> directly, KMPPI perturbs the parameters <span class="math inline">\(\alpha_i\)</span> (or equivalent control points).</p>
-<p>Let <span class="math inline">\(\theta\)</span> represent the parameters. We sample perturbations <span class="math inline">\(\delta \theta_k \sim \mathcal{N}(0, \Sigma_\theta)\)</span>. The corresponding control trajectory is:</p>
-<p>[ _k(t) = (+ _k) ]</p>
-<p>The update rule is applied to <span class="math inline">\(\theta\)</span>:</p>
-<p>[ <em>{new} = </em>{nom} + _{k=1}^K w_k _k ]</p>
-<p>By choosing an appropriate kernel (e.g., RBF kernel), we can control the smoothness and frequency content of the resulting trajectories.</p>
+<section id="rbf-kernel" class="level3">
+<h3 class="anchored" data-anchor-id="rbf-kernel">RBF Kernel</h3>
+<p>The default kernel is the Radial Basis Function (Gaussian) kernel:</p>
+<p><span class="math display">\[
+k(t, t') = \exp\!\left(-\frac{\|t - t'\|^2}{2\sigma^2}\right)
+\]</span></p>
+<p>The bandwidth parameter <span class="math inline">\(\sigma\)</span> controls the smoothness of the interpolated trajectory:</p>
+<ul>
+<li><strong>Small <span class="math inline">\(\sigma\)</span></strong>: each support point only influences nearby time steps, allowing higher-frequency content</li>
+<li><strong>Large <span class="math inline">\(\sigma\)</span></strong>: broad influence, producing very smooth (low-frequency) trajectories</li>
+</ul>
+</section>
+<section id="sampling-in-parameter-space" class="level3">
+<h3 class="anchored" data-anchor-id="sampling-in-parameter-space">Sampling in Parameter Space</h3>
+<p>Instead of perturbing the full control trajectory <span class="math inline">\(\mathbf{u} \in \mathbb{R}^{T \times n_u}\)</span>, KMPPI samples perturbations in the reduced parameter space <span class="math inline">\(\boldsymbol{\theta} \in \mathbb{R}^{M \times n_u}\)</span>:</p>
+<p><span class="math display">\[
+\delta\boldsymbol{\theta}^{(k)} \sim \mathcal{N}(\mathbf{0}, \Sigma_\theta), \qquad
+\tilde{\boldsymbol{\theta}}^{(k)} = \boldsymbol{\theta} + \delta\boldsymbol{\theta}^{(k)}
+\]</span></p>
+<p>Each perturbed parameter set is interpolated back to trajectory space:</p>
+<p><span class="math display">\[
+\tilde{\mathbf{U}}^{(k)} = \mathbf{W} \, \tilde{\boldsymbol{\theta}}^{(k)}
+\]</span></p>
+<p>Rollout costs are computed using <span class="math inline">\(\tilde{\mathbf{U}}^{(k)}\)</span>, while the noise cost is evaluated in parameter space:</p>
+<p><span class="math display">\[
+J_{\text{noise}}^{(k)} = \sum_{m=1}^{M} \delta\boldsymbol{\theta}_m^{(k) T} \Sigma_\theta^{-1} \, \delta\boldsymbol{\theta}_m^{(k)}
+\]</span></p>
+<p>The update is also applied in parameter space:</p>
+<p><span class="math display">\[
+\boldsymbol{\theta}^{new} = \boldsymbol{\theta} + \sum_k w_k \, \delta\boldsymbol{\theta}^{(k)}
+\]</span></p>
+</section>
+<section id="dimensionality-reduction" class="level3">
+<h3 class="anchored" data-anchor-id="dimensionality-reduction">Dimensionality Reduction</h3>
+<p>The key advantage of KMPPI is that <span class="math inline">\(M \ll T\)</span>. For example, with <span class="math inline">\(T = 30\)</span> horizon steps and <span class="math inline">\(M = 15\)</span> support points, the number of parameters to optimize is halved. This:</p>
+<ol type="1">
+<li><strong>Reduces variance</strong> of the MPPI estimator (fewer dimensions to explore)</li>
+<li><strong>Implicitly enforces smoothness</strong> through the kernel bandwidth</li>
+<li><strong>Lowers computational cost</strong> of noise sampling and weight computation</li>
+</ol>
+<p>The trade-off is representational capacity: the kernel determines which trajectory shapes are reachable. The default choice <span class="math inline">\(M = T/2\)</span> with RBF kernel <span class="math inline">\(\sigma = 1.0\)</span> provides a good balance between expressivity and smoothness.</p>
 
 
-</section>
+
 </section>
 </section>
 
