@@ -675,6 +675,196 @@ $$ F = \frac{\partial u^*}{\partial x_0} = \sum_{k=0}^{K} \frac{\partial \pi}{\p
 
 The control law becomes $u = u^* + F(\hat{x} - x_{sp})$, allowing for high-bandwidth corrections ($\ge 200$ Hz).
 
+# Parallel I-MPPI Architecture {#parallel-imppi}
+
+The hierarchical (sequential) I-MPPI architecture couples Layer 2 and Layer 3 through a **reference trajectory**: Layer 2 plans at 5 Hz, then Layer 3 tracks that trajectory at 50 Hz. This introduces two limitations:
+
+1. **Latency**: Layer 3 cannot act on new information until the next Layer 2 replan.
+2. **Tight coupling**: Layer 3's biased sampling is anchored to a single reference, limiting its ability to discover alternative informative paths.
+
+The **Parallel I-MPPI** architecture eliminates the reference trajectory entirely. Instead, a single MPPI controller runs at 50 Hz and consults an **information potential field** $\mathcal{I}(x, y)$ that is computed concurrently at a lower rate.
+
+## Architecture Overview
+
+```{mermaid}
+graph TD
+    subgraph FSMI_Loop ["FSMI Field Generator (5–10 Hz)"]
+        Grid[Occupancy Grid] --> VP[Coarse Viewpoint Grid]
+        VP --> FSMI_Eval["vmap: FSMI(x, y, ψ) over grid × yaws"]
+        FSMI_Eval --> MaxYaw["max over ψ"]
+        MaxYaw --> Field["Information Potential Field 𝓘(x, y)"]
+    end
+
+    subgraph MPPI_Loop ["MPPI Controller (50 Hz)"]
+        State["UAV State x₀"] --> Rollouts["K Parallel Rollouts"]
+        Rollouts --> CostEval["Cost Evaluation"]
+        CostEval --> Weights["Importance Weights ω_k"]
+        Weights --> Update["Weighted Average → u*"]
+    end
+
+    Field -.->|"cached read"| CostEval
+    State -.->|"latest state"| FSMI_Loop
+    Grid -.->|"latest grid"| MPPI_Loop
+    Update --> Actuators[/Motor Commands/]
+
+    style FSMI_Loop fill:#e8f5e9,stroke:#1b5e20
+    style MPPI_Loop fill:#fff3e0,stroke:#e65100
+```
+
+**Key difference from sequential I-MPPI**: there is no reference trajectory $\tau_{\text{ref}}$ and no biased sampling. MPPI "discovers" informative paths by following the spatial gradient of $\mathcal{I}$.
+
+## Information Potential Field
+
+At low rate (5–10 Hz), the FSMI field generator evaluates FSMI at a coarse grid of candidate viewpoints in the local workspace around the UAV.
+
+### Field Definition
+
+For each grid position $(x, y)$, the information potential is the best achievable FSMI over all candidate yaw angles:
+
+$$
+\mathcal{I}(x, y) = \max_{\psi \in \Psi} \; I_{\text{FSMI}}(x, y, \psi)
+$$
+
+where $\Psi = \{0, \frac{2\pi}{N_\psi}, \dots, \frac{2\pi(N_\psi - 1)}{N_\psi}\}$ is a discrete set of yaw angles.
+
+::: {.callout-tip}
+### Yaw-dependent variant
+When the UAV's sensor has a limited azimuthal FOV (e.g., forward-facing camera), the field can retain yaw dependence: $\mathcal{I}(x, y, \psi)$. MPPI rollouts then query with their heading angle, adding yaw-steering incentive to the cost.
+:::
+
+### Field Computation Pseudocode
+
+```python
+def compute_info_field(grid_map, uav_pos, field_res, field_extent, yaw_angles):
+    """Compute information potential field over local workspace.
+
+    Args:
+        grid_map:     current occupancy grid (H, W)
+        uav_pos:      UAV position (x, y)
+        field_res:    grid spacing of the field [m]
+        field_extent: half-width of the local workspace [m]
+        yaw_angles:   (N_psi,) array of candidate yaw angles
+
+    Returns:
+        field: (Nx, Ny) information potential field
+        field_origin: (x0, y0) world coordinates of field[0, 0]
+    """
+    # Build coarse grid of (x, y) positions centered on UAV
+    xs = jnp.arange(-field_extent, field_extent, field_res) + uav_pos[0]
+    ys = jnp.arange(-field_extent, field_extent, field_res) + uav_pos[1]
+    positions = jnp.stack(jnp.meshgrid(xs, ys, indexing="ij"), axis=-1)  # (Nx, Ny, 2)
+
+    # Evaluate FSMI at every (position, yaw) pair
+    # vmap over positions (flattened), then vmap over yaw angles
+    flat_pos = positions.reshape(-1, 2)                # (Nx*Ny, 2)
+    fsmi_fn = lambda pos, psi: compute_fsmi(grid_map, pos, psi)
+    fsmi_all = vmap(vmap(fsmi_fn, in_axes=(None, 0)), in_axes=(0, None))
+    gains = fsmi_all(flat_pos, yaw_angles)             # (Nx*Ny, N_psi)
+
+    # Max over yaw → information potential
+    field = gains.max(axis=-1).reshape(positions.shape[:2])  # (Nx, Ny)
+    field_origin = jnp.array([xs[0], ys[0]])
+    return field, field_origin
+```
+
+**Computational budget**: For a $10 \times 10$ m workspace at 0.5 m resolution ($20 \times 20 = 400$ positions) with $N_\psi = 8$ yaw angles, the field requires 3,200 FSMI evaluations — parallelized via `vmap` on GPU.
+
+## MPPI Cost with Field Lookup
+
+The MPPI running cost incorporates the information field via bilinear interpolation at each rollout position:
+
+$$
+J_{\text{info}}(\mathbf{x}_t) = -\lambda_{\text{info}} \cdot \text{interp}_2\!\big(\mathcal{I},\; p_x(t),\; p_y(t)\big)
+$$
+
+where $\text{interp}_2$ performs bilinear interpolation of the cached field $\mathcal{I}$ at the rollout position $(p_x, p_y)$.
+
+### Combined Cost
+
+The total per-timestep cost combines the field-based information reward with standard terms:
+
+$$
+J(\mathbf{x}_t, \mathbf{u}_t) = \underbrace{J_{\text{obs}}}_{\text{obstacles}} + \underbrace{J_{\text{bounds}}}_{\text{workspace}} + \underbrace{J_{\text{control}}}_{\text{effort}} + \underbrace{J_{\text{info}}(\mathbf{x}_t)}_{\text{field lookup}} + \underbrace{J_{\text{local}}(\mathbf{x}_t)}_{\text{Uniform-FSMI}}
+$$
+
+The **field lookup** $J_{\text{info}}$ provides medium-range strategic guidance (which region to fly toward), while the **Uniform-FSMI** term $J_{\text{local}}$ provides immediate viewpoint-specific information (which way to look right now). Together they replace both the target attraction $J_{\text{target}}$ and the biased sampling of sequential I-MPPI.
+
+::: {.callout-note}
+### Why bilinear interpolation?
+The field is computed on a coarse grid (0.5 m spacing), but MPPI rollouts have continuous positions. Bilinear interpolation is $O(1)$ per query — negligible compared to dynamics rollouts — and provides smooth gradients that MPPI can exploit through its importance-weighted averaging.
+:::
+
+## Main Loop Pseudocode
+
+```python
+def parallel_imppi_loop(state, grid_map, mppi, fsmi_module, config):
+    """Dual-rate parallel I-MPPI main loop.
+
+    MPPI runs every step (50 Hz).
+    FSMI field recomputes every N steps (5–10 Hz).
+    """
+    field = None
+    field_origin = None
+
+    for step in range(config.max_steps):
+        # --- Low-rate: recompute information field ---
+        if step % config.field_update_interval == 0:
+            field, field_origin = compute_info_field(
+                grid_map=grid_map,
+                uav_pos=state.position[:2],
+                field_res=config.field_res,        # e.g., 0.5 m
+                field_extent=config.field_extent,   # e.g., 5.0 m
+                yaw_angles=config.yaw_angles,
+            )
+
+        # --- High-rate: MPPI with cached field ---
+        def cost_fn(x_traj):
+            """Per-rollout cost using cached information field."""
+            obs_cost = obstacle_cost(x_traj, grid_map)
+            ctrl_cost = control_cost(x_traj)
+            # Field lookup: bilinear interpolation at each (x, y)
+            info_cost = -config.lambda_info * interp2d(
+                field, field_origin, config.field_res, x_traj[:, :2]
+            )
+            # Local Uniform-FSMI for immediate viewpoint reward
+            local_cost = -config.lambda_local * uniform_fsmi(
+                grid_map, x_traj[-1, :2], x_traj[-1, 6]  # final yaw
+            )
+            return obs_cost + ctrl_cost + info_cost + local_cost
+
+        u_opt = mppi.step(state, cost_fn)
+
+        # --- Apply control and update state ---
+        state = dynamics(state, u_opt)
+        grid_map = update_grid_from_observation(grid_map, state)
+```
+
+### Dual-Rate Scheduling
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| MPPI rate | 50 Hz | Every control step |
+| Field update rate | 5–10 Hz | Every 5–10 MPPI steps |
+| Field resolution | 0.5 m | Coarse enough for fast computation |
+| Field extent | 5–10 m | Local workspace around UAV |
+| Yaw discretization | 8 angles | $45°$ increments |
+
+The field update is **non-blocking** in practice: on GPU, the field computation can overlap with the next MPPI step via asynchronous dispatch. The MPPI controller always reads the latest available field.
+
+## Sequential vs Parallel Comparison
+
+| Aspect | Sequential (current) | Parallel (proposed) |
+|--------|---------------------|---------------------|
+| **Architecture** | L2 plans $\tau_{\text{ref}}$ → L3 tracks it | Single MPPI + concurrent field |
+| **Information coupling** | Reference trajectory encodes info | Spatial potential field $\mathcal{I}(x,y)$ |
+| **MPPI sampling** | Biased toward $\tau_{\text{ref}}$ | Unbiased; field shapes cost landscape |
+| **Latency** | L3 waits for L2 replan (200 ms) | Field stale by $\le$ 1 update period |
+| **Path discovery** | Constrained near reference | MPPI explores full cost landscape |
+| **Compute overlap** | Sequential: L2 then L3 | Concurrent: field + MPPI on GPU |
+| **Failure mode** | Bad reference → bad tracking | Stale field → slightly suboptimal |
+| **Yaw planning** | Implicit in reference | Explicit via field or $J_{\text{local}}$ |
+| **Implementation** | Requires trajectory generator + biased sampling | Requires field computation + interpolation |
+
 # Summary: Information as Energy
 
 In **I-MPPI**, map uncertainty is treated as a **High Potential Energy** region. The solver naturally seeks to minimize free energy, causing the vehicle to "fall" into informative gravity wells. Calling it **Informative MPPI** separates the exploration objective from the underlying mathematical solver framework.
