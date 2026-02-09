@@ -1,0 +1,154 @@
+---
+title: "Quadrotor Dynamics"
+format:
+  html:
+    math: true
+---
+
+This section documents the 6-DOF quadrotor dynamics model used for trajectory rollouts in `jax_mppi`. The implementation follows the **NED-FRD** convention:
+
+- **NED** (North-East-Down): world/global frame where the Z-axis points downward
+- **FRD** (Forward-Right-Down): body frame where X points forward, Y right, Z down
+
+## State and Control Spaces
+
+### State Vector (13D)
+
+$$
+\mathbf{x} = \begin{bmatrix} \mathbf{p} \\ \mathbf{v} \\ \mathbf{q} \\ \boldsymbol{\omega} \end{bmatrix} \in \mathbb{R}^{13}
+$$
+
+| Component | Symbol | Dimension | Frame | Description |
+|-----------|--------|-----------|-------|-------------|
+| Position | $\mathbf{p} = [p_x, p_y, p_z]^T$ | 3 | NED world | Cartesian position |
+| Velocity | $\mathbf{v} = [v_x, v_y, v_z]^T$ | 3 | NED world | Linear velocity |
+| Quaternion | $\mathbf{q} = [q_w, q_x, q_y, q_z]^T$ | 4 | Body→World | Orientation (unit norm) |
+| Angular velocity | $\boldsymbol{\omega} = [\omega_x, \omega_y, \omega_z]^T$ | 3 | FRD body | Angular rates |
+
+### Control Vector (4D)
+
+$$
+\mathbf{u} = \begin{bmatrix} T \\ \omega_x^{cmd} \\ \omega_y^{cmd} \\ \omega_z^{cmd} \end{bmatrix} \in \mathbb{R}^4
+$$
+
+| Component | Description | Default Bounds |
+|-----------|-------------|----------------|
+| $T$ | Thrust magnitude (acts in $-\mathbf{z}_B$ direction, i.e. upward in FRD) | $[0,\; 4mg]$ |
+| $\omega_x^{cmd}$ | Roll rate command | $[-10,\; 10]$ rad/s |
+| $\omega_y^{cmd}$ | Pitch rate command | $[-10,\; 10]$ rad/s |
+| $\omega_z^{cmd}$ | Yaw rate command | $[-10,\; 10]$ rad/s |
+
+## Equations of Motion
+
+### Translational Dynamics
+
+The translational acceleration in the NED world frame is:
+
+$$
+\dot{\mathbf{v}} = \frac{1}{m}\left(\mathbf{f}_g + \mathbf{R}(\mathbf{q})\,\mathbf{f}_T\right)
+$$
+
+where:
+
+- $\mathbf{f}_g = [0,\; 0,\; mg]^T$ is gravity (positive-$z$ = downward in NED)
+- $\mathbf{f}_T = [0,\; 0,\; -T]^T$ is thrust in the body frame (upward in FRD)
+- $\mathbf{R}(\mathbf{q})$ rotates from body FRD to world NED
+
+Position evolves as $\dot{\mathbf{p}} = \mathbf{v}$.
+
+### Quaternion Kinematics
+
+The quaternion derivative relates angular velocity in the body frame to orientation change:
+
+$$
+\dot{\mathbf{q}} = \frac{1}{2}\,\boldsymbol{\Omega}(\boldsymbol{\omega})\,\mathbf{q}
+$$
+
+where $\boldsymbol{\Omega}(\boldsymbol{\omega})$ is the quaternion multiplication matrix. Expanding component-wise:
+
+$$
+\begin{aligned}
+\dot{q}_w &= -\tfrac{1}{2}(\omega_x q_x + \omega_y q_y + \omega_z q_z) \\
+\dot{q}_x &= \phantom{-}\tfrac{1}{2}(\omega_x q_w + \omega_z q_y - \omega_y q_z) \\
+\dot{q}_y &= \phantom{-}\tfrac{1}{2}(\omega_y q_w - \omega_z q_x + \omega_x q_z) \\
+\dot{q}_z &= \phantom{-}\tfrac{1}{2}(\omega_z q_w + \omega_y q_x - \omega_x q_y)
+\end{aligned}
+$$
+
+### Rotation Matrix
+
+The rotation matrix $\mathbf{R}(\mathbf{q})$ from body FRD to world NED is:
+
+$$
+\mathbf{R} = \begin{bmatrix}
+1 - 2(q_y^2 + q_z^2) & 2(q_xq_y - q_wq_z) & 2(q_xq_z + q_wq_y) \\
+2(q_xq_y + q_wq_z) & 1 - 2(q_x^2 + q_z^2) & 2(q_yq_z - q_wq_x) \\
+2(q_xq_z - q_wq_y) & 2(q_yq_z + q_wq_x) & 1 - 2(q_x^2 + q_y^2)
+\end{bmatrix}
+$$
+
+### Rotational Dynamics
+
+The angular velocity is modeled as a **first-order system** tracking the commanded rates:
+
+$$
+\dot{\boldsymbol{\omega}} = \frac{\boldsymbol{\omega}^{cmd} - \boldsymbol{\omega}}{\tau_\omega}
+$$
+
+where $\tau_\omega$ is the angular velocity time constant (default 0.05 s). This simplified model abstracts away the full Euler equations and motor dynamics, assuming a fast inner-loop attitude controller.
+
+## Numerical Integration
+
+### RK4 Step
+
+The continuous-time dynamics $\dot{\mathbf{x}} = g(\mathbf{x}, \mathbf{u})$ are integrated using the classical 4th-order Runge-Kutta method:
+
+$$
+\begin{aligned}
+\mathbf{k}_1 &= g(\mathbf{x}_t, \mathbf{u}_t) \\
+\mathbf{k}_2 &= g(\mathbf{x}_t + \tfrac{\Delta t}{2}\mathbf{k}_1, \mathbf{u}_t) \\
+\mathbf{k}_3 &= g(\mathbf{x}_t + \tfrac{\Delta t}{2}\mathbf{k}_2, \mathbf{u}_t) \\
+\mathbf{k}_4 &= g(\mathbf{x}_t + \Delta t\,\mathbf{k}_3, \mathbf{u}_t) \\[4pt]
+\mathbf{x}_{t+1} &= \mathbf{x}_t + \frac{\Delta t}{6}(\mathbf{k}_1 + 2\mathbf{k}_2 + 2\mathbf{k}_3 + \mathbf{k}_4)
+\end{aligned}
+$$
+
+### Quaternion Renormalization
+
+After each RK4 step, the quaternion component is renormalized to maintain the unit-norm constraint:
+
+$$
+\mathbf{q}_{t+1} \leftarrow \frac{\mathbf{q}_{t+1}}{\|\mathbf{q}_{t+1}\| + \varepsilon}
+$$
+
+with $\varepsilon = 10^{-8}$ for numerical safety. This is necessary because RK4 does not preserve the constraint $\|\mathbf{q}\| = 1$ exactly.
+
+## Augmented State for I-MPPI
+
+For informative path planning (I-MPPI), the quadrotor state is augmented with **information zone levels**, yielding a 16D state vector:
+
+$$
+\mathbf{x}_{\text{aug}} = \begin{bmatrix} \mathbf{x}_{\text{quad}} \\ \mathbf{i} \end{bmatrix} \in \mathbb{R}^{16}
+$$
+
+where $\mathbf{i} = [i_1, i_2, i_3]^T$ tracks the remaining information content of each zone ($i_j \in [0, 100]$).
+
+The augmented dynamics are:
+
+$$
+\begin{aligned}
+\mathbf{x}_{\text{quad}}^{(t+1)} &= f_{\text{RK4}}(\mathbf{x}_{\text{quad}}^{(t)}, \mathbf{u}^{(t)}) \\
+i_j^{(t+1)} &= i_j^{(t)} \left(1 - \alpha \cdot c_j^{(t)}\right)
+\end{aligned}
+$$
+
+where $\alpha$ is the depletion rate and $c_j^{(t)} \in [0, 1]$ is the FOV coverage of zone $j$ at time $t$. See the [I-MPPI documentation](i_mppi.qmd#information-zone-depletion) for details on the coverage and depletion model.
+
+## Parameters
+
+| Parameter | Symbol | Default | Description |
+|-----------|--------|---------|-------------|
+| Mass | $m$ | 1.0 kg | Quadrotor mass |
+| Gravity | $g$ | 9.81 m/s$^2$ | Gravitational acceleration (positive down in NED) |
+| Angular time constant | $\tau_\omega$ | 0.05 s | First-order rate tracking bandwidth |
+| Integration step | $\Delta t$ | 0.01 s | RK4 time step |
