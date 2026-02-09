@@ -865,6 +865,41 @@ The field update is **non-blocking** in practice: on GPU, the field computation 
 | **Yaw planning** | Implicit in reference | Explicit via field or $J_{\text{local}}$ |
 | **Implementation** | Requires trajectory generator + biased sampling | Requires field computation + interpolation |
 
+## Relation to Artificial Potential Fields
+
+The information potential field $\mathcal{I}(x, y)$ naturally evokes the **Artificial Potential Field (APF)** framework [@Khatib1986], where obstacles generate repulsive potentials and goals generate attractive potentials, guiding the robot via gradient descent. Parallel I-MPPI extends this paradigm in three key ways:
+
+1. **Information-driven attraction**: Rather than a fixed goal point, the attractive potential $\mathcal{I}(x, y)$ represents the *expected information gain* from visiting $(x, y)$, computed via FSMI. The "goal" is emergent — it is wherever the map is most uncertain.
+
+2. **Dynamic field evolution**: Unlike static APFs, $\mathcal{I}$ is recomputed at 5–10 Hz as the occupancy grid updates, creating a time-varying potential landscape that naturally depletes as regions are explored. A visited region's potential diminishes, preventing re-exploration.
+
+3. **Stochastic optimization over dynamics**: Instead of instantaneous gradient descent (which is prone to local minima and ignores dynamics), MPPI performs trajectory optimization over the full UAV dynamics, escaping local minima through importance-weighted sampling while respecting control authority limits.
+
+### Classical APF Limitations and I-MPPI Solutions
+
+| Classical APF Limitation | I-MPPI Solution |
+|--------------------------|----------------|
+| Local minima traps | MPPI's stochastic sampling escapes via exploration noise ($\lambda$) |
+| Static potential field | $\mathcal{I}(x,y)$ recomputed at 5–10 Hz as the map updates |
+| Oscillations in narrow passages | Trajectory-level optimization with smooth KMPPI basis functions |
+| No dynamics consideration | MPPI rollouts respect full 6-DOF quadrotor dynamics |
+| Binary goal attraction | Continuous information potential that depletes with exploration |
+
+This formulation can be viewed as a *thermodynamic APF*, where the temperature parameter $\lambda$ controls exploration vs. exploitation, and the free energy $\mathcal{F}$ naturally balances kinetic cost (control effort) with potential cost (information opportunity).
+
+::: {.callout-tip}
+### Intuition for Robotics Readers
+If you are familiar with APF-based planners, think of Parallel I-MPPI as replacing the fixed-goal attractive potential with a *learned, dynamic information landscape* — and replacing gradient descent with *stochastic trajectory sampling* that respects full vehicle dynamics. The "Summary: Information as Energy" framing below makes this analogy precise through statistical mechanics.
+:::
+
 # Summary: Information as Energy
 
-In **I-MPPI**, map uncertainty is treated as a **High Potential Energy** region. The solver naturally seeks to minimize free energy, causing the vehicle to "fall" into informative gravity wells. Calling it **Informative MPPI** separates the exploration objective from the underlying mathematical solver framework.
+In **I-MPPI**, map uncertainty is treated as a **High Potential Energy** region. The solver naturally seeks to minimize free energy, causing the vehicle to "fall" into informative gravity wells. The information potential field $\mathcal{I}(x, y)$ makes this analogy concrete: it is literally a spatial energy landscape that MPPI descends through importance-weighted sampling.
+
+The key insight is that this *thermodynamic* potential field is richer than a classical APF:
+
+- The **temperature** $\lambda$ controls the exploration–exploitation trade-off: high $\lambda$ → broader sampling → more exploration of the cost landscape; low $\lambda$ → greedy descent toward the nearest information well.
+- The **free energy** $\mathcal{F}$ naturally balances kinetic cost (control effort, $J_{\text{control}}$) with potential cost (negative information gain, $J_{\text{info}}$), without requiring manual gain tuning between attractive and repulsive forces.
+- The field **evolves** as the map is updated, so depleted regions lose their attractive pull — the robot is never drawn back to already-explored space.
+
+Calling it **Informative MPPI** separates the exploration objective from the underlying mathematical solver framework.
