@@ -51,24 +51,21 @@ dev = { features = ["dev"], solve-group = "default" }
 autotuning = { features = ["autotuning"], solve-group = "default" }
 
 [tasks]
-# Testing
-test = "pytest tests/"
-list-tests = "find tests -name 'test_*.py' -o -name '*_test.py' | sort"
-
-# Linting
-lint = "ruff format . && ruff check . --fix"
-type-check = "basedpyright ."
-
 # Examples
 hover = "python examples/quadrotor/hover_comparison.py --visualize"
 figure8 = "python examples/quadrotor/figure8_comparison.py --visualize"
-run-i-mppi-sim = { cmd = "python examples/i_mppi/simulation.py", env = { PYTHONPATH = "src" } }
+i-mppi-sim = { cmd = "python examples/i_mppi/simulation.py", env = { PYTHONPATH = "src" } }
 jit-pendulum = "python examples/cuda/pendulum_jit.py --visualization"
 test-cuda = "python examples/cuda/test_cuda_mppi.py"
 
 # Git submodules
 submodule-update = "git submodule update --init --recursive"
 
-# Docs
+# Dev tasks (require dev environment)
+[feature.dev.tasks]
+test = "PYTHONPATH= pytest tests/"
+list-tests = "find tests -name 'test_*.py' -o -name '*_test.py' | sort"
+lint = "ruff format . && ruff check . --fix"
+type-check = "basedpyright ."
 quarto-doc = "quarto preview docs"
 publish-doc = { cmd = "quarto publish gh-pages --no-browser --no-prompt", cwd = "docs" }

@@ -16,6 +16,11 @@ dist/
 # Pixi
 .pixi/
 
+.benchmarks/
+.ruff_cache/
+
+.venv/
+
 # Docs
 docs/_issues
 
