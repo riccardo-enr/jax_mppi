@@ -1,4 +1,3 @@
-
 from jax_mppi import cuda_mppi
 
 
@@ -13,10 +12,11 @@ def main():
         dt=0.05,
         u_scale=1.0,
         w_action_seq_cost=0.0,
-        num_support_pts=10
+        num_support_pts=10,
     )
     print(f"Config created: {config}")
     print("Success!")
+
 
 if __name__ == "__main__":
     main()

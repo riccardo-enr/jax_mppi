@@ -77,7 +77,12 @@ FSMI_BEAMS = 12
 FSMI_RANGE = 5.0
 
 MEDIA_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "..", "docs", "_media"
+    os.path.dirname(os.path.abspath(__file__)),
+    "..",
+    "..",
+    "docs",
+    "_media",
+    "i_mppi",
 )
 GIF_PATH = os.path.join(MEDIA_DIR, "i_mppi_trajectory.gif")
 SUMMARY_PATH = os.path.join(MEDIA_DIR, "i_mppi_summary.png")
@@ -219,9 +224,7 @@ def main() -> None:
 
     status = "Completed" if done_step_int > 0 else "Timeout"
 
-    print(
-        f"Runtime : {runtime:.2f}s ({runtime / SIM_DURATION:.2f}x realtime)"
-    )
+    print(f"Runtime : {runtime:.2f}s ({runtime / SIM_DURATION:.2f}x realtime)")
     print(f"  Goal dist  : {goal_dist:.2f}m")
     print(f"  Info levels: {final_state[13:]}")
     print()

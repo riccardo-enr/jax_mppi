@@ -178,21 +178,23 @@ def run_quadrotor_circle(
     cost_builder = create_tracking_cost(Q_pos, Q_vel, R)
 
     # Initial state: start at first reference point
-    state = jnp.array([
-        reference[0, 0],
-        reference[0, 1],
-        reference[0, 2],  # start position
-        0.0,
-        0.0,
-        0.0,  # zero initial velocity
-        1.0,
-        0.0,
-        0.0,
-        0.0,  # level quaternion
-        0.0,
-        0.0,
-        0.0,  # zero angular velocity
-    ])
+    state = jnp.array(
+        [
+            reference[0, 0],
+            reference[0, 1],
+            reference[0, 2],  # start position
+            0.0,
+            0.0,
+            0.0,  # zero initial velocity
+            1.0,
+            0.0,
+            0.0,
+            0.0,  # level quaternion
+            0.0,
+            0.0,
+            0.0,  # zero angular velocity
+        ]
+    )
 
     print("\nRunning MPPI on quadrotor circular trajectory tracking...")
     print(f"  Samples: {num_samples}, Horizon: {horizon}, Lambda: {lambda_}")
@@ -422,8 +424,10 @@ def run_quadrotor_circle(
 
             plt.tight_layout()
 
-            # Save to docs/media directory
-            output_dir = Path(__file__).parent.parent / "docs" / "media"
+            # Save to docs/_media/quadrotor directory
+            output_dir = (
+                Path(__file__).parent.parent / "docs" / "_media" / "quadrotor"
+            )
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / "quadrotor_circle_mppi.png"
 

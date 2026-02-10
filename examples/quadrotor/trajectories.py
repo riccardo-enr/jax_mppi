@@ -42,8 +42,7 @@ def generate_hover_setpoint(
 
     # Constant position, zero velocity
     trajectory = jnp.tile(
-        jnp.concatenate([position, jnp.zeros(3)]),
-        (num_steps, 1)
+        jnp.concatenate([position, jnp.zeros(3)]), (num_steps, 1)
     )
 
     return trajectory
@@ -168,7 +167,7 @@ def generate_lemniscate_trajectory(
 
         # Velocities (derivatives)
         vx = scale * omega * jnp.cos(omega * t)
-        vy = scale * omega * (jnp.cos(omega * t)**2 - jnp.sin(omega * t)**2)
+        vy = scale * omega * (jnp.cos(omega * t) ** 2 - jnp.sin(omega * t) ** 2)
         vz = jnp.zeros_like(t)
 
     elif axis == "xz":
@@ -180,7 +179,7 @@ def generate_lemniscate_trajectory(
         # Velocities
         vx = scale * omega * jnp.cos(omega * t)
         vy = jnp.zeros_like(t)
-        vz = scale * omega * (jnp.cos(omega * t)**2 - jnp.sin(omega * t)**2)
+        vz = scale * omega * (jnp.cos(omega * t) ** 2 - jnp.sin(omega * t) ** 2)
 
     else:
         raise ValueError(f"Invalid axis: {axis}. Must be 'xy' or 'xz'")
@@ -309,7 +308,10 @@ def generate_waypoint_trajectory(
 
         # Cubic Hermite interpolation
         p0, p1 = waypoints[i], waypoints[i + 1]
-        v0, v1 = velocities[i] * segment_duration, velocities[i + 1] * segment_duration
+        v0, v1 = (
+            velocities[i] * segment_duration,
+            velocities[i + 1] * segment_duration,
+        )
 
         # Hermite basis functions
         h00 = 2 * t**3 - 3 * t**2 + 1
@@ -319,10 +321,10 @@ def generate_waypoint_trajectory(
 
         # Position
         pos = (
-            h00[:, None] * p0[None, :] +
-            h10[:, None] * v0[None, :] +
-            h01[:, None] * p1[None, :] +
-            h11[:, None] * v1[None, :]
+            h00[:, None] * p0[None, :]
+            + h10[:, None] * v0[None, :]
+            + h01[:, None] * p1[None, :]
+            + h11[:, None] * v1[None, :]
         )
 
         # Velocity (derivative of position)
@@ -332,10 +334,10 @@ def generate_waypoint_trajectory(
         dh11 = 3 * t**2 - 2 * t
 
         vel = (
-            dh00[:, None] * p0[None, :] +
-            dh10[:, None] * v0[None, :] +
-            dh01[:, None] * p1[None, :] +
-            dh11[:, None] * v1[None, :]
+            dh00[:, None] * p0[None, :]
+            + dh10[:, None] * v0[None, :]
+            + dh01[:, None] * p1[None, :]
+            + dh11[:, None] * v1[None, :]
         ) / segment_duration
 
         # Combine position and velocity

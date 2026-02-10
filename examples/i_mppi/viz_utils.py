@@ -52,7 +52,9 @@ def _fov_polygon(
 _SEEN_NUM_RAYS = 80  # denser than FOV polygon for better cell coverage
 
 
-def _compute_seen_mask(x, y, yaw, grid, resolution, max_range, origin=(0.0, 0.0)):
+def _compute_seen_mask(
+    x, y, yaw, grid, resolution, max_range, origin=(0.0, 0.0)
+):
     """Return (H, W) boolean mask of grid cells visible from the given pose.
 
     Casts ``_SEEN_NUM_RAYS`` rays across the sensor FOV.  Each ray is
@@ -346,8 +348,13 @@ def create_trajectory_gif(
     fi = 0
     for k in range(n_steps):
         seen_k = _compute_seen_mask(
-            positions[k, 0], positions[k, 1], yaws[k],
-            grid_np, resolution, SENSOR_MAX_RANGE, origin,
+            positions[k, 0],
+            positions[k, 1],
+            yaws[k],
+            grid_np,
+            resolution,
+            SENSOR_MAX_RANGE,
+            origin,
         )
         cumulative_seen = cumulative_seen | seen_k
         if fi < len(frame_indices) and frame_indices[fi] == k:
@@ -359,7 +366,10 @@ def create_trajectory_gif(
 
     explored_rgba = np.zeros((*grid_np.shape, 4))
     explored_img = ax_map.imshow(
-        explored_rgba, origin="lower", extent=extent, zorder=1,
+        explored_rgba,
+        origin="lower",
+        extent=extent,
+        zorder=1,
     )
 
     title = ax_map.set_title("")

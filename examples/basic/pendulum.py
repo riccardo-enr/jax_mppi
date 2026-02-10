@@ -282,8 +282,10 @@ def run_pendulum_mppi(
 
             plt.tight_layout()
 
-            # Save to docs/media directory
-            output_dir = Path(__file__).parent.parent / "docs" / "media"
+            # Save to docs/_media/basic directory
+            output_dir = (
+                Path(__file__).parent.parent / "docs" / "_media" / "basic"
+            )
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / "pendulum_mppi.png"
 
