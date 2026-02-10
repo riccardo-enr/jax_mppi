@@ -32,6 +32,7 @@ _site/
 
 # AIs
 .claude/
+CLAUDE.md
 
 # IDEs
 .vscode/
