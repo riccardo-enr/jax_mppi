@@ -9,6 +9,7 @@ dist/
 *.png
 *.gif
 *.mp4
+*.html
 
 # Simulation and data outputs
 *.npy
