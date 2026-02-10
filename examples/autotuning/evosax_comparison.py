@@ -220,9 +220,11 @@ def plot_results(results_dict):
 
     plt.tight_layout()
     plt.savefig(
-        "docs/media/autotune_comparison.png", dpi=150, bbox_inches="tight"
+        "docs/_media/autotuning/autotune_comparison.png",
+        dpi=150,
+        bbox_inches="tight",
     )
-    print("\n✓ Plot saved to docs/media/autotune_comparison.png")
+    print("\n✓ Plot saved to docs/_media/autotuning/autotune_comparison.png")
     plt.show()
 
 

@@ -46,6 +46,7 @@ from jax_mppi.i_mppi.fsmi import (
     UniformFSMI,
     UniformFSMIConfig,
 )
+from jax_mppi.i_mppi.map import GridMap
 
 
 def create_occupancy_grid():
@@ -211,11 +212,17 @@ def main():
         motion_weight=0.5,  # Lower weight to allow detours
     )
 
+    grid_map_obj = GridMap(
+        grid=grid_map,
+        origin=map_origin,
+        resolution=map_resolution,
+        width=grid_map.shape[1],
+        height=grid_map.shape[0],
+    )
     fsmi_planner = FSMITrajectoryGenerator(
         fsmi_config,
         INFO_ZONES,
-        map_origin,
-        map_resolution,
+        grid_map_obj,
     )
     print(f"  Beams: {fsmi_config.num_beams}")
     print(f"  Range: {fsmi_config.max_range}m")
@@ -283,7 +290,11 @@ def main():
     )
 
     def make_sim_fn(
-        controller_name, config, ctrl_state, use_informative_cost=True, kernel_fn=None
+        controller_name,
+        config,
+        ctrl_state,
+        use_informative_cost=True,
+        kernel_fn=None,
     ):
         def step_fn(carry, t):
             current_state, current_ctrl_state, ref_traj = carry
@@ -341,6 +352,7 @@ def main():
                     bias_alpha=0.2,
                 )
             elif controller_name == "kmppi":
+                assert kernel_fn is not None
                 action, next_ctrl_state = biased_kmppi_command(
                     config,
                     current_ctrl_state,
@@ -483,7 +495,9 @@ def main():
         ) = sim_fn(state, ctrl_state)
         block_until_ready(final_state)
         elapsed = time.perf_counter() - start
-        print(f"  Runtime: {elapsed:.2f}s ({elapsed / sim_duration:.2f}x realtime)")
+        print(
+            f"  Runtime: {elapsed:.2f}s ({elapsed / sim_duration:.2f}x realtime)"
+        )
 
         action_jerk, traj_jerk = compute_smoothness(actions, history_x, dt)
 
@@ -508,7 +522,8 @@ def main():
 
     controllers = ["mppi", "smppi", "kmppi"]
     results = {
-        name: run_controller(name, use_informative_cost=True) for name in controllers
+        name: run_controller(name, use_informative_cost=True)
+        for name in controllers
     }
 
     # Print results
@@ -746,7 +761,9 @@ def main():
         )
 
     fig.update_xaxes(range=[-1, 14], row=1, col=1)
-    fig.update_yaxes(range=[-1, 12], scaleanchor="x", scaleratio=1, row=1, col=1)
+    fig.update_yaxes(
+        range=[-1, 12], scaleanchor="x", scaleratio=1, row=1, col=1
+    )
 
     fig.update_xaxes(title="X (m)", row=2, col=1)
     fig.update_yaxes(title="Y (m)", row=2, col=1)
@@ -770,8 +787,8 @@ def main():
         ),
     )
 
-    output_path = "docs/_media/i_mppi_simulation.png"
-    os.makedirs("docs/_media", exist_ok=True)
+    output_path = "docs/_media/i_mppi/i_mppi_simulation.png"
+    os.makedirs("docs/_media/i_mppi", exist_ok=True)
     fig.write_image(output_path)
     print(f"Visualization saved to {output_path}")
 

@@ -119,11 +119,13 @@ class TestCustomTrajectory:
             run_quadrotor_custom_trajectory,
         )
 
-        waypoints = jnp.array([
-            [0.0, 0.0, -2.0],
-            [3.0, 0.0, -3.0],
-            [3.0, 3.0, -2.0],
-        ])
+        waypoints = jnp.array(
+            [
+                [0.0, 0.0, -2.0],
+                [3.0, 0.0, -3.0],
+                [3.0, 3.0, -2.0],
+            ]
+        )
 
         states, actions, costs, reference = run_quadrotor_custom_trajectory(
             waypoints=waypoints,
@@ -148,11 +150,13 @@ class TestCustomTrajectory:
             run_quadrotor_custom_trajectory,
         )
 
-        waypoints = jnp.array([
-            [0.0, 0.0, -2.0],
-            [2.0, 0.0, -3.0],
-            [2.0, 2.0, -2.0],
-        ])
+        waypoints = jnp.array(
+            [
+                [0.0, 0.0, -2.0],
+                [2.0, 0.0, -3.0],
+                [2.0, 2.0, -2.0],
+            ]
+        )
 
         states, _, _, _ = run_quadrotor_custom_trajectory(
             waypoints=waypoints,
@@ -182,10 +186,12 @@ class TestCustomTrajectory:
             run_quadrotor_custom_trajectory,
         )
 
-        waypoints = jnp.array([
-            [0.0, 0.0, -2.0],
-            [2.0, 2.0, -3.0],
-        ])
+        waypoints = jnp.array(
+            [
+                [0.0, 0.0, -2.0],
+                [2.0, 2.0, -3.0],
+            ]
+        )
 
         states, _, _, _ = run_quadrotor_custom_trajectory(
             waypoints=waypoints,
@@ -207,10 +213,12 @@ class TestCustomTrajectory:
             run_quadrotor_custom_trajectory,
         )
 
-        waypoints = jnp.array([
-            [0.0, 0.0, -2.0],
-            [3.0, 0.0, -3.0],
-        ])
+        waypoints = jnp.array(
+            [
+                [0.0, 0.0, -2.0],
+                [3.0, 0.0, -3.0],
+            ]
+        )
 
         states, actions, costs, reference = run_quadrotor_custom_trajectory(
             waypoints=waypoints,
@@ -234,10 +242,12 @@ class TestCustomTrajectory:
 
         # Test with 2, 3, and 4 waypoints
         for num_waypoints in [2, 3, 4]:
-            waypoints = jnp.array([
-                [float(i), 0.0, -2.0 - float(i) * 0.5]
-                for i in range(num_waypoints)
-            ])
+            waypoints = jnp.array(
+                [
+                    [float(i), 0.0, -2.0 - float(i) * 0.5]
+                    for i in range(num_waypoints)
+                ]
+            )
 
             states, actions, costs, reference = run_quadrotor_custom_trajectory(
                 waypoints=waypoints,
@@ -271,8 +281,12 @@ class TestAdvancedExamplesCompatibility:
 
         waypoints = jnp.array([[0.0, 0.0, -2.0], [2.0, 0.0, -2.0]])
         states_custom, _, _, _ = run_quadrotor_custom_trajectory(
-            waypoints=waypoints, segment_duration=2.0,
-            num_samples=50, horizon=5, visualize=False, seed=42
+            waypoints=waypoints,
+            segment_duration=2.0,
+            num_samples=50,
+            horizon=5,
+            visualize=False,
+            seed=42,
         )
 
         # All should use 13D state

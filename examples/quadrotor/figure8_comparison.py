@@ -239,21 +239,23 @@ def run_controller(
         raise ValueError(f"Unknown controller type: {controller_type}")
 
     # Initial state
-    state = jnp.array([
-        reference[0, 0],
-        reference[0, 1],
-        reference[0, 2],
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-    ])
+    state = jnp.array(
+        [
+            reference[0, 0],
+            reference[0, 1],
+            reference[0, 2],
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
+    )
 
     print(f"\nRunning {controller_type.upper()}...")
 
@@ -613,7 +615,9 @@ def run_quadrotor_figure8_comparison(
             plt.tight_layout()
 
             # Save
-            output_dir = Path(__file__).parent.parent / "docs" / "media"
+            output_dir = (
+                Path(__file__).parent.parent / "docs" / "_media" / "quadrotor"
+            )
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / "quadrotor_figure8_comparison.png"
 

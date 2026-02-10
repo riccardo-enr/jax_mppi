@@ -20,6 +20,7 @@ import numpy as np
 
 from jax_mppi.i_mppi.environment import INFO_ZONES
 from jax_mppi.i_mppi.fsmi import FSMIConfig, FSMIModule, FSMITrajectoryGenerator
+from jax_mppi.i_mppi.map import GridMap
 
 
 def create_synthetic_grid(width=100, height=100, resolution=0.1):
@@ -145,9 +146,11 @@ def visualize_grid_with_fsmi(grid_map, map_origin, resolution, config):
     plt.colorbar(im3, ax=ax, label="Mutual Information")
 
     plt.tight_layout()
-    os.makedirs("docs/_media", exist_ok=True)
-    plt.savefig("docs/_media/fsmi_grid_demo.png", dpi=150, bbox_inches="tight")
-    print("Saved visualization to docs/_media/fsmi_grid_demo.png")
+    os.makedirs("docs/_media/fsmi", exist_ok=True)
+    plt.savefig(
+        "docs/_media/fsmi/fsmi_grid_demo.png", dpi=150, bbox_inches="tight"
+    )
+    print("Saved visualization to docs/_media/fsmi/fsmi_grid_demo.png")
     plt.close()
 
 
@@ -191,9 +194,11 @@ def compare_fsmi_modes():
 
     # Grid-based FSMI
     print("\n=== Grid-based FSMI ===")
-    fsmi_gen_grid = FSMITrajectoryGenerator(
-        config_grid, INFO_ZONES, map_origin, resolution
+    H, W = grid_map.shape
+    gm = GridMap(
+        grid=grid_map, origin=map_origin, resolution=resolution, width=W, height=H
     )
+    fsmi_gen_grid = FSMITrajectoryGenerator(config_grid, INFO_ZONES, gm)
     info_gain_grid = fsmi_gen_grid._info_gain_grid(
         ref_traj, view_dir_xy, grid_map, dt
     )
@@ -201,7 +206,7 @@ def compare_fsmi_modes():
 
     # Legacy geometric FSMI
     print("\n=== Legacy Geometric FSMI ===")
-    fsmi_gen_legacy = FSMITrajectoryGenerator(config_legacy, INFO_ZONES)
+    fsmi_gen_legacy = FSMITrajectoryGenerator(config_legacy, INFO_ZONES, gm)
     info_levels = jnp.array([100.0, 100.0])
     info_gain_legacy = fsmi_gen_legacy._info_gain_legacy(
         ref_traj, view_dir_xy, info_levels, dt
@@ -227,11 +232,13 @@ def demo_beam_computation():
     cell_dists = jnp.arange(N) * 0.1
 
     # Scenario: Free space, then frontier, then obstacle
-    cell_probs = jnp.concatenate([
-        0.2 * jnp.ones(20),  # Free
-        0.5 * jnp.ones(10),  # Unknown (frontier)
-        0.8 * jnp.ones(20),  # Occupied
-    ])
+    cell_probs = jnp.concatenate(
+        [
+            0.2 * jnp.ones(20),  # Free
+            0.5 * jnp.ones(10),  # Unknown (frontier)
+            0.8 * jnp.ones(20),  # Occupied
+        ]
+    )
 
     config = FSMIConfig()
     map_origin = jnp.array([0.0, 0.0])
@@ -283,9 +290,11 @@ def demo_beam_computation():
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    os.makedirs("docs/_media", exist_ok=True)
-    plt.savefig("docs/_media/fsmi_beam_demo.png", dpi=150, bbox_inches="tight")
-    print("Saved beam visualization to docs/_media/fsmi_beam_demo.png")
+    os.makedirs("docs/_media/fsmi", exist_ok=True)
+    plt.savefig(
+        "docs/_media/fsmi/fsmi_beam_demo.png", dpi=150, bbox_inches="tight"
+    )
+    print("Saved beam visualization to docs/_media/fsmi/fsmi_beam_demo.png")
     plt.close()
 
 
@@ -315,8 +324,8 @@ def main():
     print("\n" + "=" * 60)
     print("Demo complete!")
     print("Generated files:")
-    print("  - docs/_media/fsmi_beam_demo.png: Single beam computation")
-    print("  - docs/_media/fsmi_grid_demo.png: Grid FSMI heatmap")
+    print("  - docs/_media/fsmi/fsmi_beam_demo.png: Single beam computation")
+    print("  - docs/_media/fsmi/fsmi_grid_demo.png: Grid FSMI heatmap")
     print("=" * 60)
 
 

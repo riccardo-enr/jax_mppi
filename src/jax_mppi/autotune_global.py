@@ -257,7 +257,6 @@ class RayOptimizer(Optimizer):
             raise RuntimeError("Must call setup_optimization() first")
 
         # Use iterations if provided, otherwise use num_samples
-        num_trials = iterations if iterations > 0 else self.num_samples
 
         # This will be set by AutotuneGlobal
         raise NotImplementedError(
@@ -350,9 +349,9 @@ class AutotuneGlobal(Autotune):
             for param in self.params_to_tune:
                 if param.dim() == 1:
                     # Single-valued parameter
-                    param_values[param.name()] = np.array([
-                        config[param.name()]
-                    ])
+                    param_values[param.name()] = np.array(
+                        [config[param.name()]]
+                    )
                 else:
                     # Multi-valued parameter
                     values = []
@@ -409,10 +408,12 @@ class AutotuneGlobal(Autotune):
             if param.dim() == 1:
                 value = np.array([best_config[param.name()]])
             else:
-                value = np.array([
-                    best_config[f"{param.name()}_{i}"]
-                    for i in range(param.dim())
-                ])
+                value = np.array(
+                    [
+                        best_config[f"{param.name()}_{i}"]
+                        for i in range(param.dim())
+                    ]
+                )
             validated = param.ensure_valid_value(value)
             param.apply_parameter_value(validated)
 
@@ -439,11 +440,12 @@ class AutotuneGlobal(Autotune):
 
 def save_search_progress_plot(
     iteration_costs: list[float],
-    output_path: str | Path = "docs/media/autotune_global_progress.png",
+    output_path: str
+    | Path = "docs/_media/autotuning/autotune_global_progress.png",
     title: str = "Global Hyperparameter Search Progress",
     **kwargs: Any,
 ) -> None:
-    """Save global search progress plot to docs/media.
+    """Save global search progress plot.
 
     Args:
         iteration_costs: List of best costs at each iteration

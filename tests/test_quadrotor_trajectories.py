@@ -260,7 +260,12 @@ class TestHelixTrajectory:
         center = jnp.array([0.0, 0.0])
 
         trajectory = generate_helix_trajectory(
-            radius, height_rate, period=10.0, duration=10.0, dt=0.01, center=center
+            radius,
+            height_rate,
+            period=10.0,
+            duration=10.0,
+            dt=0.01,
+            center=center,
         )
 
         # Check horizontal distance from center
@@ -277,8 +282,12 @@ class TestHelixTrajectory:
         duration = 10.0
 
         trajectory = generate_helix_trajectory(
-            radius, height_rate, period=5.0, duration=duration, dt=0.01,
-            start_height=start_height
+            radius,
+            height_rate,
+            period=5.0,
+            duration=duration,
+            dt=0.01,
+            start_height=start_height,
         )
 
         # Check altitude change
@@ -322,11 +331,13 @@ class TestWaypointTrajectory:
 
     def test_waypoint_passes_through_waypoints(self):
         """Test that trajectory passes through specified waypoints."""
-        waypoints = jnp.array([
-            [0.0, 0.0, -2.0],
-            [5.0, 0.0, -5.0],
-            [5.0, 5.0, -5.0],
-        ])
+        waypoints = jnp.array(
+            [
+                [0.0, 0.0, -2.0],
+                [5.0, 0.0, -5.0],
+                [5.0, 5.0, -5.0],
+            ]
+        )
 
         trajectory = generate_waypoint_trajectory(
             waypoints, segment_duration=5.0, dt=0.01
@@ -338,11 +349,13 @@ class TestWaypointTrajectory:
 
     def test_waypoint_smooth_transitions(self):
         """Test that waypoint trajectory has continuous velocity."""
-        waypoints = jnp.array([
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [1.0, 1.0, 0.0],
-        ])
+        waypoints = jnp.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 1.0, 0.0],
+            ]
+        )
 
         trajectory = generate_waypoint_trajectory(
             waypoints, segment_duration=2.0, dt=0.01
@@ -361,18 +374,24 @@ class TestWaypointTrajectory:
         waypoints = jnp.array([[0.0, 0.0, 0.0]])
 
         with pytest.raises(ValueError):
-            generate_waypoint_trajectory(waypoints, segment_duration=5.0, dt=0.01)
+            generate_waypoint_trajectory(
+                waypoints, segment_duration=5.0, dt=0.01
+            )
 
     def test_waypoint_with_specified_velocities(self):
         """Test waypoint trajectory with specified velocities."""
-        waypoints = jnp.array([
-            [0.0, 0.0, -2.0],
-            [5.0, 0.0, -2.0],
-        ])
-        velocities = jnp.array([
-            [0.0, 0.0, 0.0],  # Start from rest
-            [0.0, 0.0, 0.0],  # End at rest
-        ])
+        waypoints = jnp.array(
+            [
+                [0.0, 0.0, -2.0],
+                [5.0, 0.0, -2.0],
+            ]
+        )
+        velocities = jnp.array(
+            [
+                [0.0, 0.0, 0.0],  # Start from rest
+                [0.0, 0.0, 0.0],  # End at rest
+            ]
+        )
 
         trajectory = generate_waypoint_trajectory(
             waypoints, velocities=velocities, segment_duration=5.0, dt=0.01

@@ -673,16 +673,16 @@ class Autotune:
 def save_convergence_plot(
     costs: list[float],
     initial_cost: float,
-    output_path: str | Path = "docs/media/autotune_convergence.png",
+    output_path: str | Path = "docs/_media/autotuning/autotune_convergence.png",
     title: str = "Autotuning Convergence",
     **kwargs: Any,
 ) -> None:
-    """Save convergence plot to docs/media.
+    """Save convergence plot.
 
     Args:
         costs: List of costs at each iteration
         initial_cost: Initial cost before optimization
-        output_path: Path to save the plot (default: docs/media/autotune_convergence.png)
+        output_path: Path to save the plot (default: docs/_media/autotuning/autotune_convergence.png)
         title: Plot title
         **kwargs: Additional arguments passed to plt.savefig (dpi, figsize, etc.)
     """

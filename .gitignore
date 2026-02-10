@@ -5,13 +5,22 @@ __pycache__/
 build/
 dist/
 
-# png
+# Media files
 *.png
 *.gif
+*.mp4
 
-# UV
+# Simulation and data outputs
+*.npy
+*.npz
+
+# Pixi
+.pixi/
+
+.benchmarks/
+.ruff_cache/
+
 .venv/
-uv.lock
 
 # Docs
 docs/_issues
@@ -24,7 +33,12 @@ _site/
 
 # AIs
 .claude/
+CLAUDE.md
 
 # IDEs
 .vscode/
 .zed/
+
+# Debug
+ruff_errors.txt
+basedpyright_report.txt

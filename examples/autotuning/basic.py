@@ -93,11 +93,13 @@ def main():
     print(f"Best lambda: {best.params['lambda'][0]:.3f}")
     print(f"Best noise_sigma: {best.params['noise_sigma'][0]:.3f}")
 
-    # 8. Save convergence plot to docs/media
+    # 8. Save convergence plot
     print("\nSaving convergence plot...")
     initial_cost = costs[0]
     autotune.save_convergence_plot(
-        costs, initial_cost, "docs/media/autotune_basic_convergence.png"
+        costs,
+        initial_cost,
+        "docs/_media/autotuning/autotune_basic_convergence.png",
     )
 
 

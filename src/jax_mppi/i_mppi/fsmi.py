@@ -11,33 +11,27 @@ The implementation includes:
 4. Integration with biased MPPI trajectory generation
 """
 
-from dataclasses import dataclass, field, replace
-from functools import partial
+from dataclasses import dataclass, field
 
 import jax
 import jax.numpy as jnp
 from jax.scipy.stats import norm
 from jax.tree_util import register_pytree_node_class
 
-from jax_mppi.i_mppi.environment import dist_rect
-
-from .map import GridMap, world_to_grid
+from .map import GridMap
 
 
 @dataclass
 class FSMIConfig:
-    # Legacy geometric parameters (for backward compatibility)
     info_threshold: float = 20.0
     ref_speed: float = 2.0
     info_weight: float = 10.0
     motion_weight: float = 1.0
+    dist_weight: float = 0.5
 
     goal_pos: jax.Array = field(
         default_factory=lambda: jnp.array([9.0, 5.0, -2.0])
     )
-
-    # Grid-based FSMI parameters
-    use_grid_fsmi: bool = True  # Toggle between grid FSMI and legacy geometric
 
     # Sensor parameters (Zhang et al. 2020)
     fov_rad: float = 1.57  # 90 degrees FOV
@@ -62,21 +56,6 @@ class FSMIConfig:
     # "filtered": conservative first-hit filtering (Method 2)
     trajectory_ig_method: str = "direct"
     trajectory_ig_decay: float = 0.7  # Decay rate for discount method
-
-    # Legacy geometric parameters (kept for backward compatibility)
-    sensor_range: float = 6.0
-    fov_half_angle_deg: float = 60.0
-    info_scale: float = 20.0
-    distance_sigma: float = 1.0
-    info_depletion_rate: float = 20.0
-    info_depletion_sigma: float = 1.0
-
-    # Parameters from my implementation
-    num_rays: int = 36
-    ray_max_steps: int = 50
-    gain_weight: float = 1.0
-    dist_weight: float = 0.5
-    min_gain_threshold: float = 2.0
 
 
 @dataclass
@@ -103,6 +82,26 @@ class UniformFSMIConfig:
 
     # Weight for informative cost term
     info_weight: float = 5.0
+
+
+@dataclass
+class InfoFieldConfig:
+    """Configuration for information potential field computation.
+
+    Used in Parallel I-MPPI architecture for computing a cached information
+    potential field updated at 5-10 Hz, consulted by the MPPI planner at 50 Hz.
+    """
+
+    field_res: float = 0.5  # meters per field cell
+    field_extent: float = 5.0  # half-width of local workspace [m]
+    n_yaw: int = 8  # candidate yaw angles
+    field_update_interval: int = 10  # MPPI steps between field updates
+    lambda_info: float = 5.0  # field lookup cost weight
+    lambda_local: float = 10.0  # Uniform-FSMI cost weight
+    ref_speed: float = 2.0  # gradient trajectory speed [m/s]
+    ref_horizon: int = 40  # gradient trajectory steps
+    target_weight: float = 1.0  # MPPI target tracking weight
+    goal_weight: float = 0.5  # constant goal attraction weight
 
 
 class FSMIModule:
@@ -238,7 +237,7 @@ class FSMIModule:
         return mi
 
     def compute_fsmi(
-        self, grid_map: jax.Array, pos: jax.Array, yaw: float
+        self, grid_map: jax.Array, pos: jax.Array, yaw: jax.typing.ArrayLike
     ) -> jax.Array:
         """
         Computes total FSMI for all beams at a given pose.
@@ -399,7 +398,7 @@ class UniformFSMI:
         return mi
 
     def compute(
-        self, grid_map: jax.Array, pos: jax.Array, yaw: float
+        self, grid_map: jax.Array, pos: jax.Array, yaw: jax.typing.ArrayLike
     ) -> jax.Array:
         """
         Compute Uniform-FSMI at a given pose.
@@ -471,142 +470,82 @@ class UniformFSMI:
         )
 
 
-# --- FSMI Implementation from my changes (simplified) ---
+def compute_info_field(
+    fsmi_module: FSMIModule,
+    grid_map: jax.Array,
+    uav_pos: jax.Array,
+    config: InfoFieldConfig,
+) -> tuple[jax.Array, jax.Array]:
+    """Compute information potential field centered on UAV.
 
+    Evaluates FSMI at a grid of (x, y) positions with multiple yaw angles,
+    returning the max information gain for each position (yaw-independent field).
 
-def _entropy_proxy(p: jax.Array) -> jax.Array:
-    """Returns proxy for entropy: 1.0 at p=0.5, 0.0 at p=0,1."""
-    # 4 * p * (1 - p)
-    return 4.0 * p * (1.0 - p)
+    Used in Parallel I-MPPI architecture as a medium-range strategic guidance
+    source, consulted by MPPI cost function via bilinear interpolation.
 
+    Args:
+        fsmi_module: FSMIModule instance for computing FSMI at each pose
+        grid_map: (H, W) occupancy grid
+        uav_pos: (3,) or (2,) UAV position in world coordinates
+        config: InfoFieldConfig with field parameters
 
-@partial(jax.jit, static_argnames=["num_steps"])
-def cast_ray_fsmi(
-    origin: jax.Array,  # (2,)
-    angle: float,
-    map_grid: jax.Array,  # (H, W)
-    map_origin: jax.Array,
-    map_resolution: float,
-    num_steps: int = 50,
-) -> float:
+    Returns:
+        (field, field_origin):
+            field: (Nx, Ny) information potential values
+            field_origin: (2,) world coordinates of field[0, 0]
+
+    Algorithm:
+        1. Build coarse grid of positions centered on UAV
+        2. Define n_yaw candidate yaw angles
+        3. Evaluate FSMI at every (position, yaw) pair via double vmap
+        4. Max over yaw to get yaw-independent field
     """
-    Cast a single ray and compute information gain (entropy reduction).
-    """
-    step_size = map_resolution
-    dx = jnp.cos(angle) * step_size
-    dy = jnp.sin(angle) * step_size
-    step_vec = jnp.array([dx, dy])
+    # Extract x, y from uav_pos (drop z if present)
+    uav_xy = uav_pos[:2]
 
-    def step_fn(carry, _):
-        pos, visibility, current_gain = carry
-
-        # Get grid index
-        grid_pos = world_to_grid(pos, map_origin, map_resolution)
-        ix = jnp.floor(grid_pos[0]).astype(jnp.int32)
-        iy = jnp.floor(grid_pos[1]).astype(jnp.int32)
-
-        # Check bounds
-        h, w = map_grid.shape
-        in_bounds = (ix >= 0) & (ix < w) & (iy >= 0) & (iy < h)
-
-        # Get cell probability
-        # If out of bounds, treat as occupied (prob=1) to stop ray
-        p = jax.lax.select(in_bounds, map_grid[iy, ix], 1.0)
-
-        # Info Gain
-        # Gain = visibility * Entropy(p)
-        # Only unknown cells (p=0.5) contribute high entropy
-        h_val = _entropy_proxy(p)
-        gain_inc = visibility * h_val
-
-        # Update visibility
-        # Visibility reduces by probability of occlusion (p)
-        # If p=1 (wall), vis becomes 0
-        # If p=0 (free), vis stays same
-        # If p=0.5 (unknown), vis reduces by 0.5
-        new_vis = visibility * (1.0 - p)
-
-        new_pos = pos + step_vec
-
-        return (new_pos, new_vis, current_gain + gain_inc), None
-
-    init_val = (origin, 1.0, 0.0)  # pos, visibility, gain
-    (final_pos, final_vis, total_gain), _ = jax.lax.scan(
-        step_fn, init_val, None, length=num_steps
+    # Build field grid positions
+    field_xs = (
+        jnp.arange(-config.field_extent, config.field_extent, config.field_res)
+        + uav_xy[0]
     )
-
-    return total_gain
-
-
-@partial(jax.jit, static_argnames=["num_rays", "num_steps"])
-def compute_fsmi_gain(
-    origin: jax.Array,  # (2,)
-    map_grid: jax.Array,
-    map_origin: jax.Array,
-    map_resolution: float,
-    num_rays: int = 36,
-    num_steps: int = 50,
-) -> float:
-    """
-    Compute total FSMI gain for a viewpoint by casting rays in circle.
-    """
-    angles = jnp.linspace(0, 2 * jnp.pi, num_rays, endpoint=False)
-
-    # vmap over angles
-    def ray_fn(a):
-        return cast_ray_fsmi(
-            origin, a, map_grid, map_origin, map_resolution, num_steps
-        )
-
-    gains = jax.vmap(ray_fn)(angles)
-    return jnp.sum(gains)
-
-
-@partial(jax.jit, static_argnames=["width", "height", "resolution"])
-def _update_grid_zones(
-    grid: jax.Array,
-    origin: jax.Array,
-    resolution: float,
-    info_zones: jax.Array,
-    info_levels: jax.Array,
-    width: int,
-    height: int,
-) -> jax.Array:
-    """Updates grid probabilities based on info levels."""
-    y_range = jnp.arange(height)
-    x_range = jnp.arange(width)
-    Y, X = jnp.meshgrid(y_range, x_range, indexing="ij")
-
-    world_X = origin[0] + (X + 0.5) * resolution
-    world_Y = origin[1] + (Y + 0.5) * resolution
-    coords = jnp.stack([world_X.flatten(), world_Y.flatten()], axis=1)
-
-    def get_new_prob(p_curr, pos):
-        # We only update if p_curr != 1.0 (Wall)
-        is_wall = p_curr >= 0.99
-
-        zone_prob = 0.0
-        for i in range(info_zones.shape[0]):
-            z = info_zones[i]
-            level = info_levels[i]
-            center = z[:2]
-            size = z[2:4]
-            half_size = size / 2.0
-            d = jnp.abs(pos - center) - half_size
-            in_zone = jnp.all(d <= 0.0)
-            p = 0.5 * jnp.clip(level / 100.0, 0.0, 1.0)
-            zone_prob = jax.lax.select(in_zone, p, zone_prob)
-
-        return jax.lax.select(is_wall, 1.0, zone_prob)
-
-    new_vals = jax.vmap(lambda p_c, pos: get_new_prob(p_c, pos))(
-        grid.flatten(), coords
+    field_ys = (
+        jnp.arange(-config.field_extent, config.field_extent, config.field_res)
+        + uav_xy[1]
     )
-    return new_vals.reshape(height, width)
+    Nx, Ny = len(field_xs), len(field_ys)
+
+    # Meshgrid: (Nx, Ny, 2)
+    positions_grid = jnp.stack(
+        jnp.meshgrid(field_xs, field_ys, indexing="ij"), axis=-1
+    )
+    flat_positions = positions_grid.reshape(-1, 2)  # (Nx*Ny, 2)
+
+    # Define yaw angles: 0 to 2π in n_yaw steps
+    yaws = jnp.linspace(0, 2 * jnp.pi, config.n_yaw, endpoint=False)
+
+    # Compute FSMI for all (position, yaw) pairs via double vmap
+    # Inner vmap: over positions (axis 0) for each yaw
+    # Outer vmap: over yaws (axis 1, None for grid_map)
+    def fsmi_fn(pos, yaw):
+        return fsmi_module.compute_fsmi(grid_map, pos, yaw)
+
+    fsmi_vmap_pos = jax.vmap(fsmi_fn, in_axes=(0, None))
+    fsmi_vmap_yaw = jax.vmap(fsmi_vmap_pos, in_axes=(None, 0))
+
+    gains = fsmi_vmap_yaw(flat_positions, yaws)  # (n_yaw, Nx*Ny)
+
+    # Max over yaws (axis 0) and reshape to field grid
+    field = gains.max(axis=0).reshape(Nx, Ny)
+
+    # Field origin: world coordinates of field[0, 0]
+    field_origin = jnp.array([field_xs[0], field_ys[0]])
+
+    return field, field_origin
 
 
 # ---------------------------------------------------------------------------
-# Trajectory-level FSMI methods (Part A of parallel trajectory IG plan)
+# Trajectory-level FSMI methods
 # ---------------------------------------------------------------------------
 
 
@@ -669,9 +608,7 @@ def _fov_cell_masks(
         dist = jnp.sqrt(dx**2 + dy**2)
         bearing = jnp.arctan2(dy, dx)
         # Angle difference wrapped to [-pi, pi]
-        angle_diff = jnp.arctan2(
-            jnp.sin(bearing - yaw), jnp.cos(bearing - yaw)
-        )
+        angle_diff = jnp.arctan2(jnp.sin(bearing - yaw), jnp.cos(bearing - yaw))
         in_fov = jnp.abs(angle_diff) <= (fov_rad / 2.0)
         in_range = dist <= max_range
         return in_fov & in_range
@@ -814,11 +751,15 @@ def fsmi_trajectory_filtered(
     pose_indices = jnp.arange(N)
 
     # first_hit[i, h, w] = True iff pose i is the first to see cell (h,w)
-    first_hit = (first_pose[None, :, :] == pose_indices[:, None, None]) & any_seen[None, :, :]
+    first_hit = (
+        first_pose[None, :, :] == pose_indices[:, None, None]
+    ) & any_seen[None, :, :]
 
     # Independent fraction: of this pose's FOV cells, how many are first-hits
     n_fov = jnp.sum(masks, axis=(1, 2)).astype(jnp.float32)  # (N,)
-    n_first = jnp.sum(first_hit & masks, axis=(1, 2)).astype(jnp.float32)  # (N,)
+    n_first = jnp.sum(first_hit & masks, axis=(1, 2)).astype(
+        jnp.float32
+    )  # (N,)
     independent_fraction = n_first / jnp.maximum(n_fov, 1.0)  # (N,)
 
     return jnp.sum(mi_per_pose * independent_fraction) * dt * subsample_rate
@@ -827,7 +768,8 @@ def fsmi_trajectory_filtered(
 @register_pytree_node_class
 @dataclass
 class FSMITrajectoryGenerator:
-    """Layer 2: FSMI-driven trajectory generator."""
+    """Layer 2: FSMI (Fast Shannon Mutual Information)-driven trajectory
+    generator."""
 
     config: FSMIConfig
     info_zones: jax.Array
@@ -842,24 +784,10 @@ class FSMITrajectoryGenerator:
         config = aux[0]
         return cls(config=config, info_zones=info_zones, grid_map=grid_map)
 
-    def update_map(self, info_levels: jax.Array):
-        """Update the internal grid map based on current info levels."""
-        new_grid = _update_grid_zones(
-            self.grid_map.grid,
-            self.grid_map.origin,
-            self.grid_map.resolution,
-            self.info_zones,
-            info_levels,
-            self.grid_map.width,
-            self.grid_map.height,
-        )
-        new_map = replace(self.grid_map, grid=new_grid)
-        return replace(self, grid_map=new_map)
-
     def select_target(
         self,
         current_pos: jax.Array,
-        info_levels: jax.Array | None = None,
+        info_levels: jax.Array,
     ):
         """Select best target based on remaining info levels.
 
@@ -870,48 +798,23 @@ class FSMITrajectoryGenerator:
 
         Args:
             current_pos: Current robot position (3,).
-            info_levels: (N,) remaining info per zone. If None, falls
-                back to FSMI-based scoring on the grid.
+            info_levels: (N,) remaining info per zone.
         """
         candidates = self.info_zones[:, :2]  # (N, 2)
         goal = self.config.goal_pos[:2]
 
-        if info_levels is not None:
-            # Score zones by remaining info weighted against distance
-            dists = jax.vmap(
-                lambda p: jnp.linalg.norm(p - current_pos[:2])
-            )(candidates)
-            zone_scores = info_levels - self.config.dist_weight * dists
+        # Score zones by remaining info weighted against distance
+        dists = jax.vmap(lambda p: jnp.linalg.norm(p - current_pos[:2]))(
+            candidates
+        )
+        zone_scores = info_levels - self.config.dist_weight * dists
 
-            # Mask out depleted zones
-            has_info = info_levels > self.config.info_threshold
-            zone_scores = jnp.where(has_info, zone_scores, -1e6)
+        # Mask out depleted zones
+        has_info = info_levels > self.config.info_threshold
+        zone_scores = jnp.where(has_info, zone_scores, jnp.float32(-1e6))
 
-            best_zone_idx = jnp.argmax(zone_scores)
-            go_to_zone = has_info[best_zone_idx]
-        else:
-            # Fallback: FSMI-based scoring on grid
-            def score_candidate(cand_pos):
-                gain = compute_fsmi_gain(
-                    cand_pos,
-                    self.grid_map.grid,
-                    self.grid_map.origin,
-                    self.grid_map.resolution,
-                    self.config.num_rays,
-                    self.config.ray_max_steps,
-                )
-                dist = jnp.linalg.norm(cand_pos - current_pos[:2])
-                score = (
-                    self.config.gain_weight * gain
-                    - self.config.dist_weight * dist
-                )
-                return score, gain
-
-            zone_scores, zone_gains = jax.vmap(
-                lambda p: score_candidate(p)
-            )(candidates)
-            best_zone_idx = jnp.argmax(zone_scores)
-            go_to_zone = zone_gains[best_zone_idx] > self.config.min_gain_threshold
+        best_zone_idx = jnp.argmax(zone_scores)
+        go_to_zone = has_info[best_zone_idx]
 
         target_pos_2d = jax.lax.select(
             go_to_zone, candidates[best_zone_idx], goal
@@ -921,10 +824,6 @@ class FSMITrajectoryGenerator:
         mode = jax.lax.select(go_to_zone, 1, 0)
 
         return target_pos, mode
-
-    def _fov_cos_threshold(self) -> jax.Array:
-        """Cosine of half FOV angle for legacy geometric gating."""
-        return jnp.cos(jnp.deg2rad(self.config.fov_half_angle_deg))
 
     def _make_ref_traj(
         self,
@@ -954,70 +853,6 @@ class FSMITrajectoryGenerator:
         ref_traj = pos0[None, :] + step_d[:, None] * unit[None, :]
         return ref_traj
 
-    def _info_gain_legacy(
-        self,
-        ref_traj: jax.Array,
-        view_dir_xy: jax.Array,
-        info_levels: jax.Array,
-        dt: float,
-    ) -> jax.Array:
-        """
-        Legacy geometric info gain (heuristic gating functions).
-
-        Uses FOV, range, and proximity gates to approximate information gain
-        from rectangular zones.
-        """
-        pos_xy = ref_traj[:, :2]
-        zone_centers = self.info_zones[:, :2]
-        zone_sizes = self.info_zones[:, 2:4]
-
-        def dist_to_zones(p):
-            return jax.vmap(dist_rect, in_axes=(None, 0, 0))(
-                p, zone_centers, zone_sizes
-            )
-
-        rect_dist = jax.vmap(dist_to_zones)(pos_xy)
-
-        vec = zone_centers[None, :, :] - pos_xy[:, None, :]
-        dist = jnp.linalg.norm(vec, axis=-1) + 1e-6
-        view_dir = view_dir_xy / (jnp.linalg.norm(view_dir_xy) + 1e-6)
-        cos_angle = jnp.sum(vec * view_dir[None, None, :], axis=-1) / dist
-        cos_half = self._fov_cos_threshold()
-
-        angle_gate = jnp.clip(
-            (cos_angle - cos_half) / (1.0 - cos_half + 1e-6), 0.0, 1.0
-        )
-        range_gate = jnp.clip(
-            1.0 - dist / (self.config.sensor_range + 1e-6), 0.0, 1.0
-        )
-        proximity_gate = jnp.exp(
-            -(rect_dist**2) / (2.0 * self.config.distance_sigma**2)
-        )
-
-        info_levels0 = info_levels
-
-        def step_fn(info_lvls, gates):
-            angle_g, range_g, prox_g, rect_d = gates
-            info_strength = jnp.tanh(info_lvls / self.config.info_scale)
-            step_gain = angle_g * range_g * prox_g * info_strength
-
-            # Deplete info where trajectory is informative
-            depletion = (
-                self.config.info_depletion_rate
-                * dt
-                * jnp.exp(
-                    -(rect_d**2) / (2.0 * self.config.info_depletion_sigma**2)
-                )
-            )
-            next_info = jnp.maximum(0.0, info_lvls - depletion)
-            return next_info, jnp.sum(step_gain)
-
-        gates = (angle_gate, range_gate, proximity_gate, rect_dist)
-        info_levels_T, gain_seq = jax.lax.scan(step_fn, info_levels0, gates)
-        _ = info_levels_T
-
-        return dt * jnp.sum(gain_seq)
-
     def _info_gain_grid(
         self,
         ref_traj: jax.Array,
@@ -1046,7 +881,7 @@ class FSMITrajectoryGenerator:
         """
         fsmi_mod = FSMIModule(
             self.config,
-            self.grid_map.origin,
+            jnp.asarray(self.grid_map.origin),
             self.grid_map.resolution,
         )
         subsample = self.config.trajectory_subsample_rate
@@ -1074,18 +909,17 @@ class FSMITrajectoryGenerator:
         self,
         pos0: jax.Array,
         target_pos: jax.Array,
-        info_data: jax.Array | tuple[jax.Array, jax.Array],
+        info_data: tuple[jax.Array, jax.Array],
         horizon: int,
         dt: float,
     ) -> jax.Array:
         """
-        Unified cost target selection: motion_cost - info_weight * info_gain.
+        Cost for target selection: motion_cost - info_weight * info_gain.
 
         Args:
             pos0: Current position
             target_pos: Candidate target position
-            info_data: Either info_levels (legacy)
-                       or (grid_map, info_levels) tuple
+            info_data: (grid_map, info_levels) tuple
             horizon: Planning horizon
             dt: Time step
 
@@ -1100,26 +934,17 @@ class FSMITrajectoryGenerator:
             target_pos[:2] - pos0[:2]
         )
 
-        # Info gain (dispatch based on mode)
-        if self.config.use_grid_fsmi:
-            # info_data is (grid_map, info_levels) tuple
-            grid_map, _info_levels = info_data
-
-            info_gain = self._info_gain_grid(
-                ref_traj, view_dir_xy, grid_map, dt
-            )
-        else:
-            info_levels = info_data  # Single array
-            info_gain = self._info_gain_legacy(
-                ref_traj, view_dir_xy, info_levels, dt
-            )
+        grid_map, _info_levels = info_data
+        info_gain = self._info_gain_grid(
+            ref_traj, view_dir_xy, grid_map, dt
+        )
 
         return motion_cost - self.config.info_weight * info_gain
 
     def get_target(
         self,
         pos0: jax.Array,
-        info_data: jax.Array | tuple[jax.Array, jax.Array],
+        info_data: tuple[jax.Array, jax.Array],
         horizon: int,
         dt: float,
     ) -> tuple[jax.Array, jax.Array]:
@@ -1130,7 +955,7 @@ class FSMITrajectoryGenerator:
 
         Args:
             pos0: Current position [x, y, z]
-            info_data: Either info_levels or (grid_map, info_levels)
+            info_data: (grid_map, info_levels) tuple
             horizon: Planning horizon steps
             dt: Time step size
 
@@ -1142,10 +967,12 @@ class FSMITrajectoryGenerator:
         goal_pos = self.config.goal_pos
 
         # Info zone positions (use zone centers at z=-2.0)
-        zone_targets = jnp.column_stack([
-            self.info_zones[:, :2],  # cx, cy
-            -2.0 * jnp.ones(self.info_zones.shape[0]),  # z coordinate
-        ])
+        zone_targets = jnp.column_stack(
+            [
+                self.info_zones[:, :2],  # cx, cy
+                -2.0 * jnp.ones(self.info_zones.shape[0]),  # z coordinate
+            ]
+        )
 
         # Concatenate: [goal, zone1, zone2, ...]
         candidates = jnp.vstack([goal_pos[None, :], zone_targets])
@@ -1164,7 +991,7 @@ class FSMITrajectoryGenerator:
     def get_reference_trajectory(
         self,
         state: jax.Array,
-        info_data: jax.Array | tuple[jax.Array, jax.Array],
+        info_data: tuple[jax.Array, jax.Array],
         horizon: int,
         dt: float,
     ) -> tuple[jax.Array, jax.Array]:
@@ -1173,7 +1000,7 @@ class FSMITrajectoryGenerator:
 
         Args:
             state: Current state (position + velocities + info_levels)
-            info_data: Either info_levels or (grid_map, info_levels)
+            info_data: (grid_map, info_levels) tuple
             horizon: Trajectory length
             dt: Time step
 
@@ -1182,12 +1009,7 @@ class FSMITrajectoryGenerator:
             target_mode: Integer index of selected target
         """
         pos0 = state[:3]
-        # Extract info_levels from info_data
-        if isinstance(info_data, tuple):
-            _grid, info_levels = info_data
-        else:
-            info_levels = info_data
-        # Use select_target with info_levels so depleted zones are skipped
+        _grid, info_levels = info_data
         target_pos, target_mode = self.select_target(pos0, info_levels)
         ref_traj = self._make_ref_traj(pos0, target_pos, horizon, dt)
 

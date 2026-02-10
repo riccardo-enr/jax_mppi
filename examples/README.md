@@ -67,7 +67,7 @@ uv run python examples/quadrotor/hover_comparison.py --visualize
 
 ## Output
 
-Most examples save visualizations to `docs/media/` or `docs/_media/`.
+Most examples save visualizations to `docs/_media/` (organized by topic subdirectory).
 
 ## Dependencies
 

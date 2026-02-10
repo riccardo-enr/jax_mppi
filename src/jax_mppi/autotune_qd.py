@@ -213,9 +213,9 @@ class CMAMEOpt(Optimizer):
             # Objective is negative cost, so negate to get cost
             cost = -row["objective"]
             # Behavior is stored in columns like "behavior_0", "behavior_1", etc.
-            behavior = np.array([
-                row[f"index_{i}"] for i in range(self.behavior_dim)
-            ])
+            behavior = np.array(
+                [row[f"index_{i}"] for i in range(self.behavior_dim)]
+            )
             results.append((params, cost, behavior))
 
         return results
@@ -240,11 +240,11 @@ class CMAMEOpt(Optimizer):
 
 def save_qd_heatmap(
     costs: list[float],
-    output_path: str | Path = "docs/media/autotune_qd_heatmap.png",
+    output_path: str | Path = "docs/_media/autotuning/autotune_qd_heatmap.png",
     title: str = "Quality Diversity Archive Heatmap",
     **kwargs: Any,
 ) -> None:
-    """Save quality diversity optimization progress to docs/media.
+    """Save quality diversity optimization progress.
 
     Args:
         costs: List of best costs at each iteration

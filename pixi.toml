@@ -1,0 +1,72 @@
+[workspace]
+name = "jax-mppi"
+version = "0.3.0"
+description = "JAX implementation of Model Predictive Path Integral (MPPI) control"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+readme = "README.md"
+license = "MIT"
+authors = ["Riccardo Enrico"]
+
+[system-requirements]
+cuda = "13"
+
+# Only python from conda (pixi requirement), everything else from PyPI
+[dependencies]
+python = ">=3.11,<3.13"
+
+[pypi-dependencies]
+jax-mppi = { path = ".", editable = true }
+jax = { version = ">=0.9.0", extras = ["cuda13"] }
+numpy = "*"
+jaxtyping = "*"
+chex = "*"
+pyyaml = ">=6.0.3"
+cmake = ">=3.18"
+nanobind = "*"
+scikit-build-core = ">=0.3.3"
+
+# Dev feature
+[feature.dev.pypi-dependencies]
+pytest = "*"
+pytest-benchmark = "*"
+lark = "*"
+gymnasium = { version = "*", extras = ["classic_control"] }
+matplotlib = "*"
+ipywidgets = "*"
+tqdm = "*"
+basedpyright = "*"
+ruff = ">=0.14.14"
+nbstripout = "*"
+plotly = ">=6.5.2"
+
+# Autotuning feature
+[feature.autotuning.pypi-dependencies]
+cma = ">=3.3.0"
+evosax = ">=0.1.0"
+
+[environments]
+default = { solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
+autotuning = { features = ["autotuning"], solve-group = "default" }
+
+[tasks]
+# Examples
+hover = "python examples/quadrotor/hover_comparison.py --visualize"
+figure8 = "python examples/quadrotor/figure8_comparison.py --visualize"
+jit-pendulum = "python examples/cuda/pendulum_jit.py --visualization"
+test-cuda = "python examples/cuda/test_cuda_mppi.py"
+
+# Git submodules
+submodule-update = "git submodule update --init --recursive"
+
+# Dev tasks (require dev environment)
+[feature.dev.tasks]
+test = "PYTHONPATH= pytest tests/"
+list-tests = "find tests -name 'test_*.py' -o -name '*_test.py' | sort"
+lint = "ruff format . && ruff check . --fix"
+type-check = "basedpyright ."
+quarto-doc = "quarto preview docs"
+publish-doc = { cmd = "quarto publish gh-pages --no-browser --no-prompt", cwd = "docs" }
+# Examples
+i-mppi-sim = { cmd = "python examples/i_mppi/i_mppi_parallel_simulation.py", env = { PYTHONPATH = "src" } }

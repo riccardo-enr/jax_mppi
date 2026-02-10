@@ -7,16 +7,18 @@ import jax.numpy as jnp
 from jax_mppi.dynamics.quadrotor import normalize_quaternion, rk4_step
 
 # --- Environment Configuration ---
-WALLS = jnp.array([
-    # [x1, y1, x2, y2]
-    [0.0, 2.0, 4.0, 2.0],  # Bottom wall of first segment (Horizontal)
-    [0.0, 8.0, 4.0, 8.0],  # Top wall of first segment (Horizontal)
-    [4.0, 2.0, 4.0, 0.0],  # Corner down (Vertical)
-    [4.0, 8.0, 4.0, 10.0],  # Corner up (Vertical)
-    [4.0, 0.0, 12.0, 0.0],  # Bottom long wall (Horizontal)
-    [4.0, 10.0, 12.0, 10.0],  # Top long wall (Horizontal)
-    [12.0, 0.0, 12.0, 10.0],  # End wall (Vertical)
-])
+WALLS = jnp.array(
+    [
+        # [x1, y1, x2, y2]
+        [0.0, 2.0, 4.0, 2.0],  # Bottom wall of first segment (Horizontal)
+        [0.0, 8.0, 4.0, 8.0],  # Top wall of first segment (Horizontal)
+        [4.0, 2.0, 4.0, 0.0],  # Corner down (Vertical)
+        [4.0, 8.0, 4.0, 10.0],  # Corner up (Vertical)
+        [4.0, 0.0, 12.0, 0.0],  # Bottom long wall (Horizontal)
+        [4.0, 10.0, 12.0, 10.0],  # Top long wall (Horizontal)
+        [12.0, 0.0, 12.0, 10.0],  # End wall (Vertical)
+    ]
+)
 
 # Info sources: [cx, cy, width, height, initial_value]
 # These should match the unknown regions in the occupancy grid
@@ -24,11 +26,13 @@ WALLS = jnp.array([
 #   - Bottom-left room: x=1-4m, y=4-8m (center ~2.5, 6)
 #   - Bottom-right room: x=10-13m, y=4-8m (center ~11.5, 6)
 #   - Top-right room: x=10-13m, y=1-3m (center ~11.5, 2)
-INFO_ZONES = jnp.array([
-    [2.5, 6.0, 3.0, 4.0, 100.0],  # Bottom-left room (high info)
-    [11.5, 6.0, 3.0, 4.0, 100.0],  # Bottom-right room (high info)
-    [11.5, 2.0, 3.0, 2.0, 100.0],  # Top-right room (high info)
-])
+INFO_ZONES = jnp.array(
+    [
+        [2.5, 6.0, 3.0, 4.0, 100.0],  # Bottom-left room (high info)
+        [11.5, 6.0, 3.0, 4.0, 100.0],  # Bottom-right room (high info)
+        [11.5, 2.0, 3.0, 2.0, 100.0],  # Top-right room (high info)
+    ]
+)
 
 GOAL_POS = jnp.array([9.0, 5.0, -2.0])  # x, y, z (z is neg altitude)
 
@@ -155,7 +159,7 @@ def _fov_coverage_with_los(
     return jnp.mean(jax.vmap(_visible)(pts))
 
 
-def _step_quadrotor(quad_state, action, dt):
+def step_quadrotor(quad_state, action, dt):
     """Advance quadrotor state by one RK4 step with clamped controls."""
     action_clipped = jnp.clip(action, _U_MIN, _U_MAX)
     next_quad_state = rk4_step(
@@ -218,7 +222,7 @@ def augmented_dynamics(
     quad_state = state[:13]
     info_levels = state[13:]
 
-    next_quad_state = _step_quadrotor(quad_state, action, dt)
+    next_quad_state = step_quadrotor(quad_state, action, dt)
 
     # Info Dynamics — deplete proportionally to FOV coverage of the zone
     pos = quad_state[:3]
@@ -256,7 +260,7 @@ def augmented_dynamics_with_grid(
     quad_state = state[:13]
     info_levels = state[13:]
 
-    next_quad_state = _step_quadrotor(quad_state, action, dt)
+    next_quad_state = step_quadrotor(quad_state, action, dt)
 
     pos = quad_state[:3]
     yaw = quat_to_yaw(quad_state[6:10])
@@ -351,6 +355,7 @@ def informative_running_cost(
     info_weight: float = 5.0,
     grid_origin: Optional[jax.Array] = None,
     grid_resolution: Optional[float] = None,
+    target_weight: float = 1.0,
 ) -> jax.Array:
     """
     Running cost with Layer 3 Uniform-FSMI informative term.
@@ -383,7 +388,7 @@ def informative_running_cost(
     else:
         target_pos = target
     dist_target = jnp.linalg.norm(pos - target_pos)
-    target_cost = 1.0 * dist_target
+    target_cost = target_weight * dist_target
 
     # Bounds cost
     bounds_cost = 0.0
