@@ -135,7 +135,9 @@ def main():
     else:
         # Try relative to this script
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        potential_include = os.path.join(script_dir, "../third_party/cuda-mppi/include")
+        potential_include = os.path.join(
+            script_dir, "../third_party/cuda-mppi/include"
+        )
         if os.path.exists(potential_include):
             include_paths.append(os.path.abspath(potential_include))
             os.environ["CUDA_MPPI_INCLUDE_DIR"] = os.path.abspath(
@@ -179,7 +181,6 @@ def main():
     pygame = None
     screen = None
     clock = None
-    font = None
     if args.visualization:
         try:
             import pygame as _pygame  # type: ignore
@@ -190,7 +191,7 @@ def main():
             screen = pygame.display.set_mode((640, 480))
             pygame.display.set_caption("CUDA MPPI Pendulum (Real-time)")
             clock = pygame.time.Clock()
-            font = pygame.font.SysFont("Arial", 20)
+            pygame.font.SysFont("Arial", 20)
         except Exception as e:
             print(
                 f"  ⚠ Pygame unavailable, continuing without visualization: {e}"

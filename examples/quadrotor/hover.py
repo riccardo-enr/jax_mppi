@@ -47,7 +47,7 @@ def run_quadrotor_hover(
 
     # State and action dimensions
     nx = 13  # [px, py, pz, vx, vy, vz, qw, qx, qy, qz, wx, wy, wz]
-    nu = 4   # [thrust, wx_cmd, wy_cmd, wz_cmd]
+    nu = 4  # [thrust, wx_cmd, wy_cmd, wz_cmd]
 
     # Physical parameters
     mass = 1.0  # kg
@@ -73,8 +73,8 @@ def run_quadrotor_hover(
 
     # Cost function weights
     Q_pos = jnp.eye(3) * 100.0  # Position error weight
-    Q_vel = jnp.eye(3) * 10.0   # Velocity weight
-    Q_att = jnp.eye(4) * 5.0    # Attitude weight
+    Q_vel = jnp.eye(3) * 10.0  # Velocity weight
+    Q_att = jnp.eye(4) * 5.0  # Attitude weight
     R = jnp.diag(jnp.array([0.01, 0.1, 0.1, 0.1]))  # Control effort
 
     # Running cost
@@ -88,8 +88,11 @@ def run_quadrotor_hover(
     Q_att_terminal = Q_att * 5.0
 
     terminal_cost_fn = create_terminal_cost(
-        Q_pos_terminal, Q_vel_terminal, Q_att_terminal,
-        hover_position, hover_quaternion
+        Q_pos_terminal,
+        Q_vel_terminal,
+        Q_att_terminal,
+        hover_position,
+        hover_quaternion,
     )
 
     # Noise covariance (exploration in control space)
@@ -110,12 +113,23 @@ def run_quadrotor_hover(
 
     # Initial state: displaced from hover position with some velocity
     # Start at [2, 1, -3] (2m altitude, displaced in xy)
-    state = jnp.array([
-        2.0, 1.0, -3.0,       # position (displaced)
-        0.5, 0.3, 0.0,        # velocity (small initial velocity)
-        1.0, 0.0, 0.0, 0.0,   # quaternion (level)
-        0.0, 0.0, 0.0         # angular velocity (zero)
-    ])
+    state = jnp.array(
+        [
+            2.0,
+            1.0,
+            -3.0,  # position (displaced)
+            0.5,
+            0.3,
+            0.0,  # velocity (small initial velocity)
+            1.0,
+            0.0,
+            0.0,
+            0.0,  # quaternion (level)
+            0.0,
+            0.0,
+            0.0,  # angular velocity (zero)
+        ]
+    )
 
     # Storage for trajectory
     states = [state]
@@ -138,7 +152,7 @@ def run_quadrotor_hover(
     print("Running MPPI on quadrotor hover control...")
     print(f"  Samples: {num_samples}, Horizon: {horizon}, Lambda: {lambda_}")
     print(f"  Target: {hover_position}, Initial: {state[0:3]}")
-    print(f"  Control rate: {1/dt:.0f} Hz")
+    print(f"  Control rate: {1 / dt:.0f} Hz")
 
     # Control loop
     for step in range(num_steps):
@@ -195,12 +209,14 @@ def run_quadrotor_hover(
 
             time = jnp.arange(len(states)) * dt
 
-            fig = plt.figure(figsize=(14, 10))
+            plt.figure(figsize=(14, 10))
 
             # Position tracking
             ax1 = plt.subplot(3, 3, 1)
             ax1.plot(time, states[:, 0], label="px", color="C0")
-            ax1.axhline(hover_position[0], color="C0", linestyle="--", alpha=0.5)
+            ax1.axhline(
+                hover_position[0], color="C0", linestyle="--", alpha=0.5
+            )
             ax1.set_ylabel("X Position (m)")
             ax1.legend()
             ax1.grid(True, alpha=0.3)
@@ -208,14 +224,18 @@ def run_quadrotor_hover(
 
             ax2 = plt.subplot(3, 3, 4)
             ax2.plot(time, states[:, 1], label="py", color="C1")
-            ax2.axhline(hover_position[1], color="C1", linestyle="--", alpha=0.5)
+            ax2.axhline(
+                hover_position[1], color="C1", linestyle="--", alpha=0.5
+            )
             ax2.set_ylabel("Y Position (m)")
             ax2.legend()
             ax2.grid(True, alpha=0.3)
 
             ax3 = plt.subplot(3, 3, 7)
             ax3.plot(time, states[:, 2], label="pz", color="C2")
-            ax3.axhline(hover_position[2], color="C2", linestyle="--", alpha=0.5)
+            ax3.axhline(
+                hover_position[2], color="C2", linestyle="--", alpha=0.5
+            )
             ax3.set_ylabel("Z Position (m)")
             ax3.set_xlabel("Time (s)")
             ax3.legend()
@@ -247,17 +267,31 @@ def run_quadrotor_hover(
             time_actions = jnp.arange(len(actions_taken)) * dt
 
             ax6 = plt.subplot(3, 3, 3)
-            ax6.plot(time_actions, actions_taken[:, 0], label="Thrust", color="C3")
-            ax6.axhline(mass * gravity, color="k", linestyle="--", alpha=0.3, label="Hover")
+            ax6.plot(
+                time_actions, actions_taken[:, 0], label="Thrust", color="C3"
+            )
+            ax6.axhline(
+                mass * gravity,
+                color="k",
+                linestyle="--",
+                alpha=0.3,
+                label="Hover",
+            )
             ax6.set_ylabel("Thrust (N)")
             ax6.legend()
             ax6.grid(True, alpha=0.3)
             ax6.set_title("Control Inputs")
 
             ax7 = plt.subplot(3, 3, 6)
-            ax7.plot(time_actions, actions_taken[:, 1], label="ωx cmd", color="C0")
-            ax7.plot(time_actions, actions_taken[:, 2], label="ωy cmd", color="C1")
-            ax7.plot(time_actions, actions_taken[:, 3], label="ωz cmd", color="C2")
+            ax7.plot(
+                time_actions, actions_taken[:, 1], label="ωx cmd", color="C0"
+            )
+            ax7.plot(
+                time_actions, actions_taken[:, 2], label="ωy cmd", color="C1"
+            )
+            ax7.plot(
+                time_actions, actions_taken[:, 3], label="ωz cmd", color="C2"
+            )
             ax7.axhline(0, color="k", linestyle="--", alpha=0.3)
             ax7.set_ylabel("Angular Rate Cmd (rad/s)")
             ax7.legend()
@@ -266,7 +300,13 @@ def run_quadrotor_hover(
             # Tracking errors
             ax8 = plt.subplot(3, 3, 8)
             ax8.plot(time, pos_errors, label="Position error", color="C4")
-            ax8.axhline(0.1, color="r", linestyle="--", alpha=0.5, label="Settling threshold")
+            ax8.axhline(
+                0.1,
+                color="r",
+                linestyle="--",
+                alpha=0.5,
+                label="Settling threshold",
+            )
             ax8.set_ylabel("Position Error (m)")
             ax8.set_xlabel("Time (s)")
             ax8.legend()
@@ -275,7 +315,9 @@ def run_quadrotor_hover(
 
             # Cost
             ax9 = plt.subplot(3, 3, 9)
-            ax9.plot(time_actions, costs_history, label="Running cost", color="C5")
+            ax9.plot(
+                time_actions, costs_history, label="Running cost", color="C5"
+            )
             ax9.set_ylabel("Cost")
             ax9.set_xlabel("Time (s)")
             ax9.legend()
@@ -285,8 +327,10 @@ def run_quadrotor_hover(
 
             plt.tight_layout()
 
-            # Save to docs/media directory
-            output_dir = Path(__file__).parent.parent / "docs" / "media"
+            # Save to docs/_media/quadrotor directory
+            output_dir = (
+                Path(__file__).parent.parent / "docs" / "_media" / "quadrotor"
+            )
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / "quadrotor_hover_mppi.png"
 
@@ -303,12 +347,28 @@ def run_quadrotor_hover(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Quadrotor hover control with MPPI")
-    parser.add_argument("--steps", type=int, default=500, help="Number of control steps")
-    parser.add_argument("--samples", type=int, default=1000, help="Number of MPPI samples")
-    parser.add_argument("--horizon", type=int, default=30, help="MPPI planning horizon")
-    parser.add_argument("--lambda", type=float, default=1.0, dest="lambda_", help="MPPI temperature")
-    parser.add_argument("--visualize", action="store_true", help="Plot results with matplotlib")
+    parser = argparse.ArgumentParser(
+        description="Quadrotor hover control with MPPI"
+    )
+    parser.add_argument(
+        "--steps", type=int, default=500, help="Number of control steps"
+    )
+    parser.add_argument(
+        "--samples", type=int, default=1000, help="Number of MPPI samples"
+    )
+    parser.add_argument(
+        "--horizon", type=int, default=30, help="MPPI planning horizon"
+    )
+    parser.add_argument(
+        "--lambda",
+        type=float,
+        default=1.0,
+        dest="lambda_",
+        help="MPPI temperature",
+    )
+    parser.add_argument(
+        "--visualize", action="store_true", help="Plot results with matplotlib"
+    )
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
 
     args = parser.parse_args()

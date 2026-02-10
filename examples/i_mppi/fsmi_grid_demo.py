@@ -145,9 +145,11 @@ def visualize_grid_with_fsmi(grid_map, map_origin, resolution, config):
     plt.colorbar(im3, ax=ax, label="Mutual Information")
 
     plt.tight_layout()
-    os.makedirs("docs/_media", exist_ok=True)
-    plt.savefig("docs/_media/fsmi_grid_demo.png", dpi=150, bbox_inches="tight")
-    print("Saved visualization to docs/_media/fsmi_grid_demo.png")
+    os.makedirs("docs/_media/fsmi", exist_ok=True)
+    plt.savefig(
+        "docs/_media/fsmi/fsmi_grid_demo.png", dpi=150, bbox_inches="tight"
+    )
+    print("Saved visualization to docs/_media/fsmi/fsmi_grid_demo.png")
     plt.close()
 
 
@@ -227,11 +229,13 @@ def demo_beam_computation():
     cell_dists = jnp.arange(N) * 0.1
 
     # Scenario: Free space, then frontier, then obstacle
-    cell_probs = jnp.concatenate([
-        0.2 * jnp.ones(20),  # Free
-        0.5 * jnp.ones(10),  # Unknown (frontier)
-        0.8 * jnp.ones(20),  # Occupied
-    ])
+    cell_probs = jnp.concatenate(
+        [
+            0.2 * jnp.ones(20),  # Free
+            0.5 * jnp.ones(10),  # Unknown (frontier)
+            0.8 * jnp.ones(20),  # Occupied
+        ]
+    )
 
     config = FSMIConfig()
     map_origin = jnp.array([0.0, 0.0])
@@ -283,9 +287,11 @@ def demo_beam_computation():
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    os.makedirs("docs/_media", exist_ok=True)
-    plt.savefig("docs/_media/fsmi_beam_demo.png", dpi=150, bbox_inches="tight")
-    print("Saved beam visualization to docs/_media/fsmi_beam_demo.png")
+    os.makedirs("docs/_media/fsmi", exist_ok=True)
+    plt.savefig(
+        "docs/_media/fsmi/fsmi_beam_demo.png", dpi=150, bbox_inches="tight"
+    )
+    print("Saved beam visualization to docs/_media/fsmi/fsmi_beam_demo.png")
     plt.close()
 
 
@@ -315,8 +321,8 @@ def main():
     print("\n" + "=" * 60)
     print("Demo complete!")
     print("Generated files:")
-    print("  - docs/_media/fsmi_beam_demo.png: Single beam computation")
-    print("  - docs/_media/fsmi_grid_demo.png: Grid FSMI heatmap")
+    print("  - docs/_media/fsmi/fsmi_beam_demo.png: Single beam computation")
+    print("  - docs/_media/fsmi/fsmi_grid_demo.png: Grid FSMI heatmap")
     print("=" * 60)
 
 

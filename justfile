@@ -5,6 +5,9 @@
 default:
     @just --list
 
+sync-deps:
+    uv sync --extra dev
+
 # Run quadrotor hover comparison
 hover:
     uv run python examples/quadrotor/hover_comparison.py --visualize
@@ -49,11 +52,17 @@ test-cuda:
 
 # Run tests
 test:
+    @just sync-deps
     uv run pytest tests/
 
+test-single test-name:
+    @just sync-deps
+    uv run pytest tests/{{ test-name }}
+
 # Run linting
-lint:
-    uv run ruff check . --fix
+lint check-args="":
+    uv run ruff format .
+    uv run ruff check . --fix {{ check-args }}
     uv run basedpyright .
 
 # Initialize and update git submodules (cuda-mppi)
@@ -62,7 +71,7 @@ submodule-update:
 
 # Clean generated media files
 clean:
-    rm -f docs/media/quadrotor_*_comparison.png
+    rm -f docs/_media/quadrotor/quadrotor_*_comparison.png
 
 # Show help for hover comparison
 help-hover:

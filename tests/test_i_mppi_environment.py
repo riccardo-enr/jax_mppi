@@ -23,6 +23,7 @@ from jax_mppi.i_mppi.map import rasterize_environment
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _identity_quad_state(x=0.0, y=0.0, z=-2.0):
     """13D quadrotor state at (x,y,z) with identity quat, zero vel/omega."""
     s = jnp.zeros(13)
@@ -60,6 +61,7 @@ def _make_test_grid():
 # ---------------------------------------------------------------------------
 # TestDistRect (existing + additions)
 # ---------------------------------------------------------------------------
+
 
 def test_dist_rect():
     center = jnp.array([0.0, 0.0])
@@ -103,6 +105,7 @@ def test_dist_rect_asymmetric():
 # TestQuatToYaw
 # ---------------------------------------------------------------------------
 
+
 class TestQuatToYaw:
     def test_identity(self):
         q = jnp.array([1.0, 0.0, 0.0, 0.0])
@@ -138,6 +141,7 @@ class TestQuatToYaw:
 # ---------------------------------------------------------------------------
 # TestFOVCoverage
 # ---------------------------------------------------------------------------
+
 
 class TestFOVCoverage:
     def test_facing_nearby_zone(self):
@@ -193,6 +197,7 @@ class TestFOVCoverage:
 # ---------------------------------------------------------------------------
 # TestLineOfSight
 # ---------------------------------------------------------------------------
+
 
 class TestLineOfSight:
     def test_clear_path(self):
@@ -251,6 +256,7 @@ class TestLineOfSight:
 # ---------------------------------------------------------------------------
 # TestFOVCoverageWithLOS
 # ---------------------------------------------------------------------------
+
 
 class TestFOVCoverageWithLOS:
     def test_no_wall_matches_basic(self):
@@ -319,6 +325,7 @@ class TestFOVCoverageWithLOS:
 # TestAugmentedDynamics
 # ---------------------------------------------------------------------------
 
+
 class TestAugmentedDynamics:
     def test_output_shape(self):
         state = _make_augmented_state(5.0, 5.0)
@@ -376,12 +383,15 @@ class TestAugmentedDynamics:
 # TestAugmentedDynamicsWithGrid
 # ---------------------------------------------------------------------------
 
+
 class TestAugmentedDynamicsWithGrid:
     def _grid_and_params(self):
-        walls = jnp.array([
-            [0.0, 2.0, 4.0, 2.0],
-            [0.0, 8.0, 4.0, 8.0],
-        ])
+        walls = jnp.array(
+            [
+                [0.0, 2.0, 4.0, 2.0],
+                [0.0, 8.0, 4.0, 8.0],
+            ]
+        )
         info_zones = INFO_ZONES
         origin = jnp.array([0.0, 0.0])
         gm = rasterize_environment(walls, info_zones, origin, 30, 24, 0.5)
@@ -392,8 +402,11 @@ class TestAugmentedDynamicsWithGrid:
         state = _make_augmented_state(5.0, 5.0)
         action = jnp.array([9.81, 0.0, 0.0, 0.0])
         ns = augmented_dynamics_with_grid(
-            state, action, dt=0.05,
-            grid=gm.grid, grid_origin=gm.origin,
+            state,
+            action,
+            dt=0.05,
+            grid=gm.grid,
+            grid_origin=gm.origin,
             grid_resolution=gm.resolution,
         )
         assert ns.shape == (16,)
@@ -405,8 +418,11 @@ class TestAugmentedDynamicsWithGrid:
         state = _make_augmented_state(2.5, 9.0, yaw=-jnp.pi / 2)
         action = jnp.array([9.81, 0.0, 0.0, 0.0])
         ns = augmented_dynamics_with_grid(
-            state, action, dt=0.05,
-            grid=gm.grid, grid_origin=gm.origin,
+            state,
+            action,
+            dt=0.05,
+            grid=gm.grid,
+            grid_origin=gm.origin,
             grid_resolution=gm.resolution,
         )
         # Info should be mostly unchanged (wall blocks view)
@@ -418,8 +434,11 @@ class TestAugmentedDynamicsWithGrid:
         state = _make_augmented_state(2.5, 6.0, yaw=0.0)
         action = jnp.array([9.81, 0.0, 0.0, 0.0])
         ns = augmented_dynamics_with_grid(
-            state, action, dt=0.05,
-            grid=gm.grid, grid_origin=gm.origin,
+            state,
+            action,
+            dt=0.05,
+            grid=gm.grid,
+            grid_origin=gm.origin,
             grid_resolution=gm.resolution,
         )
         assert ns[13] < 100.0
@@ -433,8 +452,12 @@ class TestAugmentedDynamicsWithGrid:
         action = jnp.array([9.81, 0.0, 0.0, 0.0])
         ns_basic = augmented_dynamics(state, action, dt=0.05)
         ns_grid = augmented_dynamics_with_grid(
-            state, action, dt=0.05,
-            grid=grid, grid_origin=origin, grid_resolution=0.5,
+            state,
+            action,
+            dt=0.05,
+            grid=grid,
+            grid_origin=origin,
+            grid_resolution=0.5,
         )
         assert jnp.allclose(ns_basic[13:], ns_grid[13:], atol=0.05)
 
@@ -445,8 +468,12 @@ class TestAugmentedDynamicsWithGrid:
         state = _make_augmented_state(2.5, 6.0, yaw=0.0)
         action = jnp.array([9.81, 0.0, 0.0, 0.0])
         ns = augmented_dynamics_with_grid(
-            state, action, dt=0.05,
-            grid=grid, grid_origin=origin, grid_resolution=0.5,
+            state,
+            action,
+            dt=0.05,
+            grid=grid,
+            grid_origin=origin,
+            grid_resolution=0.5,
         )
         assert jnp.allclose(ns[13:], state[13:], atol=1e-5)
 
@@ -454,6 +481,7 @@ class TestAugmentedDynamicsWithGrid:
 # ---------------------------------------------------------------------------
 # TestRunningCost
 # ---------------------------------------------------------------------------
+
 
 class TestRunningCost:
     def test_at_target_finite(self):
@@ -511,6 +539,7 @@ class TestRunningCost:
 # TestInformativeRunningCost
 # ---------------------------------------------------------------------------
 
+
 class TestInformativeRunningCost:
     def _dummy_fsmi_fn(self, grid_map, pos, yaw):
         """Simple mock: high gain in unknown regions, zero elsewhere."""
@@ -521,7 +550,10 @@ class TestInformativeRunningCost:
         action = jnp.array([9.81, 0.0, 0.0, 0.0])
         grid = jnp.zeros((20, 20))
         cost = informative_running_cost(
-            state, action, 0, GOAL_POS,
+            state,
+            action,
+            0,
+            GOAL_POS,
             grid_map=grid,
             uniform_fsmi_fn=self._dummy_fsmi_fn,
         )
@@ -534,7 +566,10 @@ class TestInformativeRunningCost:
         grid = jnp.zeros((10, 10)).at[5, 5].set(1.0)
         origin = jnp.array([0.0, 0.0])
         cost = informative_running_cost(
-            state, action, 0, GOAL_POS,
+            state,
+            action,
+            0,
+            GOAL_POS,
             grid_map=grid,
             uniform_fsmi_fn=self._dummy_fsmi_fn,
             grid_origin=origin,
@@ -547,13 +582,19 @@ class TestInformativeRunningCost:
         action = jnp.array([9.81, 0.0, 0.0, 0.0])
         grid = jnp.zeros((20, 20))
         cost_low = informative_running_cost(
-            state, action, 0, GOAL_POS,
+            state,
+            action,
+            0,
+            GOAL_POS,
             grid_map=grid,
             uniform_fsmi_fn=self._dummy_fsmi_fn,
             info_weight=0.0,
         )
         cost_high = informative_running_cost(
-            state, action, 0, GOAL_POS,
+            state,
+            action,
+            0,
+            GOAL_POS,
             grid_map=grid,
             uniform_fsmi_fn=self._dummy_fsmi_fn,
             info_weight=10.0,
@@ -566,7 +607,10 @@ class TestInformativeRunningCost:
         action = jnp.array([9.81, 0.0, 0.0, 0.0])
         grid = jnp.zeros((20, 20))
         cost = informative_running_cost(
-            state, action, 0, GOAL_POS,
+            state,
+            action,
+            0,
+            GOAL_POS,
             grid_map=grid,
             uniform_fsmi_fn=self._dummy_fsmi_fn,
             grid_origin=None,

@@ -281,7 +281,7 @@ def main():
     axes[1].grid(True, alpha=0.3)
 
     plt.tight_layout()
-    output_path = "docs/media/autotune_pendulum_results.png"
+    output_path = "docs/_media/autotuning/autotune_pendulum_results.png"
     plt.savefig(output_path, dpi=150)
     plt.close()
     print(f"   Saved plot to: {output_path}")

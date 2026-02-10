@@ -7,16 +7,18 @@ import jax.numpy as jnp
 from jax_mppi.dynamics.quadrotor import normalize_quaternion, rk4_step
 
 # --- Environment Configuration ---
-WALLS = jnp.array([
-    # [x1, y1, x2, y2]
-    [0.0, 2.0, 4.0, 2.0],  # Bottom wall of first segment (Horizontal)
-    [0.0, 8.0, 4.0, 8.0],  # Top wall of first segment (Horizontal)
-    [4.0, 2.0, 4.0, 0.0],  # Corner down (Vertical)
-    [4.0, 8.0, 4.0, 10.0],  # Corner up (Vertical)
-    [4.0, 0.0, 12.0, 0.0],  # Bottom long wall (Horizontal)
-    [4.0, 10.0, 12.0, 10.0],  # Top long wall (Horizontal)
-    [12.0, 0.0, 12.0, 10.0],  # End wall (Vertical)
-])
+WALLS = jnp.array(
+    [
+        # [x1, y1, x2, y2]
+        [0.0, 2.0, 4.0, 2.0],  # Bottom wall of first segment (Horizontal)
+        [0.0, 8.0, 4.0, 8.0],  # Top wall of first segment (Horizontal)
+        [4.0, 2.0, 4.0, 0.0],  # Corner down (Vertical)
+        [4.0, 8.0, 4.0, 10.0],  # Corner up (Vertical)
+        [4.0, 0.0, 12.0, 0.0],  # Bottom long wall (Horizontal)
+        [4.0, 10.0, 12.0, 10.0],  # Top long wall (Horizontal)
+        [12.0, 0.0, 12.0, 10.0],  # End wall (Vertical)
+    ]
+)
 
 # Info sources: [cx, cy, width, height, initial_value]
 # These should match the unknown regions in the occupancy grid
@@ -24,11 +26,13 @@ WALLS = jnp.array([
 #   - Bottom-left room: x=1-4m, y=4-8m (center ~2.5, 6)
 #   - Bottom-right room: x=10-13m, y=4-8m (center ~11.5, 6)
 #   - Top-right room: x=10-13m, y=1-3m (center ~11.5, 2)
-INFO_ZONES = jnp.array([
-    [2.5, 6.0, 3.0, 4.0, 100.0],  # Bottom-left room (high info)
-    [11.5, 6.0, 3.0, 4.0, 100.0],  # Bottom-right room (high info)
-    [11.5, 2.0, 3.0, 2.0, 100.0],  # Top-right room (high info)
-])
+INFO_ZONES = jnp.array(
+    [
+        [2.5, 6.0, 3.0, 4.0, 100.0],  # Bottom-left room (high info)
+        [11.5, 6.0, 3.0, 4.0, 100.0],  # Bottom-right room (high info)
+        [11.5, 2.0, 3.0, 2.0, 100.0],  # Top-right room (high info)
+    ]
+)
 
 GOAL_POS = jnp.array([9.0, 5.0, -2.0])  # x, y, z (z is neg altitude)
 

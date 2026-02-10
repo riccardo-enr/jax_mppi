@@ -97,7 +97,9 @@ def run_quadrotor_custom_trajectory(
         print(f"  WP{i}: [{wp[0]:6.2f}, {wp[1]:6.2f}, {wp[2]:6.2f}] m")
 
     print(f"\nSegment duration: {segment_duration:.1f}s")
-    print(f"Total duration: {duration:.1f}s ({num_steps} steps @ {1/dt:.0f} Hz)")
+    print(
+        f"Total duration: {duration:.1f}s ({num_steps} steps @ {1 / dt:.0f} Hz)"
+    )
     print(f"Control: {num_samples} samples, horizon={horizon}, λ={lambda_}")
 
     metrics = compute_trajectory_metrics(reference, dt)
@@ -110,8 +112,12 @@ def run_quadrotor_custom_trajectory(
     u_max = jnp.array([4.0 * mass * gravity, 6.0, 6.0, 6.0])
 
     dynamics = create_quadrotor_dynamics(
-        dt=dt, mass=mass, gravity=gravity, tau_omega=0.05,
-        u_min=u_min, u_max=u_max
+        dt=dt,
+        mass=mass,
+        gravity=gravity,
+        tau_omega=0.05,
+        u_min=u_min,
+        u_max=u_max,
     )
 
     # Cost weights
@@ -123,8 +129,11 @@ def run_quadrotor_custom_trajectory(
     goal_position = waypoints[-1]
     goal_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
     terminal_cost_fn = create_terminal_cost(
-        Q_pos * 10.0, Q_vel * 10.0, jnp.eye(4) * 5.0,
-        goal_position, goal_quaternion
+        Q_pos * 10.0,
+        Q_vel * 10.0,
+        jnp.eye(4) * 5.0,
+        goal_position,
+        goal_quaternion,
     )
 
     # Noise covariance
@@ -132,18 +141,35 @@ def run_quadrotor_custom_trajectory(
 
     # Create MPPI controller
     config, mppi_state = mppi.create(
-        nx=nx, nu=nu, noise_sigma=noise_sigma,
-        num_samples=num_samples, horizon=horizon,
-        lambda_=lambda_, u_min=u_min, u_max=u_max, key=key
+        nx=nx,
+        nu=nu,
+        noise_sigma=noise_sigma,
+        num_samples=num_samples,
+        horizon=horizon,
+        lambda_=lambda_,
+        u_min=u_min,
+        u_max=u_max,
+        key=key,
     )
 
     # Initial state (start at first waypoint)
-    state = jnp.array([
-        waypoints[0, 0], waypoints[0, 1], waypoints[0, 2],
-        0.0, 0.0, 0.0,
-        1.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0
-    ])
+    state = jnp.array(
+        [
+            waypoints[0, 0],
+            waypoints[0, 1],
+            waypoints[0, 2],
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
+    )
 
     # Storage
     states, actions_taken, costs_history = [state], [], []
@@ -155,7 +181,9 @@ def run_quadrotor_custom_trajectory(
         # Create cost for current reference
         ref_pos = reference[step, 0:3]
         ref_vel = reference[step, 3:6]
-        running_cost_fn = create_tracking_cost(Q_pos, Q_vel, R, ref_pos, ref_vel)
+        running_cost_fn = create_tracking_cost(
+            Q_pos, Q_vel, R, ref_pos, ref_vel
+        )
 
         # Compute action
         action, mppi_state = mppi.command(
@@ -178,7 +206,9 @@ def run_quadrotor_custom_trajectory(
 
         if step % 100 == 0:
             pos_error = jnp.linalg.norm(state[0:3] - ref_pos)
-            print(f"  Step {step:4d}: pos_err={pos_error:.3f}m, cost={cost:.2f}")
+            print(
+                f"  Step {step:4d}: pos_err={pos_error:.3f}m, cost={cost:.2f}"
+            )
 
     states = jnp.stack(states)
     actions_taken = jnp.stack(actions_taken)
@@ -215,17 +245,32 @@ def run_quadrotor_custom_trajectory(
             # 3D trajectory
             ax1 = fig.add_subplot(2, 3, 1, projection="3d")
             ax1.plot(
-                reference[:, 0], reference[:, 1], reference[:, 2],
-                "k--", linewidth=2, alpha=0.5, label="Reference"
+                reference[:, 0],
+                reference[:, 1],
+                reference[:, 2],
+                "k--",
+                linewidth=2,
+                alpha=0.5,
+                label="Reference",
             )
             ax1.plot(
-                states[:, 0], states[:, 1], states[:, 2],
-                "b-", linewidth=1, label="Actual"
+                states[:, 0],
+                states[:, 1],
+                states[:, 2],
+                "b-",
+                linewidth=1,
+                label="Actual",
             )
             # Plot waypoints
             ax1.scatter(
-                waypoints[:, 0], waypoints[:, 1], waypoints[:, 2],
-                c="r", s=100, marker="o", label="Waypoints", zorder=10
+                waypoints[:, 0],
+                waypoints[:, 1],
+                waypoints[:, 2],
+                c="r",
+                s=100,
+                marker="o",
+                label="Waypoints",
+                zorder=10,
             )
             # Label waypoints
             for i, wp in enumerate(waypoints):
@@ -241,18 +286,32 @@ def run_quadrotor_custom_trajectory(
             # XY trajectory (top view)
             ax2 = plt.subplot(2, 3, 2)
             ax2.plot(
-                reference[:, 0], reference[:, 1],
-                "k--", linewidth=2, alpha=0.5, label="Reference"
+                reference[:, 0],
+                reference[:, 1],
+                "k--",
+                linewidth=2,
+                alpha=0.5,
+                label="Reference",
             )
-            ax2.plot(states[:, 0], states[:, 1], "b-", linewidth=1, label="Actual")
+            ax2.plot(
+                states[:, 0], states[:, 1], "b-", linewidth=1, label="Actual"
+            )
             ax2.scatter(
-                waypoints[:, 0], waypoints[:, 1],
-                c="r", s=100, marker="o", label="Waypoints", zorder=10
+                waypoints[:, 0],
+                waypoints[:, 1],
+                c="r",
+                s=100,
+                marker="o",
+                label="Waypoints",
+                zorder=10,
             )
             for i, wp in enumerate(waypoints):
                 ax2.annotate(
-                    f"WP{i}", (wp[0], wp[1]),
-                    xytext=(5, 5), textcoords="offset points", fontsize=9
+                    f"WP{i}",
+                    (wp[0], wp[1]),
+                    xytext=(5, 5),
+                    textcoords="offset points",
+                    fontsize=9,
                 )
             ax2.set_xlabel("X (m)")
             ax2.set_ylabel("Y (m)")
@@ -264,7 +323,9 @@ def run_quadrotor_custom_trajectory(
             # Altitude profile
             ax3 = plt.subplot(2, 3, 3)
             ax3.plot(time, states[:, 2], "b-", label="Actual")
-            ax3.plot(time[:-1], reference[:, 2], "k--", alpha=0.5, label="Reference")
+            ax3.plot(
+                time[:-1], reference[:, 2], "k--", alpha=0.5, label="Reference"
+            )
             # Mark waypoint times
             for i in range(waypoints.shape[0]):
                 t_wp = i * segment_duration
@@ -295,7 +356,9 @@ def run_quadrotor_custom_trajectory(
             vel_mag = jnp.linalg.norm(states[:, 3:6], axis=1)
             ref_vel_mag = jnp.linalg.norm(reference[:, 3:6], axis=1)
             ax5.plot(time, vel_mag, "b-", label="Actual")
-            ax5.plot(time[:-1], ref_vel_mag, "k--", alpha=0.5, label="Reference")
+            ax5.plot(
+                time[:-1], ref_vel_mag, "k--", alpha=0.5, label="Reference"
+            )
             ax5.set_xlabel("Time (s)")
             ax5.set_ylabel("Velocity Magnitude (m/s)")
             ax5.legend()
@@ -305,8 +368,16 @@ def run_quadrotor_custom_trajectory(
             # Control inputs
             time_actions = jnp.arange(len(actions_taken)) * dt
             ax6 = plt.subplot(2, 3, 6)
-            ax6.plot(time_actions, actions_taken[:, 0], label="Thrust", color="C3")
-            ax6.axhline(mass * gravity, color="k", linestyle="--", alpha=0.3, label="Hover")
+            ax6.plot(
+                time_actions, actions_taken[:, 0], label="Thrust", color="C3"
+            )
+            ax6.axhline(
+                mass * gravity,
+                color="k",
+                linestyle="--",
+                alpha=0.3,
+                label="Hover",
+            )
             ax6.set_xlabel("Time (s)")
             ax6.set_ylabel("Thrust (N)")
             ax6.legend()
@@ -316,7 +387,9 @@ def run_quadrotor_custom_trajectory(
             plt.tight_layout()
 
             # Save
-            output_dir = Path(__file__).parent.parent / "docs" / "media"
+            output_dir = (
+                Path(__file__).parent.parent / "docs" / "_media" / "quadrotor"
+            )
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / "quadrotor_custom_trajectory.png"
 
@@ -348,9 +421,15 @@ if __name__ == "__main__":
         default=5.0,
         help="Time between waypoints (s)",
     )
-    parser.add_argument("--samples", type=int, default=1000, help="Number of MPPI samples")
-    parser.add_argument("--horizon", type=int, default=30, help="Planning horizon")
-    parser.add_argument("--lambda", type=float, default=1.0, dest="lambda_", help="Temperature")
+    parser.add_argument(
+        "--samples", type=int, default=1000, help="Number of MPPI samples"
+    )
+    parser.add_argument(
+        "--horizon", type=int, default=30, help="Planning horizon"
+    )
+    parser.add_argument(
+        "--lambda", type=float, default=1.0, dest="lambda_", help="Temperature"
+    )
     parser.add_argument("--visualize", action="store_true", help="Plot results")
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
 
@@ -368,13 +447,15 @@ if __name__ == "__main__":
         waypoints = jnp.array(waypoint_list)
     else:
         # Default: square pattern at 5m altitude
-        waypoints = jnp.array([
-            [0.0, 0.0, -2.0],   # Start low
-            [5.0, 0.0, -5.0],   # Climb and move forward
-            [5.0, 5.0, -5.0],   # Turn right
-            [0.0, 5.0, -5.0],   # Turn back
-            [0.0, 0.0, -2.0],   # Return home and descend
-        ])
+        waypoints = jnp.array(
+            [
+                [0.0, 0.0, -2.0],  # Start low
+                [5.0, 0.0, -5.0],  # Climb and move forward
+                [5.0, 5.0, -5.0],  # Turn right
+                [0.0, 5.0, -5.0],  # Turn back
+                [0.0, 0.0, -2.0],  # Return home and descend
+            ]
+        )
 
     states, actions, costs, reference = run_quadrotor_custom_trajectory(
         waypoints=waypoints,

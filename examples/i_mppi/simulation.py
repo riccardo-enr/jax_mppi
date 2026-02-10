@@ -283,7 +283,11 @@ def main():
     )
 
     def make_sim_fn(
-        controller_name, config, ctrl_state, use_informative_cost=True, kernel_fn=None
+        controller_name,
+        config,
+        ctrl_state,
+        use_informative_cost=True,
+        kernel_fn=None,
     ):
         def step_fn(carry, t):
             current_state, current_ctrl_state, ref_traj = carry
@@ -483,7 +487,9 @@ def main():
         ) = sim_fn(state, ctrl_state)
         block_until_ready(final_state)
         elapsed = time.perf_counter() - start
-        print(f"  Runtime: {elapsed:.2f}s ({elapsed / sim_duration:.2f}x realtime)")
+        print(
+            f"  Runtime: {elapsed:.2f}s ({elapsed / sim_duration:.2f}x realtime)"
+        )
 
         action_jerk, traj_jerk = compute_smoothness(actions, history_x, dt)
 
@@ -508,7 +514,8 @@ def main():
 
     controllers = ["mppi", "smppi", "kmppi"]
     results = {
-        name: run_controller(name, use_informative_cost=True) for name in controllers
+        name: run_controller(name, use_informative_cost=True)
+        for name in controllers
     }
 
     # Print results
@@ -746,7 +753,9 @@ def main():
         )
 
     fig.update_xaxes(range=[-1, 14], row=1, col=1)
-    fig.update_yaxes(range=[-1, 12], scaleanchor="x", scaleratio=1, row=1, col=1)
+    fig.update_yaxes(
+        range=[-1, 12], scaleanchor="x", scaleratio=1, row=1, col=1
+    )
 
     fig.update_xaxes(title="X (m)", row=2, col=1)
     fig.update_yaxes(title="Y (m)", row=2, col=1)
@@ -770,8 +779,8 @@ def main():
         ),
     )
 
-    output_path = "docs/_media/i_mppi_simulation.png"
-    os.makedirs("docs/_media", exist_ok=True)
+    output_path = "docs/_media/i_mppi/i_mppi_simulation.png"
+    os.makedirs("docs/_media/i_mppi", exist_ok=True)
     fig.write_image(output_path)
     print(f"Visualization saved to {output_path}")
 

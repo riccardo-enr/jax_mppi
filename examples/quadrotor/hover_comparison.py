@@ -255,21 +255,23 @@ def run_quadrotor_hover_comparison(
     noise_sigma = jnp.diag(jnp.array([5.0, 1.0, 1.0, 1.0]))
 
     # Initial state: displaced from hover position with some velocity
-    initial_state = jnp.array([
-        2.0,
-        1.0,
-        -3.0,  # position (displaced)
-        0.5,
-        0.3,
-        0.0,  # velocity (small initial velocity)
-        1.0,
-        0.0,
-        0.0,
-        0.0,  # quaternion (level)
-        0.0,
-        0.0,
-        0.0,  # angular velocity (zero)
-    ])
+    initial_state = jnp.array(
+        [
+            2.0,
+            1.0,
+            -3.0,  # position (displaced)
+            0.5,
+            0.3,
+            0.0,  # velocity (small initial velocity)
+            1.0,
+            0.0,
+            0.0,
+            0.0,  # quaternion (level)
+            0.0,
+            0.0,
+            0.0,  # angular velocity (zero)
+        ]
+    )
 
     print("\n" + "=" * 70)
     print("Quadrotor Hover Control - Controller Comparison")
@@ -386,7 +388,7 @@ def run_quadrotor_hover_comparison(
             time = jnp.arange(num_steps + 1) * dt
             time_actions = jnp.arange(num_steps) * dt
 
-            fig = plt.figure(figsize=(16, 12))
+            plt.figure(figsize=(16, 12))
 
             colors = {"mppi": "C0", "smppi": "C1", "kmppi": "C2"}
             labels = {"mppi": "MPPI", "smppi": "SMPPI", "kmppi": "KMPPI"}
@@ -515,8 +517,10 @@ def run_quadrotor_hover_comparison(
 
             plt.tight_layout()
 
-            # Save to docs/media directory
-            output_dir = Path(__file__).parent.parent / "docs" / "media"
+            # Save to docs/_media/quadrotor directory
+            output_dir = (
+                Path(__file__).parent.parent / "docs" / "_media" / "quadrotor"
+            )
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / "quadrotor_hover_comparison.png"
 

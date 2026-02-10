@@ -699,7 +699,7 @@ jax_mppi/
 **Key Features:**
 
 - Both examples run at 50 Hz control rate (JIT-compiled)
-- Detailed visualizations saved to `docs/media/`
+- Detailed visualizations saved to `docs/_media/quadrotor/`
 - Proper NED frame convention throughout
 - Performance metrics automatically computed and reported
 
