@@ -1,8 +1,8 @@
 """Smooth MPPI (SMPPI) implementation in JAX.
 
-SMPPI operates in a lifted control space where the nominal trajectory U represents
-velocity/acceleration commands rather than direct actions. The actual action sequence
-is computed through numerical integration, with smoothness penalties on action differences.
+SMPPI uses a lifted control space where U represents
+velocity/acceleration. The actual action sequence
+is integrated, with smoothness penalties.
 
 Reference: Based on pytorch_mppi SMPPI implementation
 """
@@ -49,7 +49,7 @@ class SMPPIConfig:
 class SMPPIState:
     """State for Smooth MPPI.
 
-    Includes both velocity controls (U) and integrated actions (action_sequence).
+    Includes velocity controls (U) and integrated actions.
     """
 
     # Base MPPI state

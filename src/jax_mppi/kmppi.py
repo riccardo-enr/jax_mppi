@@ -25,7 +25,7 @@ class TimeKernel(Protocol):
 
         Args:
             t: Query time points, shape (T,) or (T, 1)
-            tk: Control point times, shape (num_support_pts,) or (num_support_pts, 1)
+            tk: Control point times
 
         Returns:
             K: Kernel matrix, shape (T, num_support_pts)
@@ -49,7 +49,7 @@ class RBFKernel:
 
         Args:
             t: Query times, shape (T,) or (T, 1)
-            tk: Control point times, shape (num_support_pts,) or (num_support_pts, 1)
+            tk: Control point times
 
         Returns:
             K: kernel matrix, shape (T, num_support_pts)

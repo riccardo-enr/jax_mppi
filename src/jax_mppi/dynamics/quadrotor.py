@@ -2,7 +2,7 @@
 
 This module implements quadrotor dynamics following the NED-FRD convention:
 - NED (North-East-Down): World/global frame where Z-axis points down
-- FRD (Forward-Right-Down): Body frame where X-axis points forward, Y right, Z down
+- FRD (Forward-Right-Down): Body frame where X-axis fwd, Y right, Z down
 
 State (13D): [px, py, pz, vx, vy, vz, qw, qx, qy, qz, wx, wy, wz]
     - Position/velocity in NED world frame
@@ -18,7 +18,9 @@ import jax.numpy as jnp
 from jaxtyping import Array, Float
 
 
-def quaternion_to_rotation_matrix(q: Float[Array, "4"]) -> Float[Array, "3 3"]:
+def quaternion_to_rotation_matrix(
+    q: Float[Array, "4"]
+) -> Float[Array, "3 3"]:  # noqa: F722
     """Convert unit quaternion to rotation matrix (body FRD to world NED).
 
     Args:
@@ -140,7 +142,7 @@ def quadrotor_dynamics_dt(
         State derivative dx/dt
     """
     # Extract state components
-    pos = state[0:3]
+    # pos = state[0:3]
     vel = state[3:6]
     quat = state[6:10]  # [qw, qx, qy, qz]
     omega = state[10:13]  # angular velocity in FRD body frame
@@ -220,7 +222,7 @@ def create_quadrotor_dynamics(
 ):
     """Create quadrotor dynamics function with specified parameters.
 
-    This factory function creates a dynamics function following the library's pattern,
+    This factory function creates a dynamics function,
     with RK4 integration for better accuracy.
 
     Frame conventions: NED (world), FRD (body)

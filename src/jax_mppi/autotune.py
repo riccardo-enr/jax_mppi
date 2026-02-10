@@ -71,7 +71,7 @@ class EvaluationResult(NamedTuple):
 class ConfigStateHolder:
     """Mutable holder for MPPI config and state.
 
-    This allows parameters to access and update config/state through a shared reference.
+    Allows parameters to access/update config/state via shared ref.
     """
 
     def __init__(self, config: Any, state: Any):
@@ -146,11 +146,11 @@ class Optimizer(abc.ABC):
         initial_params: np.ndarray,
         evaluate_fn: Callable[[np.ndarray], EvaluationResult],
     ) -> None:
-        """Initialize optimizer with starting parameters and evaluation function.
+        """Initialize optimizer with starting parameters and evaluation fn.
 
         Args:
             initial_params: Initial parameter values, shape (D,)
-            evaluate_fn: Function that evaluates parameter vector and returns cost
+            evaluate_fn: Function evaluating parameter vector -> cost
         """
         ...
 
@@ -183,7 +183,7 @@ class Optimizer(abc.ABC):
 class LambdaParameter(TunableParameter):
     """Tunes temperature parameter (config.lambda_).
 
-    Lower lambda_ values lead to more aggressive exploitation of low-cost trajectories.
+    Lower lambda_ = aggressive exploitation.
     Higher values provide more exploration.
     """
 
@@ -221,7 +221,7 @@ class LambdaParameter(TunableParameter):
 class NoiseSigmaParameter(TunableParameter):
     """Tunes noise covariance diagonal (state.noise_sigma).
 
-    Controls exploration in action space. Higher sigma values increase exploration.
+    Controls exploration. Higher sigma values increase exploration.
     """
 
     def __init__(self, holder: ConfigStateHolder, min_value: float = 0.0001):
@@ -395,8 +395,8 @@ class HorizonParameter(TunableParameter):
             )
 
         if hasattr(self.holder.state, "theta"):
-            # KMPPI: rebuild time grids and reinterpolate
-            # This is more complex - for now, keep theta unchanged and rebuild Hs
+            # KMPPI: rebuild time grids
+            # For now, keep theta unchanged and rebuild Hs
             # A full implementation would reinterpolate U from theta
             num_support_pts = self.holder.config.num_support_pts
             new_Tk = jnp.linspace(0, new_horizon - 1, num_support_pts)
@@ -481,7 +481,7 @@ class CMAESOpt(Optimizer):
             import cma
         except ImportError:
             raise ImportError(
-                "CMA-ES optimizer requires the 'cma' package. Install with: pip install cma"
+                "CMA-ES requires 'cma'. Install: pip install cma"
             )
 
         self.population = population
@@ -551,7 +551,9 @@ class Autotune:
     Example:
         >>> holder = ConfigStateHolder(config, state)
         >>> tuner = Autotune(
-        ...     params_to_tune=[LambdaParameter(holder), NoiseSigmaParameter(holder)],
+        ...     params_to_tune=[
+        ...         LambdaParameter(holder), NoiseSigmaParameter(holder)
+        ...     ],
         ...     evaluate_fn=my_evaluate_fn,
         ...     optimizer=CMAESOpt(population=10),
         ... )
@@ -569,9 +571,9 @@ class Autotune:
 
         Args:
             params_to_tune: List of parameters to optimize
-            evaluate_fn: Function that runs MPPI and returns EvaluationResult
+            evaluate_fn: Function running MPPI -> EvaluationResult
             optimizer: Optimizer instance (defaults to CMAESOpt)
-            reload_state_fn: Optional function to reload state (for multiprocessing)
+            reload_state_fn: Optional fn to reload state (multiprocessing)
         """
         self.params_to_tune = params_to_tune
         self.evaluate_fn = evaluate_fn
@@ -682,9 +684,9 @@ def save_convergence_plot(
     Args:
         costs: List of costs at each iteration
         initial_cost: Initial cost before optimization
-        output_path: Path to save the plot (default: docs/media/autotune_convergence.png)
+        output_path: Path to save the plot (default: docs/...)
         title: Plot title
-        **kwargs: Additional arguments passed to plt.savefig (dpi, figsize, etc.)
+        **kwargs: Args passed to plt.savefig (dpi, figsize, etc.)
     """
     try:
         import matplotlib.pyplot as plt

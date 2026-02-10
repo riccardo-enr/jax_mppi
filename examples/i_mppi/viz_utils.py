@@ -52,7 +52,9 @@ def _fov_polygon(
 _SEEN_NUM_RAYS = 80  # denser than FOV polygon for better cell coverage
 
 
-def _compute_seen_mask(x, y, yaw, grid, resolution, max_range, origin=(0.0, 0.0)):
+def _compute_seen_mask(
+    x, y, yaw, grid, resolution, max_range, origin=(0.0, 0.0)
+):
     """Return (H, W) boolean mask of grid cells visible from the given pose.
 
     Casts ``_SEEN_NUM_RAYS`` rays across the sensor FOV.  Each ray is

@@ -1,6 +1,6 @@
 """I-MPPI Simulation with Two-Layer Architecture.
 
-This script implements the full I-MPPI architecture as described in Zhang et al. (2020):
+This script implements full I-MPPI architecture (Zhang et al. 2020):
 
 Layer 2 (FSMI Analyzer, ~5 Hz):
     - Uses full FSMI with O(n^2) computation on occupancy grid
@@ -19,7 +19,7 @@ Key insight (from the architecture description):
     - Local occlusion handling between Layer 2 updates
     - True I-MPPI behavior
 
-Comparison: Runs MPPI, SMPPI, and KMPPI variants for runtime and smoothness analysis.
+Comparison: Runs MPPI, SMPPI, KMPPI for runtime and smoothness.
 """
 
 import os
@@ -283,7 +283,7 @@ def main():
     )
 
     def make_sim_fn(
-        controller_name, config, ctrl_state, use_informative_cost=True, kernel_fn=None
+        controller_name, config, ctrl_state, use_informative_cost=True, kernel_fn=None  # noqa: E501
     ):
         def step_fn(carry, t):
             current_state, current_ctrl_state, ref_traj = carry
@@ -508,7 +508,7 @@ def main():
 
     controllers = ["mppi", "smppi", "kmppi"]
     results = {
-        name: run_controller(name, use_informative_cost=True) for name in controllers
+        name: run_controller(name, True) for name in controllers
     }
 
     # Print results
@@ -525,7 +525,7 @@ def main():
 
     print("\n" + "-" * 70)
     print(
-        f"{'Controller':<12} {'Runtime (ms)':>15} {'Action Jerk':>15} {'Traj Jerk':>15}"
+        f"{'Controller':<12} {'Runtime':>10} {'Act Jerk':>10} {'Trj Jerk':>10}"
     )
     print("-" * 70)
     for name in controllers:
@@ -533,7 +533,7 @@ def main():
         action_jerk = float(results[name]["action_jerk"])
         traj_jerk = float(results[name]["traj_jerk"])
         print(
-            f"{name:<12} {runtime_ms:>15.1f} {action_jerk:>15.4f} {traj_jerk:>15.4f}"
+            f"{name:<12} {runtime_ms:>8.1f} {action_jerk:>8.4f} {traj_jerk:>8.4f}"
         )
     print("-" * 70)
 
@@ -746,7 +746,7 @@ def main():
         )
 
     fig.update_xaxes(range=[-1, 14], row=1, col=1)
-    fig.update_yaxes(range=[-1, 12], scaleanchor="x", scaleratio=1, row=1, col=1)
+    fig.update_yaxes(range=[-1, 12], scaleanchor="x", scaleratio=1, row=1)
 
     fig.update_xaxes(title="X (m)", row=2, col=1)
     fig.update_yaxes(title="Y (m)", row=2, col=1)
@@ -764,7 +764,7 @@ def main():
         height=900,
         legend=dict(orientation="h", yanchor="bottom", y=-0.08),
         title=dict(
-            text="I-MPPI: Layer 2 (Full FSMI, 5Hz) + Layer 3 (Uniform-FSMI, 50Hz)",
+            text="I-MPPI: L2 (Full FSMI, 5Hz) + L3 (Uniform-FSMI, 50Hz)",
             x=0.5,
             xanchor="center",
         ),

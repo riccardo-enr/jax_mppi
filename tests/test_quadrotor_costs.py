@@ -217,7 +217,8 @@ class TestTimeIndexedTrajectoryCost:
         # Create trajectory: moving in x direction
         T = 100
         trajectory = jnp.zeros((T, 6))
-        trajectory = trajectory.at[:, 0].set(jnp.arange(T) * 0.1)  # px increases
+        # px increases
+        trajectory = trajectory.at[:, 0].set(jnp.arange(T) * 0.1)
 
         cost_fn = create_time_indexed_trajectory_cost(
             Q_pos, Q_vel, R, trajectory

@@ -19,7 +19,7 @@ def generate_hover_setpoint(
     position: Float[Array, "3"],
     duration: float,
     dt: float,
-) -> Float[Array, "T 6"]:
+) -> Float[Array, "T 6"]:  # noqa: F722
     """Generate hover setpoint trajectory (constant position, zero velocity).
 
     Args:
@@ -34,7 +34,7 @@ def generate_hover_setpoint(
 
     Example:
         >>> # Hover at 5m altitude above origin
-        >>> traj = generate_hover_setpoint([0.0, 0.0, -5.0], duration=10.0, dt=0.01)
+        >>> traj = generate_hover_setpoint([0,0,-5], duration=10.0, dt=0.01)
         >>> traj.shape
         (1000, 6)
     """
@@ -57,7 +57,7 @@ def generate_circle_trajectory(
     dt: float,
     center: Float[Array, "2"] | None = None,
     phase: float = 0.0,
-) -> Float[Array, "T 6"]:
+) -> Float[Array, "T 6"]:  # noqa: F722
     """Generate circular trajectory in horizontal plane (NED frame).
 
     The trajectory follows a circle in the xy-plane at constant altitude.
@@ -118,7 +118,7 @@ def generate_lemniscate_trajectory(
     dt: float,
     center: Float[Array, "2"] | None = None,
     axis: str = "xy",
-) -> Float[Array, "T 6"]:
+) -> Float[Array, "T 6"]:  # noqa: F722
     """Generate figure-8 (lemniscate of Gerono) trajectory.
 
     The lemniscate is a figure-8 pattern often used for aggressive
@@ -199,7 +199,7 @@ def generate_helix_trajectory(
     dt: float,
     start_height: float = 0.0,
     center: Float[Array, "2"] | None = None,
-) -> Float[Array, "T 6"]:
+) -> Float[Array, "T 6"]:  # noqa: F722
     """Generate helical (spiral) trajectory.
 
     Combines circular motion in xy-plane with constant vertical velocity.
@@ -252,12 +252,12 @@ def generate_helix_trajectory(
 
 
 def generate_waypoint_trajectory(
-    waypoints: Float[Array, "N 3"],
-    velocities: Float[Array, "N 3"] | None = None,
+    waypoints: Float[Array, "N 3"],  # noqa: F722
+    velocities: Float[Array, "N 3"] | None = None,  # noqa: F722
     segment_duration: float = 5.0,
     dt: float = 0.01,
     blend_time: float = 0.5,
-) -> Float[Array, "T 6"]:
+) -> Float[Array, "T 6"]:  # noqa: F722
     """Generate trajectory through waypoints with smooth transitions.
 
     Uses cubic interpolation between waypoints with optional velocity
@@ -309,7 +309,8 @@ def generate_waypoint_trajectory(
 
         # Cubic Hermite interpolation
         p0, p1 = waypoints[i], waypoints[i + 1]
-        v0, v1 = velocities[i] * segment_duration, velocities[i + 1] * segment_duration
+        v0 = velocities[i] * segment_duration
+        v1 = velocities[i + 1] * segment_duration
 
         # Hermite basis functions
         h00 = 2 * t**3 - 3 * t**2 + 1
@@ -349,7 +350,7 @@ def generate_waypoint_trajectory(
 
 
 def compute_trajectory_metrics(
-    trajectory: Float[Array, "T 6"],
+    trajectory: Float[Array, "T 6"],  # noqa: F722
     dt: float,
 ) -> dict[str, float]:
     """Compute metrics for trajectory analysis.

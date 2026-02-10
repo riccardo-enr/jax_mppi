@@ -268,7 +268,7 @@ class TestFOVCoverageWithLOS:
         assert jnp.isclose(cov_basic, cov_los, atol=0.05)
 
     def test_known_cells_reduce_coverage(self):
-        """Known-free cells (p=0.2) produce less coverage than unknown (p=0.5)."""
+        """Known-free cells produce less coverage than unknown."""
         origin = jnp.array([0.0, 0.0])
         pos = jnp.array([0.5, 0.5])
         yaw = 0.0

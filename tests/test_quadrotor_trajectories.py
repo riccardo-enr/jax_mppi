@@ -260,7 +260,12 @@ class TestHelixTrajectory:
         center = jnp.array([0.0, 0.0])
 
         trajectory = generate_helix_trajectory(
-            radius, height_rate, period=10.0, duration=10.0, dt=0.01, center=center
+            radius,
+            height_rate,
+            period=10.0,
+            duration=10.0,
+            dt=0.01,
+            center=center
         )
 
         # Check horizontal distance from center
@@ -361,7 +366,9 @@ class TestWaypointTrajectory:
         waypoints = jnp.array([[0.0, 0.0, 0.0]])
 
         with pytest.raises(ValueError):
-            generate_waypoint_trajectory(waypoints, segment_duration=5.0, dt=0.01)
+            generate_waypoint_trajectory(
+                waypoints, segment_duration=5.0, dt=0.01
+            )
 
     def test_waypoint_with_specified_velocities(self):
         """Test waypoint trajectory with specified velocities."""

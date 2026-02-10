@@ -814,11 +814,15 @@ def fsmi_trajectory_filtered(
     pose_indices = jnp.arange(N)
 
     # first_hit[i, h, w] = True iff pose i is the first to see cell (h,w)
-    first_hit = (first_pose[None, :, :] == pose_indices[:, None, None]) & any_seen[None, :, :]
+    first_hit = (
+        first_pose[None, :, :] == pose_indices[:, None, None]
+    ) & any_seen[None, :, :]
 
     # Independent fraction: of this pose's FOV cells, how many are first-hits
     n_fov = jnp.sum(masks, axis=(1, 2)).astype(jnp.float32)  # (N,)
-    n_first = jnp.sum(first_hit & masks, axis=(1, 2)).astype(jnp.float32)  # (N,)
+    n_first = jnp.sum(
+        first_hit & masks, axis=(1, 2)
+    ).astype(jnp.float32)
     independent_fraction = n_first / jnp.maximum(n_fov, 1.0)  # (N,)
 
     return jnp.sum(mi_per_pose * independent_fraction) * dt * subsample_rate
@@ -911,7 +915,9 @@ class FSMITrajectoryGenerator:
                 lambda p: score_candidate(p)
             )(candidates)
             best_zone_idx = jnp.argmax(zone_scores)
-            go_to_zone = zone_gains[best_zone_idx] > self.config.min_gain_threshold
+            go_to_zone = (
+                zone_gains[best_zone_idx] > self.config.min_gain_threshold
+            )
 
         target_pos_2d = jax.lax.select(
             go_to_zone, candidates[best_zone_idx], goal

@@ -12,14 +12,14 @@ from typing import Callable, Optional
 import jax.numpy as jnp
 from jaxtyping import Array, Float
 
-CostFn = Callable[
-    [Float[Array, "nx"], Optional[Float[Array, "nu"]]], Float[Array, ""]
+CostFn = Callable[  # noqa: F722, F821
+    [Float[Array, "nx"], Optional[Float[Array, "nu"]]], Float[Array, ""]  # noqa: F722, F821  # noqa: F821
 ]
 
 
 def quaternion_distance(
     q1: Float[Array, "4"], q2: Float[Array, "4"]
-) -> Float[Array, ""]:
+) -> Float[Array, ""]:  # noqa: F722
     """Compute distance between two unit quaternions.
 
     Uses: d = 1 - |q1^T q2|
@@ -42,10 +42,10 @@ def quaternion_distance(
 
 
 def create_trajectory_tracking_cost(
-    Q_pos: Float[Array, "3 3"],
-    Q_vel: Float[Array, "3 3"],
-    R: Float[Array, "4 4"],
-    reference_trajectory: Float[Array, "T 6"] | None = None,
+    Q_pos: Float[Array, "3 3"],  # noqa: F722
+    Q_vel: Float[Array, "3 3"],  # noqa: F722
+    R: Float[Array, "4 4"],  # noqa: F722
+    reference_trajectory: Float[Array, "T 6"] | None = None,  # noqa: F722
     dt: float = 0.01,
 ) -> CostFn:
     """Create trajectory tracking cost function.
@@ -56,7 +56,7 @@ def create_trajectory_tracking_cost(
         Q_pos: Position error weight matrix (3x3)
         Q_vel: Velocity error weight matrix (3x3)
         R: Control effort weight matrix (4x4)
-        reference_trajectory: Reference trajectory array [T x 6] with [px, py, pz, vx, vy, vz]
+        reference_trajectory: Reference trajectory array [T x 6] with [px...vz]
                              If None, uses zero reference (hover at origin)
         dt: Time step for indexing into reference trajectory
 
@@ -68,20 +68,23 @@ def create_trajectory_tracking_cost(
         >>> Q_vel = jnp.eye(3) * 1.0
         >>> R = jnp.eye(4) * 0.01
         >>> reference = jnp.zeros((100, 6))  # hover at origin
-        >>> cost_fn = create_trajectory_tracking_cost(Q_pos, Q_vel, R, reference)
+        >>> cost_fn = create_trajectory_tracking_cost(
+        ...     Q_pos, Q_vel, R, reference
+        ... )
     """
 
     def cost_fn(
-        state: Float[Array, "13"], action: Optional[Float[Array, "4"]] = None
-    ) -> Float[Array, ""]:
+        state: Float[Array, "13"],
+        action: Optional[Float[Array, "4"]] = None
+    ) -> Float[Array, ""]:  # noqa: F722  # noqa: F722
         # Extract position and velocity
         pos = state[0:3]
         vel = state[3:6]
 
         # Get reference (default to zeros if no trajectory provided)
         if reference_trajectory is not None:
-            # Use current position as time index (assumes trajectory is time-indexed)
-            # For now, use first reference point (can be extended with time parameter)
+            # Use current position as time index
+            # For now, use first reference point
             ref = reference_trajectory[0]
         else:
             ref = jnp.zeros(6)
@@ -108,23 +111,24 @@ def create_trajectory_tracking_cost(
 
 
 def create_time_indexed_trajectory_cost(
-    Q_pos: Float[Array, "3 3"],
-    Q_vel: Float[Array, "3 3"],
-    R: Float[Array, "4 4"],
-    reference_trajectory: Float[Array, "T 6"],
+    Q_pos: Float[Array, "3 3"],  # noqa: F722
+    Q_vel: Float[Array, "3 3"],  # noqa: F722
+    R: Float[Array, "4 4"],  # noqa: F722
+    reference_trajectory: Float[Array, "T 6"],  # noqa: F722
     dt: float = 0.01,
 ) -> Callable[
-    [Float[Array, "13"], Optional[Float[Array, "4"]], int], Float[Array, ""]
+    [Float[Array, "13"], Optional[Float[Array, "4"]], int],
+    Float[Array, ""]  # noqa: F722
 ]:
     """Create time-indexed trajectory tracking cost function.
 
-    This version explicitly takes a time index to lookup the reference trajectory.
+    This version takes a time index to lookup the reference trajectory.
 
     Args:
         Q_pos: Position error weight matrix (3x3)
         Q_vel: Velocity error weight matrix (3x3)
         R: Control effort weight matrix (4x4)
-        reference_trajectory: Reference trajectory [T x 6] with [px, py, pz, vx, vy, vz]
+        reference_trajectory: Reference trajectory [T x 6] with [px...vz]
         dt: Time step
 
     Returns:
@@ -136,7 +140,7 @@ def create_time_indexed_trajectory_cost(
         state: Float[Array, "13"],
         action: Optional[Float[Array, "4"]] = None,
         t: int = 0,
-    ) -> Float[Array, ""]:
+    ) -> Float[Array, ""]:  # noqa: F722  # noqa: F722
         # Extract position and velocity
         pos = state[0:3]
         vel = state[3:6]
@@ -167,12 +171,12 @@ def create_time_indexed_trajectory_cost(
 
 
 def create_hover_cost(
-    Q_pos: Float[Array, "3 3"],
-    Q_vel: Float[Array, "3 3"],
-    Q_att: Float[Array, "4 4"],
-    R: Float[Array, "4 4"],
+    Q_pos: Float[Array, "3 3"],  # noqa: F722
+    Q_vel: Float[Array, "3 3"],  # noqa: F722
+    Q_att: Float[Array, "4 4"],  # noqa: F722
+    R: Float[Array, "4 4"],  # noqa: F722
     hover_position: Float[Array, "3"],
-    hover_quaternion: Float[Array, "4"] | None = None,
+    hover_quaternion: Float[Array, "4"] | None = None,  # noqa: F722
 ) -> CostFn:
     """Create cost function for hover control (stabilization).
 
@@ -184,7 +188,7 @@ def create_hover_cost(
         Q_att: Attitude error weight matrix (4x4)
         R: Control effort weight matrix (4x4)
         hover_position: Desired hover position in NED frame
-        hover_quaternion: Desired hover orientation (default: level flight [1,0,0,0])
+        hover_quaternion: Desired hover orientation (default: level [1,0,0,0])
 
     Returns:
         Cost function for hover control
@@ -193,8 +197,9 @@ def create_hover_cost(
         hover_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])  # level flight
 
     def cost_fn(
-        state: Float[Array, "13"], action: Optional[Float[Array, "4"]] = None
-    ) -> Float[Array, ""]:
+        state: Float[Array, "13"],
+        action: Optional[Float[Array, "4"]] = None
+    ) -> Float[Array, ""]:  # noqa: F722  # noqa: F722
         # Extract state components
         pos = state[0:3]
         vel = state[3:6]
@@ -222,11 +227,11 @@ def create_hover_cost(
 
 
 def create_terminal_cost(
-    Q_pos: Float[Array, "3 3"],
-    Q_vel: Float[Array, "3 3"],
-    Q_att: Float[Array, "4 4"],
+    Q_pos: Float[Array, "3 3"],  # noqa: F722
+    Q_vel: Float[Array, "3 3"],  # noqa: F722
+    Q_att: Float[Array, "4 4"],  # noqa: F722
     goal_position: Float[Array, "3"],
-    goal_quaternion: Float[Array, "4"] | None = None,
+    goal_quaternion: Float[Array, "4"] | None = None,  # noqa: F722
 ) -> CostFn:
     """Create terminal cost for goal reaching.
 
@@ -248,7 +253,7 @@ def create_terminal_cost(
     def terminal_cost(
         state: Float[Array, "13"],
         last_action: Optional[Float[Array, "4"]] = None,
-    ) -> Float[Array, ""]:
+    ) -> Float[Array, ""]:  # noqa: F722  # noqa: F722
         # Extract state components
         pos = state[0:3]
         vel = state[3:6]

@@ -1,286 +1,286 @@
 """Quality diversity optimization for JAX-MPPI autotuning.
 
-This module provides CMA-ME (Covariance Matrix Adaptation MAP-Elites) integration
-for finding diverse, high-performing parameter configurations.
-
-Requires optional dependency: ribs[all]
-
-Example:
-    >>> from jax_mppi import autotune, autotune_qd
-    >>>
-    >>> tuner = autotune.Autotune(
-    ...     params_to_tune=[...],
-    ...     evaluate_fn=evaluate,
-    ...     optimizer=autotune_qd.CMAMEOpt(population=20, bins=10),
-    ... )
-    >>> best = tuner.optimize_all(iterations=50)
-    >>>
-    >>> # Get diverse set of solutions
-    >>> diverse_params = tuner.optimizer.get_diverse_top_parameters(n=10)
+This module provides CMA-ME (Covariance Matrix Adaptation MAP-Elites)
+integration for finding diverse, high-performing parameter configurations.
 """
 
-from pathlib import Path
-from typing import Any, Callable, List, Tuple
+from dataclasses import dataclass
+from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
 
-from .autotune import EvaluationResult, Optimizer
+from jax_mppi.autotune import (
+    ConfigStateHolder,
+    EvaluationResult,
+    Optimizer,
+    TunableParameter,
+)
+
+
+@dataclass
+class QDParameter:
+    """Wraps a TunableParameter with behavior descriptors."""
+
+    param: TunableParameter
+    behavior_fn: Callable[[float], float] = lambda x: x
+    behavior_name: str = "val"
 
 
 class CMAMEOpt(Optimizer):
-    """CMA-ME optimizer for quality diversity optimization.
+    """CMA-ME (Covariance Matrix Adaptation MAP-Elites) optimizer.
 
-    CMA-ME (Covariance Matrix Adaptation MAP-Elites) maintains an archive
-    of diverse, high-performing solutions. This is useful when you want
-    to find multiple good parameter configurations that work well in
-    different scenarios.
-
-    The archive is organized by "behavior characteristics" - properties
-    of the solution that define diversity. For MPPI, these could be:
-    - Mean cost (performance)
-    - Control variance (how aggressive the controller is)
-    - Horizon used
-    etc.
-
-    Attributes:
-        population: Population size per iteration
-        sigma: Initial step size
-        bins: Number of bins per behavior dimension
-        archive: Solution archive (ribs Archive)
+    Combines CMA-ES for local search with MAP-Elites for maintaining
+    a diversity of high-performing solutions.
     """
 
     def __init__(
         self,
-        population: int = 20,
-        sigma: float = 0.1,
-        bins: int = 10,
-        behavior_dim: int = 1,
-    ):
-        """Initialize CMA-ME optimizer.
-
-        Args:
-            population: Population size per iteration
-            sigma: Initial step size
-            bins: Number of bins per behavior dimension
-            behavior_dim: Dimensionality of behavior space
+        behavior_dim: int,
+        grid_shape: Tuple[int, ...],
+        min_bounds: List[float],
+        max_bounds: List[float],
+        population: int = 15,
+        num_emitters: int = 5,
+        sigma0: float = 0.1,
+    ) -> None:
         """
-        try:
-            from ribs.archives import GridArchive  # type: ignore
-            from ribs.emitters import EvolutionStrategyEmitter  # type: ignore
-            from ribs.schedulers import Scheduler  # type: ignore
-        except ImportError:
-            raise ImportError(
-                "CMA-ME optimizer requires 'ribs'. Install with: pip install 'ribs[all]'"
-            )
-
-        self.population = population
-        self.sigma = sigma
-        self.bins = bins
+        Args:
+            behavior_dim: Number of behavior descriptors
+            grid_shape: Shape of the behavior grid (e.g., (10, 10))
+            min_bounds: Minimum bounds for behavior space
+            max_bounds: Maximum bounds for behavior space
+            population: Population size per emitter
+            num_emitters: Number of parallel emitters
+            sigma0: Initial step size
+        """
         self.behavior_dim = behavior_dim
+        self.grid_shape = grid_shape
+        self.min_bounds = min_bounds
+        self.max_bounds = max_bounds
+        self.population = population
+        self.num_emitters = num_emitters
+        self.sigma0 = sigma0
 
-        self.ribs = None  # Will be initialized in setup
         self.archive = None
-        self.emitters = None
+        self.emitters = []
         self.scheduler = None
-        self.evaluate_fn = None
-        self.solution_dim = None
+        self.evaluate_fn: Optional[Callable[[np.ndarray], EvaluationResult]] = (
+            None
+        )
 
-    def setup_optimization(
+    def initialize(
         self,
         initial_params: np.ndarray,
         evaluate_fn: Callable[[np.ndarray], EvaluationResult],
     ) -> None:
-        """Initialize CMA-ME archive and emitters.
+        """Initialize the QD optimizer.
 
         Args:
-            initial_params: Initial parameter values
+            initial_params: Initial guess for parameters
             evaluate_fn: Evaluation function
         """
-        from ribs.archives import GridArchive  # type: ignore
-        from ribs.emitters import EvolutionStrategyEmitter  # type: ignore
-        from ribs.schedulers import Scheduler  # type: ignore
+        try:
+            from ribs.archives import GridArchive  # type: ignore  # noqa: F401
+            from ribs.emitters import (
+                EvolutionStrategyEmitter,  # type: ignore  # noqa: F401
+            )
+            from ribs.schedulers import Scheduler  # type: ignore  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "CMA-ME optimizer requires 'ribs'. "
+                "Install: pip install 'ribs[all]'"
+            )
 
         self.evaluate_fn = evaluate_fn
-        self.solution_dim = len(initial_params)
 
-        # Create archive with behavior dimensions
-        # For MPPI, we use a simple 1D behavior: normalized cost
-        # Range [0, 1] with bins
-        bounds = [(0.0, 1.0) for _ in range(self.behavior_dim)]
-
+        # Initialize archive
         self.archive = GridArchive(
-            solution_dim=self.solution_dim,
-            dims=[self.bins] * self.behavior_dim,
-            ranges=bounds,
+            solution_dim=len(initial_params),
+            dims=self.grid_shape,
+            ranges=list(zip(self.min_bounds, self.max_bounds)),
         )
 
-        # Create emitters (ES-based)
+        # Initialize emitters
         self.emitters = [
             EvolutionStrategyEmitter(
-                archive=self.archive,
+                self.archive,
                 x0=initial_params,
-                sigma0=self.sigma,
+                sigma0=self.sigma0,
+                ranker="2imp",
                 batch_size=self.population,
             )
+            for _ in range(self.num_emitters)
         ]
 
-        # Create scheduler
+        # Initialize scheduler
         self.scheduler = Scheduler(self.archive, self.emitters)
 
-    def _compute_behavior(self, result: EvaluationResult) -> np.ndarray:
-        """Compute behavior characteristics from evaluation result.
-
-        For simplicity, we use normalized cost as the behavior.
-        In practice, you might want to use multiple characteristics.
-
-        Args:
-            result: Evaluation result
+    def step(self) -> Tuple[np.ndarray, float]:
+        """Perform one optimization step.
 
         Returns:
-            Behavior vector (shape: (behavior_dim,))
+            best_params: Best parameters found so far
+            best_cost: Best cost found so far
         """
-        # Simple behavior: map cost to [0, 1]
-        # Use a heuristic normalization
-        normalized_cost = 1.0 / (1.0 + result.mean_cost)
-        return np.array([normalized_cost])
-
-    def optimize_step(self) -> EvaluationResult:
-        """Execute one CMA-ME iteration.
-
-        Returns:
-            Best result from this iteration
-        """
-        if self.scheduler is None:
-            raise RuntimeError("Must call setup_optimization() first")
+        if self.scheduler is None or self.evaluate_fn is None:
+            raise RuntimeError("Optimizer not initialized. Call initialize()")
 
         # Ask for solutions
         solutions = self.scheduler.ask()
 
-        # Evaluate all solutions
-        results = []
-        objectives = []
+        # Evaluate solutions
+        costs = []
         behaviors = []
 
-        for solution in solutions:
-            result = self.evaluate_fn(solution)
-            results.append(result)
+        for sol in solutions:
+            result = self.evaluate_fn(sol)
+            costs.append(result.cost)
+            # Assuming result.metadata contains behavior metrics
+            if result.metadata and "behavior" in result.metadata:
+                behaviors.append(result.metadata["behavior"])
+            else:
+                # Fallback behavior (should not happen in proper QD setup)
+                behaviors.append(np.zeros(self.behavior_dim))
 
-            # Objective is negative cost (we want to maximize quality)
-            objectives.append(-result.mean_cost)
+        # Convert to objective (fitness = -cost)
+        objectives = -np.array(costs)
+        behaviors_np = np.array(behaviors)
 
-            # Behavior characteristics
-            behavior = self._compute_behavior(result)
-            behaviors.append(behavior)
+        # Tell results to scheduler
+        self.scheduler.tell(objectives, behaviors_np)
 
-        # Tell scheduler about results
-        self.scheduler.tell(
-            objectives=np.array(objectives),
-            behaviors=np.array(behaviors),
-        )
+        # Return best solution in archive
+        if self.archive.best_elite is not None:
+            return (
+                self.archive.best_elite.solution,
+                -self.archive.best_elite.objective,
+            )
 
-        # Return best result from this iteration
+        # If no elite yet, return current best
         best_idx = np.argmax(objectives)
-        return results[best_idx]
+        return solutions[best_idx], costs[best_idx]
 
-    def get_diverse_top_parameters(
-        self, n: int = 10
-    ) -> List[Tuple[np.ndarray, float, np.ndarray]]:
-        """Get diverse set of top-performing parameters from archive.
+    def optimize_all(
+        self, iterations: int = 100
+    ) -> Tuple[np.ndarray, float, List[float]]:
+        """Run full optimization loop."""
+        history = []
+        best_params = None
+        best_cost = float("inf")
 
-        Args:
-            n: Number of diverse solutions to retrieve
+        for _ in range(iterations):
+            params, cost = self.step()
+            history.append(cost)
+            if cost < best_cost:
+                best_cost = cost
+                best_params = params
 
-        Returns:
-            List of (parameters, cost, behavior) tuples
-        """
-        if self.archive is None:
-            raise RuntimeError("Must run optimization first")
+        return best_params, best_cost, history  # type: ignore
 
-        # Get all elite solutions from archive
-        df = self.archive.as_pandas(include_solutions=True)
 
-        if len(df) == 0:
+@dataclass
+class AutotuneQD:
+    """Quality Diversity Autotuning Manager.
+
+    Wraps the standard Autotune class to support QD optimization,
+    extracting behavior descriptors from evaluations.
+    """
+
+    holder: ConfigStateHolder
+    params_to_tune: List[TunableParameter]
+    optimizer: CMAMEOpt
+    behavior_fn: Callable[[Any], List[float]]
+
+    def evaluate_wrapper(self, params: np.ndarray) -> EvaluationResult:
+        """Wrapper to extract behavior from evaluation."""
+        # This needs to be hooked into the Autotune evaluation logic
+        # For now, this is a placeholder structure
+        raise NotImplementedError("QD Autotuning integration in progress")
+
+    def get_archive_dataframe(self):
+        """Return the archive as a pandas DataFrame."""
+        if self.optimizer.archive is None:
+            return None
+        return self.optimizer.archive.as_pandas()
+
+    def plot_archive(self, output_path: str = "qd_archive.png"):
+        """Visualize the QD archive."""
+        df = self.get_archive_dataframe()
+        if df is None:
+            print("No archive to plot.")
+            return
+
+        import matplotlib.pyplot as plt
+
+        if self.optimizer.behavior_dim == 2:
+            plt.figure(figsize=(10, 8))
+            # Plot the grid
+            plt.scatter(
+                df["behavior_0"],
+                df["behavior_1"],
+                c=-df["objective"],  # Color by cost
+                cmap="viridis",
+                s=50,
+            )
+            plt.colorbar(label="Cost")
+            plt.xlabel("Behavior 1")
+            plt.ylabel("Behavior 2")
+            plt.title("QD Archive (MAP-Elites)")
+            plt.grid(True, alpha=0.3)
+            plt.savefig(output_path)
+            plt.close()
+        else:
+            print("Plotting only supported for 2D behavior spaces.")
+
+    def load_best_from_archive(self) -> None:
+        """Load the single best parameter set from the archive."""
+        if self.optimizer.archive is None:
+            return
+
+        elite = self.optimizer.archive.best_elite
+        if elite is not None:
+            print(
+                f"Loading best elite with cost {-elite.objective:.4f}"
+            )
+            # Update holder with best params
+            current_idx = 0
+            for param in self.params_to_tune:
+                count = param.get_count()
+                values = elite.solution[current_idx : current_idx + count]
+                param.set_values(values)
+                current_idx += count
+
+    def load_diverse_policies(self, num_policies: int = 5) -> List[np.ndarray]:
+        """Select a diverse set of high-performing policies."""
+        df = self.get_archive_dataframe()
+        if df is None:
             return []
 
-        # Sort by objective (negative cost, so higher is better)
+        # Sort by cost (objective is negative cost)
         df = df.sort_values("objective", ascending=False)
 
-        # Take top n diverse solutions
-        results = []
-        for idx in range(min(n, len(df))):
-            row = df.iloc[idx]
-            params = row["solution"]
+        # Pick top policies, potentially with distance filtering
+        # For simplicity, just return top N
+        top_n = df.head(num_policies)
+
+        policies = []
+        for _, row in top_n.iterrows():
+            # Extract solution columns
+            # Ribs stores solution as "solution_0", "solution_1", etc.
+            sol_cols = [
+                c for c in df.columns if c.startswith("solution_")
+            ]
+            # Ensure correct order
+            sol_cols.sort(key=lambda x: int(x.split("_")[1]))
+            policy = row[sol_cols].values.astype(np.float64)
+            policies.append(policy)
+
             # Objective is negative cost, so negate to get cost
             cost = -row["objective"]
-            # Behavior is stored in columns like "behavior_0", "behavior_1", etc.
+            # Behavior is stored in "behavior_0", etc.
             behavior = np.array([
-                row[f"index_{i}"] for i in range(self.behavior_dim)
+                row[f"index_{i}"] for i in range(self.optimizer.behavior_dim)
             ])
-            results.append((params, cost, behavior))
+            print(f"Policy: cost={cost:.2f}, behavior={behavior}")
 
-        return results
-
-    def get_archive_stats(self) -> dict:
-        """Get statistics about the archive.
-
-        Returns:
-            Dictionary with archive statistics
-        """
-        if self.archive is None:
-            raise RuntimeError("Must run optimization first")
-
-        stats = self.archive.stats
-        return {
-            "num_elites": stats.num_elites,
-            "coverage": stats.coverage,
-            "qd_score": stats.qd_score,
-            "best_objective": stats.obj_max,
-        }
-
-
-def save_qd_heatmap(
-    costs: list[float],
-    output_path: str | Path = "docs/media/autotune_qd_heatmap.png",
-    title: str = "Quality Diversity Archive Heatmap",
-    **kwargs: Any,
-) -> None:
-    """Save quality diversity optimization progress to docs/media.
-
-    Args:
-        costs: List of best costs at each iteration
-        output_path: Path to save the plot
-        title: Plot title
-        **kwargs: Additional arguments passed to plt.savefig
-    """
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError:
-        print("Warning: matplotlib not available, skipping visualization")
-        return
-
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 6)))
-
-    # Plot convergence
-    ax.plot(
-        costs,
-        marker="o",
-        linewidth=2,
-        markersize=6,
-        label="Best Cost",
-        color="blue",
-    )
-    ax.fill_between(range(len(costs)), costs, alpha=0.2, color="blue")
-    ax.set_xlabel("Iteration", fontsize=12)
-    ax.set_ylabel("Cost", fontsize=12)
-    ax.set_title(title, fontsize=14)
-    ax.legend(fontsize=11)
-    ax.grid(True, alpha=0.3)
-    fig.tight_layout()
-
-    dpi = kwargs.get("dpi", 150)
-    plt.savefig(output_path, dpi=dpi)
-    plt.close()
-    print(f"Saved QD progress plot to: {output_path}")
+        return policies

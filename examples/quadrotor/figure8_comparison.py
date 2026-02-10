@@ -6,7 +6,7 @@ aggressive figure-8 trajectory. It compares:
 - SMPPI: Smooth MPPI with control rate penalties
 - KMPPI: Kernel-based MPPI with information-theoretic updates
 
-The comparison evaluates tracking accuracy, control smoothness, and energy efficiency.
+Comparison of tracking accuracy, smoothness, and efficiency.
 """
 
 import sys
@@ -164,8 +164,8 @@ def run_controller(
         # Relationship: action(t+1) = action(t) + U * dt
 
         # Noise scaling for velocity space:
-        # Since action_change = velocity * dt, to get same exploration magnitude:
-        # var(action_change) = var(velocity) * dt²
+        # Since action_change = velocity * dt, for same exploration:
+        # var(action_change) = var(velocity) * dt^2
         # So: var(velocity) = var(action) / dt²
         # noise_sigma is covariance, so divide by dt²
         velocity_noise_sigma = noise_sigma / (dt * dt)

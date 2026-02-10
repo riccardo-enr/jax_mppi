@@ -135,7 +135,7 @@ def main():
     else:
         # Try relative to this script
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        potential_include = os.path.join(script_dir, "../third_party/cuda-mppi/include")
+        potential_include = os.path.join(script_dir, "../third_party/... /include")
         if os.path.exists(potential_include):
             include_paths.append(os.path.abspath(potential_include))
             os.environ["CUDA_MPPI_INCLUDE_DIR"] = os.path.abspath(
@@ -159,11 +159,11 @@ def main():
         print(f"  ✗ Compilation failed: {e}")
         print("\nTroubleshooting:")
         print(
-            "  1. Set CUDA_MPPI_INCLUDE_DIR to point to third_party/cuda-mppi/include"
+            "  1. Set CUDA_MPPI_INCLUDE_DIR to third_party/cuda-mppi/include"
         )
         print("  2. Ensure CUDA toolkit is installed")
         print(
-            f"     export CUDA_MPPI_INCLUDE_DIR={os.path.abspath('../third_party/cuda-mppi/include')}"
+            f"     export CUDA_MPPI_INCLUDE_DIR={os.path.abspath('../.../include')}"
         )
         return
 
@@ -190,7 +190,7 @@ def main():
             screen = pygame.display.set_mode((640, 480))
             pygame.display.set_caption("CUDA MPPI Pendulum (Real-time)")
             clock = pygame.time.Clock()
-            font = pygame.font.SysFont("Arial", 20)
+            # font = pygame.font.SysFont("Arial", 20)
         except Exception as e:
             print(
                 f"  ⚠ Pygame unavailable, continuing without visualization: {e}"
@@ -199,7 +199,7 @@ def main():
 
     print("\nRunning simulation...")
     print(
-        f"  Initial state: theta={state[0]:.3f} rad, theta_dot={state[1]:.3f} rad/s"
+        f"  Init: theta={state[0]:.3f}, dtheta={state[1]:.3f}"
     )
 
     # Main control loop
@@ -228,7 +228,7 @@ def main():
         # Print progress
         if (step + 1) % 50 == 0:
             print(
-                f"  Step {step + 1}: theta={state[0]:.3f} rad, torque={action[0]:.3f} Nm"
+                f"  Step {step+1}: th={state[0]:.3f}, u={action[0]:.3f}"
             )
 
         if pygame is not None:
@@ -252,7 +252,7 @@ def main():
 
             if abs(torque_norm) > 1e-3:
                 # Arced arrow: positive torque -> CCW, negative -> CW
-                # Start at top (12 o'clock = -π/2 in standard coords, but 3π/2 in pygame)
+                # Start at top (12 o'clock)
                 base_angle = -np.pi / 2  # Top of circle
                 max_sweep = np.pi * 1.2  # Maximum arc length
                 sweep = torque_norm * max_sweep
@@ -315,7 +315,7 @@ def main():
     actions = np.array(actions)
 
     print(
-        f"\n  Final state: theta={state[0]:.3f} rad, theta_dot={state[1]:.3f} rad/s"
+        f"\n  Final: theta={state[0]:.3f}, dtheta={state[1]:.3f}"
     )
     print("  Target: theta=0.0 rad (upright)")
 

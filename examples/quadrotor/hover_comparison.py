@@ -82,7 +82,7 @@ def run_controller(
         # Relationship: action(t+1) = action(t) + U * dt
 
         # Noise scaling for velocity space:
-        # Since action_change = velocity * dt, to get same exploration magnitude:
+        # Since action_change = velocity * dt, for same exploration:
         # var(action_change) = var(velocity) * dt²
         # So: var(velocity) = var(action) / dt²
         # noise_sigma is covariance, so divide by dt²
@@ -108,7 +108,7 @@ def run_controller(
             u_max=u_vel_max,
             action_min=u_min,  # Final action bounds (same as MPPI)
             action_max=u_max,
-            w_action_seq_cost=0.1,  # Lower smoothness weight for more aggressive control
+            w_action_seq_cost=0.1,  # Lower smoothness = more aggressive
             delta_t=dt,  # Integration timestep
             key=key,
         )
@@ -339,13 +339,13 @@ def run_quadrotor_hover_comparison(
 
         print(f"  Settling time: {settling_time:.2f}s")
         print(
-            f"  Final position error: {results[controller_type]['final_pos_error']:.4f}m"
+            f"  Final pos: {results[controller_type]['final_pos_error']:.4f}m"
         )
         print(
             f"  Final velocity: {results[controller_type]['final_vel']:.4f}m/s"
         )
         print(
-            f"  Mean position error: {results[controller_type]['mean_pos_error']:.4f}m"
+            f"  Mean pos: {results[controller_type]['mean_pos_error']:.4f}m"
         )
         print(f"  Total cost: {results[controller_type]['total_cost']:.2f}")
         print(f"  Control smoothness: {action_smoothness:.4f}")
@@ -374,7 +374,7 @@ def run_quadrotor_hover_comparison(
             f"{v:{fmt}}" if v != float("inf") else "N/A" for v in values
         ]
         print(
-            f"{name:<30} {value_strs[0]:>12} {value_strs[1]:>12} {value_strs[2]:>12}"
+            f"{name:<5} {value_strs[0]:>8} {value_strs[1]:>8} {value_strs[2]:>8}"
         )
 
     print("=" * 70)
@@ -386,7 +386,7 @@ def run_quadrotor_hover_comparison(
             time = jnp.arange(num_steps + 1) * dt
             time_actions = jnp.arange(num_steps) * dt
 
-            fig = plt.figure(figsize=(16, 12))
+
 
             colors = {"mppi": "C0", "smppi": "C1", "kmppi": "C2"}
             labels = {"mppi": "MPPI", "smppi": "SMPPI", "kmppi": "KMPPI"}

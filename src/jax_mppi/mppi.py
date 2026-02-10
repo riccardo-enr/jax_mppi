@@ -192,7 +192,7 @@ def _compute_rollout_costs(
     var_step_costs = jnp.zeros_like(per_step_costs)
 
     if config.rollout_samples > 1:
-        # Placeholder: allow variance penalty without explicit stochastic rollouts.
+        # Placeholder: variance penalty without stochastic rollouts.
         mean_step_costs = per_step_costs
         var_step_costs = jnp.zeros_like(per_step_costs)
 

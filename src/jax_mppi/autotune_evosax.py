@@ -1,6 +1,6 @@
 """Evosax-based optimizer for JAX-MPPI autotuning.
 
-This module provides JAX-native evolutionary strategies using the evosax library.
+This module provides JAX-native evolutionary strategies via evosax.
 Evosax enables fully JIT-compiled optimization loops with GPU acceleration.
 
 Supports multiple strategies:
@@ -36,7 +36,7 @@ def _create_jax_evaluate_fn(
     extracts scalar cost from EvaluationResult.
 
     Args:
-        evaluate_fn: Function that takes numpy array and returns EvaluationResult
+        evaluate_fn: Function taking numpy array -> EvaluationResult
         maximize: Whether to maximize (True) or minimize (False, default)
 
     Returns:
@@ -143,7 +143,7 @@ class EvoSaxOptimizer(Optimizer):
                 from evosax import algorithms
 
                 available = algorithms.__all__
-            except:
+            except Exception:
                 available = []
             raise ValueError(
                 f"Unknown strategy '{self.strategy}'. "

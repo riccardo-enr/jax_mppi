@@ -182,9 +182,9 @@ class TestPendulumIntegration:
 
         final_cost = jnp.mean(jnp.array(costs[-10:]))
 
-        # Should reduce cost significantly (at least 50% reduction in final average)
+        # Should reduce cost significantly (at least 50% reduction)
         assert final_cost < initial_cost * 0.5, (
-            f"Failed to swing up: initial_cost={initial_cost:.2f}, final_avg_cost={final_cost:.2f}"
+            f"Failed: initial={initial_cost:.2f}, final={final_cost:.2f}"
         )
 
         # Should be closer to upright than hanging

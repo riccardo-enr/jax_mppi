@@ -125,7 +125,7 @@ class TestKMPPIBasics:
             kernel=custom_kernel,
         )
 
-        # kernel_fn is typed as TimeKernel (Protocol), so basedpyright doesn't know about sigma
+        # kernel_fn is typed as TimeKernel (Protocol)
         assert isinstance(kernel_fn, kmppi.RBFKernel)
         assert kernel_fn.sigma == 2.0
 

@@ -19,7 +19,9 @@ def simple_dynamics(state: jax.Array, action: jax.Array) -> jax.Array:
         return state + action_padded
 
 
-def step_dependent_dynamics(state: jax.Array, action: jax.Array, t: int) -> jax.Array:
+def step_dependent_dynamics(
+    state: jax.Array, action: jax.Array, t: int
+) -> jax.Array:
     """Dynamics that depend on the time step."""
     return state + action + t * 0.1
 
@@ -29,7 +31,9 @@ def quadratic_cost(state: jax.Array, action: jax.Array) -> jax.Array:
     return jnp.sum(state**2) + 0.1 * jnp.sum(action**2)
 
 
-def step_dependent_cost(state: jax.Array, action: jax.Array, t: int) -> jax.Array:
+def step_dependent_cost(
+    state: jax.Array, action: jax.Array, t: int
+) -> jax.Array:
     """Cost that depends on the time step."""
     return jnp.sum(state**2) + 0.1 * jnp.sum(action**2) + t * 0.01
 
@@ -157,7 +161,7 @@ class TestMPPICommand:
         )
 
         # Should return u_per_command actions
-        # Note: unlike smppi which flattens, mppi currently returns (u_per_command, nu)
+        # Note: unlike smppi which flattens, mppi returns (u_per_command, nu)
         assert action.shape == (u_per_command, nu)
 
     def test_step_dependent_dynamics(self):
@@ -235,30 +239,46 @@ class TestMPPICommand:
 
         # Create two instances, one with large scale, one with small
         config_small, state_small = mppi.create(
-            nx=nx, nu=nu, noise_sigma=noise_sigma, u_scale=0.01, key=jax.random.PRNGKey(0)
+            nx=nx,
+            nu=nu,
+            noise_sigma=noise_sigma,
+            u_scale=0.01,
+            key=jax.random.PRNGKey(0)
         )
         config_large, state_large = mppi.create(
-            nx=nx, nu=nu, noise_sigma=noise_sigma, u_scale=100.0, key=jax.random.PRNGKey(0)
+            nx=nx,
+            nu=nu,
+            noise_sigma=noise_sigma,
+            u_scale=100.0,
+            key=jax.random.PRNGKey(0)
         )
 
         current_obs = jnp.zeros(nx)
 
         action_small, _ = mppi.command(
-            config_small, state_small, current_obs, simple_dynamics, quadratic_cost
+            config_small,
+            state_small,
+            current_obs,
+            simple_dynamics,
+            quadratic_cost
         )
 
         action_large, _ = mppi.command(
-            config_large, state_large, current_obs, simple_dynamics, quadratic_cost
+            config_large,
+            state_large,
+            current_obs,
+            simple_dynamics,
+            quadratic_cost
         )
 
         # The large scale should result in larger magnitude actions typically
-        # (though this depends on the cost landscape, for a quadratic cost around 0,
+        # (though this depends on the cost landscape, quadratic cost around 0
         # both might try to be small, but the exploration noise is scaled).
         # Actually, u_scale scales the *control authority*.
         # The noise is added to U, then multiplied by u_scale.
-        # So larger u_scale -> larger effective noise in action space -> larger exploration.
+        # So larger u_scale -> larger effective noise -> larger exploration.
 
-        # We can check that the action magnitude is different/larger for the large scale case
+        # Check that action magnitude is larger for the large scale case
         # assuming the noise drove it somewhat away from 0.
 
         assert jnp.max(jnp.abs(action_large)) > jnp.max(jnp.abs(action_small))
@@ -359,7 +379,7 @@ class TestMPPIIntegration:
     """Integration tests for MPPI."""
 
     def test_temperature_effect(self):
-        """Test that lower temperature (lambda) leads to more aggressive optimization."""
+        """Test lower temperature (lambda) -> more aggressive optimization."""
         nx, nu = 2, 1
         noise_sigma = jnp.eye(nu) * 1.0
 
@@ -412,7 +432,7 @@ class TestMPPIIntegration:
             return quadratic_cost(next_s, a)
 
         cost_high = eval_cost(action_high)
-        cost_low = eval_cost(action_low)
+
         cost_idle = eval_cost(jnp.zeros(nu))
 
         # Check that temperature parameter has an effect

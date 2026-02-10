@@ -638,7 +638,9 @@ def _make_trajectory_test_setup():
 class TestTrajectoryFSMIDirect:
     def test_positive_for_unknown(self):
         mod, gm, traj = _make_trajectory_test_setup()
-        mi = fsmi_trajectory_direct(mod, traj, gm.grid, subsample_rate=5, dt=0.1)
+        mi = fsmi_trajectory_direct(
+            mod, traj, gm.grid, subsample_rate=5, dt=0.1
+        )
         assert mi > 0
 
     def test_zero_for_free(self):
@@ -652,13 +654,18 @@ class TestTrajectoryFSMIDirect:
             jnp.full(20, 10.0),
             jnp.full(20, -2.0),
         ])
-        mi = fsmi_trajectory_direct(mod, traj, free_grid, subsample_rate=5, dt=0.1)
+        mi = fsmi_trajectory_direct(
+            mod, traj, free_grid, subsample_rate=5, dt=0.1
+        )
         # Should be very small (not exactly 0 due to boundary effects)
         assert mi < 0.1
 
     def test_jit_compatible(self):
         mod, gm, traj = _make_trajectory_test_setup()
-        fn = lambda g, t: fsmi_trajectory_direct(mod, t, g, subsample_rate=5, dt=0.1)
+        def fn(g, t):
+            return fsmi_trajectory_direct(
+                mod, t, g, subsample_rate=5, dt=0.1
+            )
         eager = fn(gm.grid, traj)
         jitted = jax.jit(fn)(gm.grid, traj)
         assert jnp.isclose(eager, jitted, atol=1e-4)
@@ -668,7 +675,9 @@ class TestTrajectoryFSMIDiscount:
     def test_leq_direct(self):
         """Discounted MI should be <= direct MI for overlapping trajectory."""
         mod, gm, traj = _make_trajectory_test_setup()
-        mi_direct = fsmi_trajectory_direct(mod, traj, gm.grid, subsample_rate=2, dt=0.1)
+        mi_direct = fsmi_trajectory_direct(
+            mod, traj, gm.grid, subsample_rate=2, dt=0.1
+        )
         mi_discount = fsmi_trajectory_discounted(
             mod, traj, gm.grid, subsample_rate=2, dt=0.1, decay=0.7
         )
@@ -677,7 +686,9 @@ class TestTrajectoryFSMIDiscount:
     def test_zero_decay_equals_direct(self):
         """With decay=0, discount weights are all 1 → same as direct."""
         mod, gm, traj = _make_trajectory_test_setup()
-        mi_direct = fsmi_trajectory_direct(mod, traj, gm.grid, subsample_rate=5, dt=0.1)
+        mi_direct = fsmi_trajectory_direct(
+            mod, traj, gm.grid, subsample_rate=5, dt=0.1
+        )
         mi_discount = fsmi_trajectory_discounted(
             mod, traj, gm.grid, subsample_rate=5, dt=0.1, decay=0.0
         )
@@ -685,7 +696,8 @@ class TestTrajectoryFSMIDiscount:
 
     def test_jit_compatible(self):
         mod, gm, traj = _make_trajectory_test_setup()
-        fn = lambda g, t: fsmi_trajectory_discounted(
+        def fn(g, t):
+            return fsmi_trajectory_discounted(
             mod, t, g, subsample_rate=5, dt=0.1, decay=0.7
         )
         eager = fn(gm.grid, traj)
@@ -697,7 +709,9 @@ class TestTrajectoryFSMIFiltered:
     def test_leq_direct(self):
         """Filtered MI should be <= direct MI."""
         mod, gm, traj = _make_trajectory_test_setup()
-        mi_direct = fsmi_trajectory_direct(mod, traj, gm.grid, subsample_rate=2, dt=0.1)
+        mi_direct = fsmi_trajectory_direct(
+            mod, traj, gm.grid, subsample_rate=2, dt=0.1
+        )
         mi_filtered = fsmi_trajectory_filtered(
             mod, traj, gm.grid, subsample_rate=2, dt=0.1
         )
@@ -717,7 +731,8 @@ class TestTrajectoryFSMIFiltered:
 
     def test_jit_compatible(self):
         mod, gm, traj = _make_trajectory_test_setup()
-        fn = lambda g, t: fsmi_trajectory_filtered(
+        def fn(g, t):
+            return fsmi_trajectory_filtered(
             mod, t, g, subsample_rate=5, dt=0.1
         )
         eager = fn(gm.grid, traj)

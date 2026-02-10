@@ -15,7 +15,7 @@ def create_lqr_cost(
     R: Float[Array, "nu nu"],
     goal: Float[Array, "nx"],
 ) -> CostFn:
-    """Create LQR cost function: (goal - state)^T Q (goal - state) + action^T R action
+    """Create LQR cost: state^T Q state + action^T R action
 
     Args:
         Q: State cost matrix (nx x nx)
@@ -65,7 +65,7 @@ def create_hill_cost(
     Cost = cost_at_center * exp(-(center - state)^T Q (center - state))
 
     Args:
-        Q: Shape matrix for the Gaussian (nx x nx). Higher values create sharper peaks.
+        Q: Gaussian shape matrix (nx x nx). Higher = sharper.
         center: Center of the Gaussian hill (nx,)
         cost_at_center: Maximum cost value at the center (default: 1.0)
 

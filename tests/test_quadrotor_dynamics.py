@@ -225,7 +225,7 @@ class TestQuadrotorDynamics:
 
         # Command angular rates
         omega_cmd = jnp.array([1.0, 2.0, -1.0])
-        action = jnp.array([mass * 9.81, omega_cmd[0], omega_cmd[1], omega_cmd[2]])
+        action = jnp.array([mass * 9.81, *omega_cmd])
 
         # Simulate until convergence
         for _ in range(200):

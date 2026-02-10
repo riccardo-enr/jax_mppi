@@ -4,7 +4,7 @@ This module implements the two-layer I-MPPI architecture:
 
 Layer 2 (FSMI Analyzer, ~5-10 Hz):
     - FSMIModule: Full FSMI with O(n²) computation
-    - FSMITrajectoryGenerator: Generates reference trajectories maximizing information
+    - FSMITrajectoryGenerator: Generates ref trajectories maximizing info
 
 Layer 3 (I-MPPI Controller, ~50 Hz):
     - UniformFSMI: O(n) fast FSMI for local reactivity
