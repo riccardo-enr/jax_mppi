@@ -52,6 +52,7 @@ from sim_utils import (  # noqa: E402
 )
 from tqdm import tqdm  # noqa: E402
 from viz_utils import (  # noqa: E402
+    _INFO_GAIN_CMAP,
     plot_environment,
 )
 
@@ -186,7 +187,7 @@ def create_parallel_trajectory_mp4(
         np.zeros((2, 2)),
         origin="lower",
         extent=[0, 1, 0, 1],
-        cmap="hot",
+        cmap=_INFO_GAIN_CMAP,
         vmin=0,
         vmax=field_vmax,
         alpha=0.5,

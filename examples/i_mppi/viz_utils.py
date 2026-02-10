@@ -4,6 +4,7 @@ import matplotlib.animation as animation
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Polygon
 
 from jax_mppi.i_mppi.environment import (
@@ -11,6 +12,13 @@ from jax_mppi.i_mppi.environment import (
     INFO_ZONES,
     SENSOR_FOV_RAD,
     SENSOR_MAX_RANGE,
+)
+
+# --- Information gain colormap (dark green → white → dark blue) ---
+_INFO_GAIN_CMAP = LinearSegmentedColormap.from_list(
+    "info_gain",
+    ["#0d2905", "#2d5016", "#4a7c2e", "#c8e6c9", "#ffffff", "#b3d9f2", "#66b3cc", "#3366aa", "#1a4488", "#003366"],
+    N=256,
 )
 
 # --- FOV visualisation helpers ---
@@ -245,8 +253,9 @@ def create_trajectory_gif(
     fps=20,
     step_skip=5,
     origin=(0.0, 0.0),
+    info_gain_field=None,
 ):
-    """Create an animated GIF of the UAV trajectory.
+    """Create an animated GIF/MP4 of the UAV trajectory.
 
     Args:
         history_x: (N, 16) state history.
@@ -254,10 +263,12 @@ def create_trajectory_gif(
         grid: (H, W) occupancy grid.
         resolution: Grid resolution in m/cell.
         dt: Simulation timestep.
-        save_path: Output GIF file path.
-        fps: Frames per second in the GIF.
+        save_path: Output file path (.gif or .mp4).
+        fps: Frames per second.
         step_skip: Show every N-th simulation step as a frame.
         origin: (x, y) world coordinates of the grid origin.
+        info_gain_field: Optional (N, H, W) or (H, W) information gain field.
+            If 3D, uses time-varying field; if 2D, uses static field.
     """
     positions = np.array(history_x[:, :2])
     # Extract yaw from quaternion (indices 6-9: qw, qx, qy, qz)
@@ -314,6 +325,30 @@ def create_trajectory_gif(
     ax_map.set_xlabel("X (m)")
     ax_map.set_ylabel("Y (m)")
     ax_map.set_aspect("equal")
+
+    # --- Information gain field overlay ---
+    info_gain_img = None
+    if info_gain_field is not None:
+        info_gain_arr = np.array(info_gain_field)
+        # Check if time-varying (3D) or static (2D)
+        is_time_varying = info_gain_arr.ndim == 3
+        if is_time_varying:
+            # Prepare initial frame
+            ig_frame = info_gain_arr[0]
+        else:
+            ig_frame = info_gain_arr
+        # Create masked array (mask out zero/invalid values for transparency)
+        ig_masked = np.ma.masked_where(ig_frame <= 0, ig_frame)
+        info_gain_img = ax_map.imshow(
+            ig_masked,
+            origin="lower",
+            extent=extent,
+            cmap=_INFO_GAIN_CMAP,
+            alpha=0.6,
+            vmin=0,
+            vmax=np.max(info_gain_arr) if np.max(info_gain_arr) > 0 else 1,
+            zorder=2,
+        )
 
     # Animated elements
     (trail_line,) = ax_map.plot([], [], "c-", linewidth=1.5, alpha=0.6)
@@ -410,6 +445,15 @@ def create_trajectory_gif(
         # FOV wedge
         fov_verts = _fov_polygon(x, y, yaw, grid_np, resolution, origin=origin)
         fov_patch.set_xy(fov_verts)
+        # Information gain field (update if time-varying)
+        updated_artists = []
+        if info_gain_img is not None:
+            info_gain_arr = np.array(info_gain_field)
+            if info_gain_arr.ndim == 3:
+                ig_frame = info_gain_arr[min(k, len(info_gain_arr) - 1)]
+                ig_masked = np.ma.masked_where(ig_frame <= 0, ig_frame)
+                info_gain_img.set_data(ig_masked)
+            updated_artists.append(info_gain_img)
         # Explored overlay (green tint on seen cells)
         seen = seen_snapshots[frame_idx]
         rgba = np.zeros((*grid_np.shape, 4))
@@ -426,6 +470,7 @@ def create_trajectory_gif(
             line.set_data(t_all[: k + 1], info[: k + 1, i])
         return (
             [trail_line, uav_dot, heading_arrow, fov_patch, explored_img, title]
+            + updated_artists
             + zone_patches
             + info_lines
         )
