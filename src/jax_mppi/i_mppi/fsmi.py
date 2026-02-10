@@ -101,7 +101,7 @@ class InfoFieldConfig:
     ref_speed: float = 2.0  # gradient trajectory speed [m/s]
     ref_horizon: int = 40  # gradient trajectory steps
     target_weight: float = 1.0  # MPPI target tracking weight
-    goal_fallback_weight: float = 2.0  # goal weight when field is depleted
+    goal_weight: float = 0.5  # constant goal attraction weight
 
 
 class FSMIModule:

@@ -92,7 +92,7 @@ LAMBDA_LOCAL = 10.0  # Uniform-FSMI cost weight
 REF_SPEED = 2.0  # gradient trajectory speed [m/s]
 REF_HORIZON = 40  # gradient trajectory steps
 TARGET_WEIGHT = 1.0  # MPPI target tracking weight
-GOAL_FALLBACK_WEIGHT = 2.0  # goal weight when field depleted
+GOAL_WEIGHT = 0.2  # constant goal attraction weight
 
 MEDIA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -102,7 +102,7 @@ MEDIA_DIR = os.path.join(
     "_media",
     "i_mppi",
 )
-GIF_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_trajectory.gif")
+MP4_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_trajectory.mp4")
 SUMMARY_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_summary.png")
 DATA_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_flight_data.npz")
 
@@ -112,7 +112,15 @@ DATA_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_flight_data.npz")
 # ---------------------------------------------------------------------------
 
 
-def create_parallel_trajectory_gif(
+def _quat_to_yaw_np(q: np.ndarray) -> float:
+    """Extract yaw from quaternion [qw, qx, qy, qz] (NumPy)."""
+    qw, qx, qy, qz = q[0], q[1], q[2], q[3]
+    siny = 2.0 * (qw * qz + qx * qy)
+    cosy = 1.0 - 2.0 * (qy * qy + qz * qz)
+    return float(np.arctan2(siny, cosy))
+
+
+def create_parallel_trajectory_mp4(
     history_x: jax.Array,
     history_field: jax.Array,
     history_field_origin: jax.Array,
@@ -123,9 +131,14 @@ def create_parallel_trajectory_gif(
     save_path: str,
     fps: int = 10,
     step_skip: int = 5,
+    fov_rad: float = 1.57,
+    sensor_range: float = 4.0,
 ) -> str:
-    """Create animated GIF showing trajectory + info field heatmap."""
-    positions = np.array(history_x[:, :2])
+    """Create animated MP4 showing trajectory + info field heatmap + FOV."""
+    from matplotlib.patches import Wedge
+
+    states = np.array(history_x)  # (N, 13)
+    positions = states[:, :2]
     fields = np.array(history_field)  # (N, Nx, Ny)
     field_origins = np.array(history_field_origin)  # (N, 2)
     n_steps = len(positions)
@@ -186,11 +199,21 @@ def create_parallel_trajectory_gif(
     (uav_dot,) = ax_map.plot([], [], "co", markersize=8, zorder=10)
     title = ax_map.set_title("")
 
+    # FOV wedge (updated per frame)
+    fov_wedge = Wedge(
+        (0, 0), sensor_range, 0, 0,
+        facecolor="cyan", edgecolor="cyan",
+        alpha=0.15, linewidth=0.5, zorder=3,
+    )
+    ax_map.add_patch(fov_wedge)
+
     # Colorbar for info field
     cbar = fig.colorbar(field_img, ax=ax_map, shrink=0.6, pad=0.02)
     cbar.set_label("FSMI (info gain)", fontsize=8)
 
     plt.tight_layout()
+
+    fov_deg = np.degrees(fov_rad)
 
     def update(frame_idx: int) -> list[Any]:
         k = frame_indices[frame_idx]
@@ -199,6 +222,13 @@ def create_parallel_trajectory_gif(
         trail_line.set_data(positions[: k + 1, 0], positions[: k + 1, 1])
         # UAV position
         uav_dot.set_data([positions[k, 0]], [positions[k, 1]])
+
+        # FOV wedge
+        yaw = _quat_to_yaw_np(states[k, 6:10])
+        yaw_deg = np.degrees(yaw)
+        fov_wedge.set_center((positions[k, 0], positions[k, 1]))
+        fov_wedge.set_theta1(yaw_deg - fov_deg / 2)
+        fov_wedge.set_theta2(yaw_deg + fov_deg / 2)
 
         # Info field heatmap
         field = fields[k]  # (Nx, Ny)
@@ -216,12 +246,12 @@ def create_parallel_trajectory_gif(
             f"Parallel I-MPPI  t = {k * dt:.1f}s  |  field max = {field.max():.3f}"
         )
 
-        return [trail_line, uav_dot, field_img, title]
+        return [trail_line, uav_dot, field_img, title, fov_wedge]
 
     anim = animation.FuncAnimation(
         fig, update, frames=len(frame_indices), interval=1000 // fps, blit=True
     )
-    anim.save(save_path, writer="pillow", fps=fps)
+    anim.save(save_path, writer="ffmpeg", fps=fps)
     plt.close(fig)
     return save_path
 
@@ -234,18 +264,18 @@ def create_parallel_trajectory_gif(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Parallel I-MPPI simulation")
     parser.add_argument(
-        "--gif", action="store_true", help="Generate trajectory GIF"
+        "--gif", action="store_true", help="Generate trajectory MP4"
     )  # pyright: ignore[reportUnusedCallResult]
     parser.add_argument(
         "--gif-only",
         action="store_true",
-        help="Generate GIF from saved flight data (skip simulation)",
+        help="Generate MP4 from saved flight data (skip simulation)",
     )  # pyright: ignore[reportUnusedCallResult]
     return parser.parse_args()
 
 
 def gif_from_data() -> None:
-    """Load saved flight data and generate GIF only."""
+    """Load saved flight data and generate MP4 only."""
     if not os.path.isfile(DATA_PATH):
         print(f"No flight data found at {DATA_PATH}")
         print("Run the simulation first: just run-parallel-imppi")
@@ -255,18 +285,21 @@ def gif_from_data() -> None:
     data = np.load(DATA_PATH, allow_pickle=True)
 
     os.makedirs(MEDIA_DIR, exist_ok=True)
-    print("Generating trajectory GIF with info field ...")
-    gif_path = create_parallel_trajectory_gif(
+    print("Generating trajectory MP4 with info field ...")
+    dt = float(data["dt"])
+    step_skip = 2
+    fps = int(1.0 / (step_skip * dt))  # 1:1 real-time (25 fps)
+    gif_path = create_parallel_trajectory_mp4(
         data["history_x"],
         data["history_field"],
         data["history_field_origin"],
         data["grid"],
         float(data["map_resolution"]),
         FIELD_RES,
-        float(data["dt"]),
-        save_path=GIF_PATH,
-        fps=10,
-        step_skip=5,
+        dt,
+        save_path=MP4_PATH,
+        step_skip=step_skip,
+        fps=fps,
     )
     print(f"Saved to: {gif_path}")
 
@@ -335,7 +368,7 @@ def main() -> None:
         ref_speed=REF_SPEED,
         ref_horizon=REF_HORIZON,
         target_weight=TARGET_WEIGHT,
-        goal_fallback_weight=GOAL_FALLBACK_WEIGHT,
+        goal_weight=GOAL_WEIGHT,
     )
 
     # --- Uniform-FSMI (local reactivity at 50 Hz) ---
@@ -482,8 +515,8 @@ def main() -> None:
 
     # --- GIF with info field (optional) ---
     if args.gif:
-        print("Generating trajectory GIF with info field ...")
-        gif_path = create_parallel_trajectory_gif(
+        print("Generating trajectory MP4 with info field ...")
+        gif_path = create_parallel_trajectory_mp4(
             history_x,
             history_field,
             history_field_origin,
@@ -491,9 +524,9 @@ def main() -> None:
             map_resolution,
             FIELD_RES,
             DT,
-            save_path=GIF_PATH,
-            fps=10,
-            step_skip=5,
+            save_path=MP4_PATH,
+            step_skip=2,
+            fps=int(1.0 / (2 * DT)),  # 1:1 real-time (25 fps)
         )
         print(f"Saved to: {gif_path}")
 

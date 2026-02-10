@@ -322,14 +322,16 @@ def build_parallel_sim_fn(
         if progress_callback is not None:
             jax.debug.callback(progress_callback, t)
 
-        # Check termination: goal reached
+        # Check termination: goal reached AND map explored
         goal_dist = jnp.linalg.norm(current_state[:3] - GOAL_POS)
         goal_reached = goal_dist < GOAL_DONE_THRESHOLD
-        # Also check if field is mostly depleted (all explored)
-        field_max = jnp.max(info_field)
-        field_depleted = field_max < 0.3
-        newly_done = field_depleted & goal_reached
-        done_step = jnp.where((done_step == 0) & newly_done, t, done_step)
+        # Map explored: fraction of high-uncertainty cells (entropy proxy > 0.5)
+        uncertainty = 4.0 * grid * (1.0 - grid)  # 1.0 at p=0.5, ~0 at known
+        unknown_frac = jnp.mean(uncertainty > 0.5)
+        map_explored = unknown_frac < 0.05  # <5% unknown cells remain
+        done_step = jnp.where(
+            (done_step == 0) & goal_reached & map_explored, t, done_step
+        )
         is_done = done_step > 0
 
         # --- FOV grid update ---
@@ -363,38 +365,28 @@ def build_parallel_sim_fn(
             lambda: ref_traj,
         )
 
-        # Target weight: normal when exploring, strong toward goal when depleted
-        target_w = jnp.where(
-            field_depleted,
-            info_field_config.goal_fallback_weight,
-            info_field_config.target_weight,
-        )
-
-        # When field is depleted, target GOAL instead of ref trajectory
-        goal_traj = jnp.broadcast_to(
-            GOAL_POS[None, :],
-            (info_field_config.ref_horizon, 3),
-        )
-        active_target = jnp.where(field_depleted, goal_traj, new_ref_traj)
-
         # --- Cost function ---
         def cost_fn(x, u, t_step):
             cost = informative_running_cost(
                 x, u, t_step,
-                target=active_target,
+                target=new_ref_traj,
                 grid_map=updated_grid,
                 uniform_fsmi_fn=uniform_fsmi.compute,
                 info_weight=info_field_config.lambda_local,
                 grid_origin=grid_origin,
                 grid_resolution=grid_resolution,
-                target_weight=target_w,
+                target_weight=info_field_config.target_weight,
             )
             # Field-based guidance term
             field_value = interp2d(
                 new_field, new_origin, info_field_config.field_res, x[:2]
             )
             field_cost = -info_field_config.lambda_info * field_value
-            return cost + field_cost
+            # Constant goal attraction
+            goal_cost = info_field_config.goal_weight * jnp.linalg.norm(
+                x[:3] - GOAL_POS
+            )
+            return cost + field_cost + goal_cost
 
         # --- Dynamics: pure quadrotor (13D) ---
         # MPPI calls dynamics(state, action, t) with step_dependent_dynamics=True
