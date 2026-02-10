@@ -11,11 +11,9 @@ authors = ["Riccardo Enrico"]
 [system-requirements]
 cuda = "13"
 
+# Only python from conda (pixi requirement), everything else from PyPI
 [dependencies]
-python = ">=3.12,<3.14"
-cmake = ">=3.18"
-nanobind = "*"
-scikit-build-core = ">=0.3.3"
+python = ">=3.11,<3.13"
 
 [pypi-dependencies]
 jax-mppi = { path = ".", editable = true }
@@ -24,6 +22,9 @@ numpy = "*"
 jaxtyping = "*"
 chex = "*"
 pyyaml = ">=6.0.3"
+cmake = ">=3.18"
+nanobind = "*"
+scikit-build-core = ">=0.3.3"
 
 # Dev feature
 [feature.dev.pypi-dependencies]

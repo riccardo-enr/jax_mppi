@@ -1,0 +1,83 @@
+[project]
+name = "jax-mppi"
+version = "0.3.0"
+description = "JAX implementation of Model Predictive Path Integral (MPPI) control"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Riccardo Enrico" }]
+keywords = [
+  "jax",
+  "mppi",
+  "model-predictive-control",
+  "robotics",
+  "optimal-control",
+  "trajectory-optimization",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/riccardo-enr/jax_mppi"
+Repository = "https://github.com/riccardo-enr/jax_mppi"
+Documentation = "https://riccardo-enr.github.io/jax_mppi/"
+"Bug Tracker" = "https://github.com/riccardo-enr/jax_mppi/issues"
+
+[tool.ruff]
+line-length = 80
+target-version = "py312"
+exclude = ["third_party", "build", "dist", "__pycache__"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.pycodestyle]
+ignore-overlong-task-comments = true
+
+[tool.ruff.lint.per-file-ignores]
+"src/jax_mppi/costs/basic.py" = ["F722", "F821"]
+"src/jax_mppi/dynamics/linear.py" = ["F722", "F821"]
+"src/jax_mppi/kmppi.py" = ["E402"]
+"src/jax_mppi/smppi.py" = ["E402"]
+"examples/cuda/pendulum_jit.py" = ["E741"]
+"examples/quadrotor/custom_trajectory.py" = ["F401"]
+"src/jax_mppi/autotune_evosax.py" = ["E722"]
+"src/jax_mppi/autotune_qd.py" = ["F401"]
+"*.ipynb" = ["E402"]                                 # Only for notebooks
+
+[tool.basedpyright]
+pythonVersion = "3.12"
+exclude = ["third_party", "build", "dist", "__pycache__"]
+typeCheckingMode = "basic"
+pythonPlatform = "Linux"
+reportGeneralTypeIssues = false
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportUnusedVariable = false
+reportUnusedImport = false
+
+[build-system]
+requires = ["scikit-build-core>=0.3.3", "nanobind>=1.3.2"]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+cmake.version = ">=3.18"
+wheel.packages = ["src/jax_mppi"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
