@@ -9,6 +9,10 @@ dist/
 *.png
 *.gif
 
+# Simulation and data outputs
+*.npy
+*.npz
+
 # UV
 .venv/
 uv.lock
