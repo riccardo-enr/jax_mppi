@@ -46,6 +46,7 @@ from jax_mppi.i_mppi.fsmi import (
     UniformFSMI,
     UniformFSMIConfig,
 )
+from jax_mppi.i_mppi.map import GridMap
 
 
 def create_occupancy_grid():
@@ -211,11 +212,17 @@ def main():
         motion_weight=0.5,  # Lower weight to allow detours
     )
 
+    grid_map_obj = GridMap(
+        grid=grid_map,
+        origin=map_origin,
+        resolution=map_resolution,
+        width=grid_map.shape[1],
+        height=grid_map.shape[0],
+    )
     fsmi_planner = FSMITrajectoryGenerator(
         fsmi_config,
         INFO_ZONES,
-        map_origin,
-        map_resolution,
+        grid_map_obj,
     )
     print(f"  Beams: {fsmi_config.num_beams}")
     print(f"  Range: {fsmi_config.max_range}m")
@@ -345,6 +352,7 @@ def main():
                     bias_alpha=0.2,
                 )
             elif controller_name == "kmppi":
+                assert kernel_fn is not None
                 action, next_ctrl_state = biased_kmppi_command(
                     config,
                     current_ctrl_state,

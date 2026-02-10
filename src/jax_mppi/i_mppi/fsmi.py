@@ -257,7 +257,7 @@ class FSMIModule:
         return mi
 
     def compute_fsmi(
-        self, grid_map: jax.Array, pos: jax.Array, yaw: float
+        self, grid_map: jax.Array, pos: jax.Array, yaw: jax.typing.ArrayLike
     ) -> jax.Array:
         """
         Computes total FSMI for all beams at a given pose.
@@ -418,7 +418,7 @@ class UniformFSMI:
         return mi
 
     def compute(
-        self, grid_map: jax.Array, pos: jax.Array, yaw: float
+        self, grid_map: jax.Array, pos: jax.Array, yaw: jax.typing.ArrayLike
     ) -> jax.Array:
         """
         Compute Uniform-FSMI at a given pose.
@@ -547,7 +547,9 @@ def compute_info_field(
     # Compute FSMI for all (position, yaw) pairs via double vmap
     # Inner vmap: over positions (axis 0) for each yaw
     # Outer vmap: over yaws (axis 1, None for grid_map)
-    fsmi_fn = lambda pos, yaw: fsmi_module.compute(grid_map, pos, yaw)
+    def fsmi_fn(pos, yaw):
+        return fsmi_module.compute_fsmi(grid_map, pos, yaw)
+
     fsmi_vmap_pos = jax.vmap(fsmi_fn, in_axes=(0, None))
     fsmi_vmap_yaw = jax.vmap(fsmi_vmap_pos, in_axes=(None, 0))
 
@@ -637,7 +639,7 @@ def compute_fsmi_gain(
     map_resolution: float,
     num_rays: int = 36,
     num_steps: int = 50,
-) -> float:
+) -> jax.Array:
     """
     Compute total FSMI gain for a viewpoint by casting rays in circle.
     """
@@ -978,9 +980,9 @@ class FSMITrajectoryGenerator:
 
             # Mask out depleted zones
             has_info = info_levels > self.config.info_threshold
-            zone_scores = jnp.where(has_info, zone_scores, -1e6)
+            zone_scores = jnp.where(has_info, zone_scores, jnp.float32(-1e6))
 
-            best_zone_idx = jnp.argmax(zone_scores)
+            best_zone_idx = int(jnp.argmax(zone_scores))
             go_to_zone = has_info[best_zone_idx]
         else:
             # Fallback: FSMI-based scoring on grid
@@ -1141,7 +1143,7 @@ class FSMITrajectoryGenerator:
         """
         fsmi_mod = FSMIModule(
             self.config,
-            self.grid_map.origin,
+            jnp.asarray(self.grid_map.origin),
             self.grid_map.resolution,
         )
         subsample = self.config.trajectory_subsample_rate
@@ -1204,9 +1206,9 @@ class FSMITrajectoryGenerator:
                 ref_traj, view_dir_xy, grid_map, dt
             )
         else:
-            info_levels = info_data  # Single array
+            assert isinstance(info_data, jax.Array)
             info_gain = self._info_gain_legacy(
-                ref_traj, view_dir_xy, info_levels, dt
+                ref_traj, view_dir_xy, info_data, dt
             )
 
         return motion_cost - self.config.info_weight * info_gain

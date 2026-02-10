@@ -20,6 +20,7 @@ import numpy as np
 
 from jax_mppi.i_mppi.environment import INFO_ZONES
 from jax_mppi.i_mppi.fsmi import FSMIConfig, FSMIModule, FSMITrajectoryGenerator
+from jax_mppi.i_mppi.map import GridMap
 
 
 def create_synthetic_grid(width=100, height=100, resolution=0.1):
@@ -193,9 +194,11 @@ def compare_fsmi_modes():
 
     # Grid-based FSMI
     print("\n=== Grid-based FSMI ===")
-    fsmi_gen_grid = FSMITrajectoryGenerator(
-        config_grid, INFO_ZONES, map_origin, resolution
+    H, W = grid_map.shape
+    gm = GridMap(
+        grid=grid_map, origin=map_origin, resolution=resolution, width=W, height=H
     )
+    fsmi_gen_grid = FSMITrajectoryGenerator(config_grid, INFO_ZONES, gm)
     info_gain_grid = fsmi_gen_grid._info_gain_grid(
         ref_traj, view_dir_xy, grid_map, dt
     )
@@ -203,7 +206,7 @@ def compare_fsmi_modes():
 
     # Legacy geometric FSMI
     print("\n=== Legacy Geometric FSMI ===")
-    fsmi_gen_legacy = FSMITrajectoryGenerator(config_legacy, INFO_ZONES)
+    fsmi_gen_legacy = FSMITrajectoryGenerator(config_legacy, INFO_ZONES, gm)
     info_levels = jnp.array([100.0, 100.0])
     info_gain_legacy = fsmi_gen_legacy._info_gain_legacy(
         ref_traj, view_dir_xy, info_levels, dt

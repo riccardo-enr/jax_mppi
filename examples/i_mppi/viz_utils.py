@@ -74,8 +74,8 @@ def _compute_seen_mask(
     ray_x = x + dists[None, :] * np.cos(angles[:, None])
     ray_y = y + dists[None, :] * np.sin(angles[:, None])
 
-    cols = np.int32(np.floor((ray_x - origin[0]) / resolution))
-    rows = np.int32(np.floor((ray_y - origin[1]) / resolution))
+    cols = np.floor((ray_x - origin[0]) / resolution).astype(np.intp)
+    rows = np.floor((ray_y - origin[1]) / resolution).astype(np.intp)
 
     valid = (cols >= 0) & (cols < W) & (rows >= 0) & (rows < H)
     safe_c = np.clip(cols, 0, W - 1)
