@@ -35,3 +35,4 @@ _site/
 
 # Debug
 ruff_errors.txt
+basedpyright_report.txt

@@ -18,6 +18,7 @@ import argparse
 import os
 import sys
 import time
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Path setup – make helper modules importable regardless of working dir.
@@ -38,8 +39,8 @@ import matplotlib.animation as animation  # noqa: E402
 import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
-from env_setup import create_grid_map  # noqa: E402
-from sim_utils import (  # noqa: E402
+from .env_setup import create_grid_map  # noqa: E402
+from .sim_utils import (  # noqa: E402
     CONTROL_HZ,
     DT,
     NOISE_SIGMA,
@@ -52,7 +53,7 @@ from sim_utils import (  # noqa: E402
     compute_smoothness,
 )
 from tqdm import tqdm  # noqa: E402
-from viz_utils import (  # noqa: E402
+from .viz_utils import (  # noqa: E402
     plot_environment,
 )
 
@@ -111,18 +112,18 @@ DATA_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_flight_data.npz")
 
 
 def create_parallel_trajectory_gif(
-    history_x,
-    history_info,
-    history_field,
-    history_field_origin,
-    grid,
-    resolution,
-    field_res,
-    dt,
-    save_path,
-    fps=10,
-    step_skip=5,
-):
+    history_x: jax.Array,
+    history_info: jax.Array,
+    history_field: jax.Array,
+    history_field_origin: jax.Array,
+    grid: jax.Array,
+    resolution: float,
+    field_res: float,
+    dt: float,
+    save_path: str,
+    fps: int = 10,
+    step_skip: int = 5,
+) -> str:
     """Create animated GIF showing trajectory + info field heatmap.
 
     The info field is rendered as a semi-transparent heatmap centered on
@@ -237,7 +238,7 @@ def create_parallel_trajectory_gif(
 
     plt.tight_layout()
 
-    def update(frame_idx):
+    def update(frame_idx: int) -> list[Any]:
         k = frame_indices[frame_idx]
 
         # Trail
@@ -260,8 +261,7 @@ def create_parallel_trajectory_gif(
 
         # Title
         title.set_text(
-            f"Parallel I-MPPI  t = {k * dt:.1f}s"
-            f"  |  field max = {field.max():.3f}"
+            f"Parallel I-MPPI  t = {k * dt:.1f}s  |  field max = {field.max():.3f}"
         )
 
         # Zone patch opacity
@@ -294,12 +294,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Parallel I-MPPI simulation")
     parser.add_argument(
         "--gif", action="store_true", help="Generate trajectory GIF"
-    )
+    )  # pyright: ignore[reportUnusedCallResult]
     parser.add_argument(
         "--gif-only",
         action="store_true",
         help="Generate GIF from saved flight data (skip simulation)",
-    )
+    )  # pyright: ignore[reportUnusedCallResult]
     return parser.parse_args()
 
 
@@ -357,12 +357,10 @@ def main() -> None:
         f"  Samples    : {NUM_SAMPLES},  Horizon: {HORIZON},  Lambda: {LAMBDA}"
     )
     print(
-        f"  Field      : res={FIELD_RES}m, extent={FIELD_EXTENT}m,"
-        f"  n_yaw={FIELD_N_YAW}"
+        f"  Field      : res={FIELD_RES}m, extent={FIELD_EXTENT}m, n_yaw={FIELD_N_YAW}"
     )
     print(
-        f"  Weights    : info={LAMBDA_INFO}, local={LAMBDA_LOCAL},"
-        f"  goal={GOAL_WEIGHT}"
+        f"  Weights    : info={LAMBDA_INFO}, local={LAMBDA_LOCAL}, goal={GOAL_WEIGHT}"
     )
     print(f"  FSMI Beams : {FSMI_BEAMS},  Range: {FSMI_RANGE}m")
     print()
@@ -439,8 +437,8 @@ def main() -> None:
         ),
     )
 
-    def _progress(t):
-        pbar.update(int(t) - pbar.n)
+    def _progress(t: int) -> None:
+        _ = pbar.update(int(t) - pbar.n)
 
     sim_fn = build_parallel_sim_fn(
         mppi_config=config,
@@ -466,7 +464,7 @@ def main() -> None:
     ) = sim_fn(state, ctrl_state)
     final_state.block_until_ready()
     runtime = time.perf_counter() - t0
-    pbar.update(sim_steps - pbar.n)
+    _ = pbar.update(sim_steps - pbar.n)
     pbar.close()
 
     # --- Truncate to active steps ---
@@ -528,19 +526,19 @@ def main() -> None:
     print(f"\nSaved flight data to {DATA_PATH}")
 
     # --- 2D trajectory figure ---
-    fig, ax = plt.subplots(figsize=(8, 7))
+    _fig, ax = plt.subplots(figsize=(8, 7))
     plot_environment(ax, grid_array, map_resolution, show_labels=False)
     positions = np.array(history_x[:, :2])
     n_pts = len(positions)
     colors_traj = plt.colormaps["viridis"](np.linspace(0, 1, n_pts))
     for i in range(n_pts - 1):
-        ax.plot(
+        _ = ax.plot(
             positions[i : i + 2, 0],
             positions[i : i + 2, 1],
             color=colors_traj[i],
             linewidth=2,
         )
-    ax.set_title(f"Parallel I-MPPI Trajectory [{status}]", fontsize=14)
+    _ = ax.set_title(f"Parallel I-MPPI Trajectory [{status}]", fontsize=14)
     plt.tight_layout()
     plt.savefig(SUMMARY_PATH, dpi=150)
     print(f"Saved summary plot to {SUMMARY_PATH}")

@@ -105,6 +105,25 @@ class UniformFSMIConfig:
     info_weight: float = 5.0
 
 
+@dataclass
+class InfoFieldConfig:
+    """Configuration for information potential field computation.
+
+    Used in Parallel I-MPPI architecture for computing a cached information
+    potential field updated at 5–10 Hz, consulted by the MPPI planner at 50 Hz.
+    """
+
+    field_res: float = 0.5  # meters per field cell
+    field_extent: float = 5.0  # half-width of local workspace [m]
+    n_yaw: int = 8  # candidate yaw angles
+    field_update_interval: int = 10  # MPPI steps between field updates
+    lambda_info: float = 5.0  # field lookup cost weight
+    lambda_local: float = 10.0  # Uniform-FSMI cost weight
+    goal_weight: float = 0.3  # constant pull toward goal
+    min_field_threshold: float = 0.1  # below this, activate strong goal pull
+    goal_fallback_weight: float = 2.0  # goal weight when field is depleted
+
+
 class FSMIModule:
     """
     Core FSMI computation module implementing Zhang et al. (2020).
@@ -469,6 +488,78 @@ class UniformFSMI:
         return jax.vmap(self.compute, in_axes=(None, 0, 0))(
             grid_map, positions, yaws
         )
+
+
+def compute_info_field(
+    fsmi_module: FSMIModule,
+    grid_map: jax.Array,
+    uav_pos: jax.Array,
+    config: InfoFieldConfig,
+) -> tuple[jax.Array, jax.Array]:
+    """Compute information potential field centered on UAV.
+
+    Evaluates FSMI at a grid of (x, y) positions with multiple yaw angles,
+    returning the max information gain for each position (yaw-independent field).
+
+    Used in Parallel I-MPPI architecture as a medium-range strategic guidance
+    source, consulted by MPPI cost function via bilinear interpolation.
+
+    Args:
+        fsmi_module: FSMIModule instance for computing FSMI at each pose
+        grid_map: (H, W) occupancy grid
+        uav_pos: (3,) or (2,) UAV position in world coordinates
+        config: InfoFieldConfig with field parameters
+
+    Returns:
+        (field, field_origin):
+            field: (Nx, Ny) information potential values
+            field_origin: (2,) world coordinates of field[0, 0]
+
+    Algorithm:
+        1. Build coarse grid of positions centered on UAV
+        2. Define n_yaw candidate yaw angles
+        3. Evaluate FSMI at every (position, yaw) pair via double vmap
+        4. Max over yaw to get yaw-independent field
+    """
+    # Extract x, y from uav_pos (drop z if present)
+    uav_xy = uav_pos[:2]
+
+    # Build field grid positions
+    field_xs = (
+        jnp.arange(-config.field_extent, config.field_extent, config.field_res)
+        + uav_xy[0]
+    )
+    field_ys = (
+        jnp.arange(-config.field_extent, config.field_extent, config.field_res)
+        + uav_xy[1]
+    )
+    Nx, Ny = len(field_xs), len(field_ys)
+
+    # Meshgrid: (Nx, Ny, 2)
+    positions_grid = jnp.stack(
+        jnp.meshgrid(field_xs, field_ys, indexing="ij"), axis=-1
+    )
+    flat_positions = positions_grid.reshape(-1, 2)  # (Nx*Ny, 2)
+
+    # Define yaw angles: 0 to 2π in n_yaw steps
+    yaws = jnp.linspace(0, 2 * jnp.pi, config.n_yaw, endpoint=False)
+
+    # Compute FSMI for all (position, yaw) pairs via double vmap
+    # Inner vmap: over positions (axis 0) for each yaw
+    # Outer vmap: over yaws (axis 1, None for grid_map)
+    fsmi_fn = lambda pos, yaw: fsmi_module.compute(grid_map, pos, yaw)
+    fsmi_vmap_pos = jax.vmap(fsmi_fn, in_axes=(0, None))
+    fsmi_vmap_yaw = jax.vmap(fsmi_vmap_pos, in_axes=(None, 0))
+
+    gains = fsmi_vmap_yaw(flat_positions, yaws)  # (Nx*Ny, n_yaw)
+
+    # Max over yaws and reshape to field grid
+    field = gains.max(axis=1).reshape(Nx, Ny)
+
+    # Field origin: world coordinates of field[0, 0]
+    field_origin = jnp.array([field_xs[0], field_ys[0]])
+
+    return field, field_origin
 
 
 # --- FSMI Implementation from my changes (simplified) ---

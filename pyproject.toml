@@ -81,12 +81,24 @@ ignore-overlong-task-comments = true
 "*.ipynb" = ["E402"]                                 # Only for notebooks
 
 [tool.basedpyright]
+pythonVersion = "3.12"
 exclude = ["third_party", "build", "dist", "__pycache__"]
+typeCheckingMode = "basic"
+pythonPlatform = "Linux"
 reportGeneralTypeIssues = false
+reportMissingImports = true
+reportMissingTypeStubs = false                            # Change this
+reportUnusedVariable = false                              # Add this to ignore unused vars for now
+reportUnusedImport = false                                # Add this
 
 [build-system]
 requires = ["scikit-build-core>=0.3.3", "nanobind>=1.3.2"]
 build-backend = "scikit_build_core.build"
+
+[dependency-groups]
+dev = [
+    "plotly>=6.5.2",
+]
 
 [tool.scikit-build]
 cmake.version = ">=3.18"
