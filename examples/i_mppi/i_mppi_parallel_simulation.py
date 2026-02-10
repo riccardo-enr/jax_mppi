@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Parallel I-MPPI simulation script.
 
-Single MPPI controller guided by a precomputed information potential field.
-No biased sampling or reference trajectory — the field provides directional
-guidance while Uniform-FSMI handles local reactivity.
+Single MPPI controller guided by a field-gradient reference trajectory and
+information potential field. FOV-based grid update replaces zone tracking.
 
 Run from the repo root::
 
@@ -36,7 +35,6 @@ for _d in _candidates:
 import jax  # noqa: E402
 import jax.numpy as jnp  # noqa: E402
 import matplotlib.animation as animation  # noqa: E402
-import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from env_setup import create_grid_map  # noqa: E402
@@ -58,7 +56,7 @@ from viz_utils import (  # noqa: E402
 )
 
 from jax_mppi import mppi  # noqa: E402
-from jax_mppi.i_mppi.environment import GOAL_POS, INFO_ZONES  # noqa: E402
+from jax_mppi.i_mppi.environment import GOAL_POS  # noqa: E402
 from jax_mppi.i_mppi.fsmi import (  # noqa: E402
     FSMIConfig,
     FSMIModule,
@@ -80,18 +78,21 @@ LAMBDA = 0.1
 
 # FSMI module (for info field computation)
 FSMI_BEAMS = 12
-FSMI_RANGE = 5.0
+FSMI_RANGE = 10.0
 
 # Info field parameters
 FIELD_RES = 0.5  # meters per field cell
 FIELD_EXTENT = 5.0  # half-width of local workspace [m]
 FIELD_N_YAW = 8  # candidate yaw angles
 FIELD_UPDATE_INTERVAL = 10  # MPPI steps between field updates
-LAMBDA_INFO = 5.0  # field lookup cost weight
+LAMBDA_INFO = 20.0  # field lookup cost weight
 LAMBDA_LOCAL = 10.0  # Uniform-FSMI cost weight
-GOAL_WEIGHT = 0.3  # constant pull toward goal
-MIN_FIELD_THRESHOLD = 0.1  # below this, activate strong goal pull
-GOAL_FALLBACK_WEIGHT = 2.0  # goal weight when field is depleted
+
+# Reference trajectory parameters
+REF_SPEED = 2.0  # gradient trajectory speed [m/s]
+REF_HORIZON = 40  # gradient trajectory steps
+TARGET_WEIGHT = 1.0  # MPPI target tracking weight
+GOAL_FALLBACK_WEIGHT = 2.0  # goal weight when field depleted
 
 MEDIA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -113,7 +114,6 @@ DATA_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_flight_data.npz")
 
 def create_parallel_trajectory_gif(
     history_x: jax.Array,
-    history_info: jax.Array,
     history_field: jax.Array,
     history_field_origin: jax.Array,
     grid: jax.Array,
@@ -124,13 +124,8 @@ def create_parallel_trajectory_gif(
     fps: int = 10,
     step_skip: int = 5,
 ) -> str:
-    """Create animated GIF showing trajectory + info field heatmap.
-
-    The info field is rendered as a semi-transparent heatmap centered on
-    the UAV, updated whenever the simulation recomputes it.
-    """
+    """Create animated GIF showing trajectory + info field heatmap."""
     positions = np.array(history_x[:, :2])
-    info = np.array(history_info)
     fields = np.array(history_field)  # (N, Nx, Ny)
     field_origins = np.array(history_field_origin)  # (N, 2)
     n_steps = len(positions)
@@ -139,9 +134,7 @@ def create_parallel_trajectory_gif(
     if frame_indices[-1] != n_steps - 1:
         frame_indices.append(n_steps - 1)
 
-    fig, (ax_map, ax_info) = plt.subplots(
-        1, 2, figsize=(14, 6), gridspec_kw={"width_ratios": [1.2, 1]}
-    )
+    fig, ax_map = plt.subplots(1, 1, figsize=(8, 7))
 
     # Static environment
     extent = [0, grid.shape[1] * resolution, 0, grid.shape[0] * resolution]
@@ -154,24 +147,6 @@ def create_parallel_trajectory_gif(
         vmax=1,
         alpha=0.8,
     )
-
-    # Info zone patches
-    zone_patches = []
-    for i in range(len(INFO_ZONES)):
-        cx, cy = float(INFO_ZONES[i, 0]), float(INFO_ZONES[i, 1])
-        w, h = float(INFO_ZONES[i, 2]), float(INFO_ZONES[i, 3])
-        rect = mpatches.FancyBboxPatch(
-            (cx - w / 2, cy - h / 2),
-            w,
-            h,
-            boxstyle="round,pad=0.05",
-            facecolor="yellow",
-            alpha=0.4,
-            edgecolor="orange",
-            linewidth=1.5,
-        )
-        ax_map.add_patch(rect)
-        zone_patches.append(rect)
 
     ax_map.plot(START_X, START_Y, "go", markersize=10, zorder=5, label="Start")
     ax_map.plot(
@@ -215,27 +190,6 @@ def create_parallel_trajectory_gif(
     cbar = fig.colorbar(field_img, ax=ax_map, shrink=0.6, pad=0.02)
     cbar.set_label("FSMI (info gain)", fontsize=8)
 
-    # Info level plot
-    t_all = np.arange(n_steps) * dt
-    zone_colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
-    info_lines = []
-    for i in range(info.shape[1]):
-        (line,) = ax_info.plot(
-            [],
-            [],
-            linewidth=2,
-            color=zone_colors[i % len(zone_colors)],
-            label=f"Zone {i + 1}",
-        )
-        info_lines.append(line)
-    ax_info.set_xlim(0, t_all[-1])
-    ax_info.set_ylim(-5, 105)
-    ax_info.set_xlabel("Time (s)")
-    ax_info.set_ylabel("Information Level")
-    ax_info.set_title("Info Zone Depletion")
-    ax_info.legend(loc="upper right")
-    ax_info.grid(True, alpha=0.3)
-
     plt.tight_layout()
 
     def update(frame_idx: int) -> list[Any]:
@@ -254,8 +208,6 @@ def create_parallel_trajectory_gif(
         fy0 = fo[1]
         fx1 = fx0 + Nx * field_res
         fy1 = fy0 + Ny * field_res
-        # imshow with origin="lower" expects (rows=Y, cols=X), field is (Nx, Ny)
-        # so transpose to (Ny, Nx)
         field_img.set_data(field.T)
         field_img.set_extent([fx0, fx1, fy0, fy1])
 
@@ -264,18 +216,7 @@ def create_parallel_trajectory_gif(
             f"Parallel I-MPPI  t = {k * dt:.1f}s  |  field max = {field.max():.3f}"
         )
 
-        # Zone patch opacity
-        for i, patch in enumerate(zone_patches):
-            alpha = max(0.05, info[min(k, len(info) - 1), i] / 100.0 * 0.4)
-            patch.set_alpha(alpha)
-
-        # Info level lines
-        for i, line in enumerate(info_lines):
-            line.set_data(t_all[: k + 1], info[: k + 1, i])
-
-        return (
-            [trail_line, uav_dot, field_img, title] + zone_patches + info_lines
-        )
+        return [trail_line, uav_dot, field_img, title]
 
     anim = animation.FuncAnimation(
         fig, update, frames=len(frame_indices), interval=1000 // fps, blit=True
@@ -317,7 +258,6 @@ def gif_from_data() -> None:
     print("Generating trajectory GIF with info field ...")
     gif_path = create_parallel_trajectory_gif(
         data["history_x"],
-        data["history_info"],
         data["history_field"],
         data["history_field_origin"],
         data["grid"],
@@ -349,7 +289,7 @@ def main() -> None:
     sim_steps = int(round(SIM_DURATION * CONTROL_HZ))
 
     print("=" * 60)
-    print("Parallel I-MPPI Simulation")
+    print("Parallel I-MPPI Simulation (FOV Grid Update)")
     print("=" * 60)
     print(f"  Start      : ({START_X}, {START_Y})")
     print(f"  Duration   : {SIM_DURATION}s ({sim_steps} steps)")
@@ -360,18 +300,16 @@ def main() -> None:
         f"  Field      : res={FIELD_RES}m, extent={FIELD_EXTENT}m, n_yaw={FIELD_N_YAW}"
     )
     print(
-        f"  Weights    : info={LAMBDA_INFO}, local={LAMBDA_LOCAL}, goal={GOAL_WEIGHT}"
+        f"  Weights    : info={LAMBDA_INFO}, local={LAMBDA_LOCAL}, target={TARGET_WEIGHT}"
     )
+    print(f"  Ref traj   : speed={REF_SPEED}m/s, horizon={REF_HORIZON}")
     print(f"  FSMI Beams : {FSMI_BEAMS},  Range: {FSMI_RANGE}m")
     print()
 
-    # --- Initial state ---
-    start_pos = jnp.array([START_X, START_Y, -2.0])
-    info_init = jnp.array([100.0, 100.0, 100.0])
-    x0 = jnp.zeros(13)
-    x0 = x0.at[:3].set(start_pos)
+    # --- Initial state (13D quadrotor only) ---
+    x0 = jnp.zeros(NX)
+    x0 = x0.at[:3].set(jnp.array([START_X, START_Y, -2.0]))
     x0 = x0.at[6].set(1.0)  # qw = 1
-    state = jnp.concatenate([x0, info_init])
 
     # --- FSMIModule (for info field computation) ---
     fsmi_config = FSMIConfig(
@@ -394,8 +332,9 @@ def main() -> None:
         field_update_interval=FIELD_UPDATE_INTERVAL,
         lambda_info=LAMBDA_INFO,
         lambda_local=LAMBDA_LOCAL,
-        goal_weight=GOAL_WEIGHT,
-        min_field_threshold=MIN_FIELD_THRESHOLD,
+        ref_speed=REF_SPEED,
+        ref_horizon=REF_HORIZON,
+        target_weight=TARGET_WEIGHT,
         goal_fallback_weight=GOAL_FALLBACK_WEIGHT,
     )
 
@@ -446,7 +385,6 @@ def main() -> None:
         uniform_fsmi=uniform_fsmi,
         info_field_config=info_field_config,
         grid_map_obj=grid_map_obj,
-        info_zones=INFO_ZONES,
         sim_steps=sim_steps,
         progress_callback=_progress,
     )
@@ -456,12 +394,12 @@ def main() -> None:
     (
         final_state,
         history_x,
-        history_info,
         actions,
         done_step,
         history_field,
         history_field_origin,
-    ) = sim_fn(state, ctrl_state)
+        final_grid,
+    ) = sim_fn(x0, ctrl_state)
     final_state.block_until_ready()
     runtime = time.perf_counter() - t0
     _ = pbar.update(sim_steps - pbar.n)
@@ -479,7 +417,6 @@ def main() -> None:
         print(f"  Timeout reached ({SIM_DURATION}s)")
 
     history_x = history_x[:n_active]
-    history_info = history_info[:n_active]
     actions = actions[:n_active]
     history_field = history_field[:n_active]
     history_field_origin = history_field_origin[:n_active]
@@ -493,7 +430,6 @@ def main() -> None:
 
     print(f"Runtime : {runtime:.2f}s ({runtime / SIM_DURATION:.2f}x realtime)")
     print(f"  Goal dist  : {goal_dist:.2f}m")
-    print(f"  Info levels: {final_state[13:]}")
     print()
     print("=" * 60)
     print(f"{'Metric':<25} {'Value':>15}")
@@ -511,11 +447,11 @@ def main() -> None:
     np.savez_compressed(
         DATA_PATH,
         history_x=np.array(history_x),
-        history_info=np.array(history_info),
         actions=np.array(actions),
         history_field=np.array(history_field),
         history_field_origin=np.array(history_field_origin),
         grid=np.array(grid_array),
+        final_grid=np.array(final_grid),
         map_resolution=map_resolution,
         dt=DT,
         done_step=done_step_int,
@@ -549,7 +485,6 @@ def main() -> None:
         print("Generating trajectory GIF with info field ...")
         gif_path = create_parallel_trajectory_gif(
             history_x,
-            history_info,
             history_field,
             history_field_origin,
             grid_array,

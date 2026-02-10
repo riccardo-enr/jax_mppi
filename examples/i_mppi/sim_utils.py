@@ -1,7 +1,5 @@
 """Simulation constants and utility functions for the I-MPPI notebook."""
 
-from dataclasses import replace
-from functools import partial
 from typing import Any, Callable
 
 import jax
@@ -9,15 +7,15 @@ import jax.numpy as jnp
 
 from jax_mppi.i_mppi.environment import (
     GOAL_POS,
-    augmented_dynamics_with_grid,
     informative_running_cost,
+    quat_to_yaw,
+    step_quadrotor,
 )
 from jax_mppi.i_mppi.fsmi import compute_info_field
-from jax_mppi.i_mppi.planner import biased_mppi_command
 
 # --- Simulation Constants ---
 DT = 0.05
-NX = 16  # 13 (quad) + 3 (info zones)
+NX = 13  # quadrotor state only
 NU = 4
 CONTROL_HZ = 50.0
 FSMI_HZ = 5.0
@@ -28,260 +26,165 @@ U_MAX = jnp.array([4.0 * 9.81, 10.0, 10.0, 10.0])
 U_INIT = jnp.array([9.81, 0.0, 0.0, 0.0])
 NOISE_SIGMA = jnp.diag(jnp.array([2.0, 0.5, 0.5, 0.5]) ** 2)
 
-# Early termination thresholds
-INFO_DONE_THRESHOLD = 5.0  # info level below which a zone is "visited"
+# Early termination
 GOAL_DONE_THRESHOLD = 1.5  # distance to goal below which goal is "reached"
 
-# Value that depleted zone cells are set to (known free space)
-_FREE_PROB = 0.2
+# FOV grid update parameters
+_FOV_RAD = 1.57  # 90 deg sensor FOV
+_SENSOR_RANGE = 4.0  # meters
+_N_RAYS = 24
+_RAY_STEP = 0.15  # meters
+_FREE_PROB = 0.01  # known-free: measured cell is ~certain (odds ≈ 0.01)
+_OCC_PROB = 0.99  # known-occupied: measured wall is ~certain
 
 
-def _build_zone_masks(info_zones, origin, resolution, width, height):
-    """Precompute per-zone boolean masks over the grid.
-
-    Returns:
-        (N, H, W) boolean array where N = number of info zones.
-    """
-    y_range = jnp.arange(height)
-    x_range = jnp.arange(width)
-    Y, X = jnp.meshgrid(y_range, x_range, indexing="ij")
-
-    world_x = origin[0] + (X + 0.5) * resolution
-    world_y = origin[1] + (Y + 0.5) * resolution
-
-    def zone_mask(zone):
-        cx, cy, w, h = zone[0], zone[1], zone[2], zone[3]
-        in_x = (world_x >= cx - w / 2) & (world_x <= cx + w / 2)
-        in_y = (world_y >= cy - h / 2) & (world_y <= cy + h / 2)
-        return in_x & in_y
-
-    return jax.vmap(zone_mask)(info_zones)  # (N, H, W)
+# ---------------------------------------------------------------------------
+# FOV-based grid update
+# ---------------------------------------------------------------------------
 
 
-def _update_grid_from_info(initial_grid, zone_masks, info_levels):
-    """Update grid probabilities based on current info levels.
-
-    For each info zone, cells inside the zone are interpolated between
-    their initial value (when info = 100) and free-space (when info = 0).
-    All other cells are preserved exactly as in the initial grid.
-
-    Args:
-        initial_grid: (H, W) the ORIGINAL occupancy grid.
-        zone_masks: (N, H, W) precomputed boolean masks for each zone.
-        info_levels: (N,) current info level per zone [0, 100].
-
-    Returns:
-        (H, W) updated grid.
-    """
-    grid = initial_grid
-    n_zones = zone_masks.shape[0]
-    # alpha = 1.0 when info=100 (keep original), 0.0 when info=0 (free)
-    alphas = jnp.clip(info_levels / 100.0, 0.0, 1.0)
-
-    # Obstacle cells (>= 0.7) are preserved even inside zones
-    is_obstacle = initial_grid >= 0.7
-
-    for i in range(n_zones):
-        mask = zone_masks[i] & ~is_obstacle
-        alpha = alphas[i]
-        # Blend: alpha * original + (1 - alpha) * free
-        blended = alpha * initial_grid + (1.0 - alpha) * _FREE_PROB
-        grid = jnp.where(mask, blended, grid)
-
-    return grid
-
-
-def make_u_ref_from_traj(current_state, ref_traj):
-    """Convert position reference trajectory to control reference."""
-    pos = current_state[:3]
-    err = ref_traj - pos[None, :]
-
-    k_thrust = 3.0
-    thrust = U_INIT[0] + k_thrust * err[:, 2]
-
-    k_omega = 0.6
-    omega_x = k_omega * err[:, 1]
-    omega_y = -k_omega * err[:, 0]
-    omega_z = jnp.zeros_like(omega_x)
-
-    u_ref = jnp.stack([thrust, omega_x, omega_y, omega_z], axis=1)
-    u_ref = jnp.clip(u_ref, U_MIN, U_MAX)
-    return u_ref
-
-
-def compute_smoothness(
-    actions: jax.Array,
-    positions: jax.Array,
-    dt_val: float,
-) -> tuple[jax.Array, jax.Array]:
-    """Compute action jerk and trajectory jerk metrics."""
-    action_jerk = jnp.diff(actions, n=2, axis=0) / (dt_val**2)
-    action_jerk_mean = jnp.mean(jnp.linalg.norm(action_jerk, axis=1))
-
-    pos = positions[:, :3]
-    vel = jnp.diff(pos, axis=0) / dt_val
-    acc = jnp.diff(vel, axis=0) / dt_val
-    jerk = jnp.diff(acc, axis=0) / dt_val
-    traj_jerk_mean = jnp.mean(jnp.linalg.norm(jerk, axis=1))
-
-    return action_jerk_mean, traj_jerk_mean
-
-
-def build_sim_fn(
-    config,
-    fsmi_planner,
-    uniform_fsmi,
-    uniform_fsmi_config,
-    grid_map_obj,
-    horizon,
-    sim_steps,
-    progress_callback=None,
+def fov_grid_update(
+    grid,
+    pos_xy,
+    yaw,
+    grid_origin,
+    grid_resolution,
+    fov_rad=_FOV_RAD,
+    max_range=_SENSOR_RANGE,
+    n_rays=_N_RAYS,
+    ray_step=_RAY_STEP,
 ):
-    """Build a JIT-compiled simulation function.
+    """Update grid cells visible to UAV to known-free.
+
+    Casts rays from the UAV across its FOV. Any non-obstacle cell that is
+    visible (in range, in FOV, not blocked by LOS) is immediately set to
+    known-free — a measurement tells you the state of the cell.
 
     Args:
-        config: MPPI configuration.
-        fsmi_planner: Layer 2 FSMI trajectory generator.
-        uniform_fsmi: Layer 3 Uniform-FSMI instance.
-        uniform_fsmi_config: Uniform-FSMI configuration.
-        grid_map_obj: GridMap object for the environment.
-        horizon: Planning horizon.
-        sim_steps: Number of simulation steps.
-        progress_callback: Optional callable(step) invoked each step
-            via ``jax.debug.callback`` for progress reporting.
+        grid: (H, W) occupancy grid
+        pos_xy: (2,) UAV position in world frame
+        yaw: scalar heading in radians
+        grid_origin: (2,) world coords of grid[0, 0]
+        grid_resolution: scalar meters/cell
+        fov_rad: sensor FOV in radians
+        max_range: maximum sensor range in meters
+        n_rays: number of rays to cast
+        ray_step: step size along each ray
+
+    Returns:
+        (H, W) updated grid
     """
-    info_zones = fsmi_planner.info_zones
-    initial_grid = grid_map_obj.grid
+    H, W = grid.shape
 
-    # Precompute zone masks (done once at build time, not inside JIT)
-    zone_masks = _build_zone_masks(
-        info_zones,
-        grid_map_obj.origin,
-        grid_map_obj.resolution,
-        grid_map_obj.width,
-        grid_map_obj.height,
+    # Cast rays uniformly across FOV
+    angles = jnp.linspace(yaw - fov_rad / 2, yaw + fov_rad / 2, n_rays)
+    steps = jnp.arange(0, max_range, ray_step)
+
+    # Ray sample world coordinates: (n_rays, n_steps)
+    ray_x = pos_xy[0] + steps[None, :] * jnp.cos(angles[:, None])
+    ray_y = pos_xy[1] + steps[None, :] * jnp.sin(angles[:, None])
+
+    # Convert to grid indices
+    gx = ((ray_x - grid_origin[0]) / grid_resolution).astype(jnp.int32)
+    gy = ((ray_y - grid_origin[1]) / grid_resolution).astype(jnp.int32)
+
+    # Boundary check
+    valid = (gx >= 0) & (gx < W) & (gy >= 0) & (gy < H)
+    safe_gx = jnp.clip(gx, 0, W - 1)
+    safe_gy = jnp.clip(gy, 0, H - 1)
+
+    # Look up cell probabilities
+    probs = grid[safe_gy, safe_gx]  # (n_rays, n_steps)
+    probs = jnp.where(valid, probs, 0.5)
+
+    # LOS blocking: cumulative max of obstacle indicator along ray
+    # Once a cell >= 0.7 is hit, all subsequent cells are blocked
+    is_obstacle = probs >= 0.7
+
+    # Use cumulative maximum via associative scan for LOS
+    def _cummax_fn(a, b):
+        return jnp.maximum(a, b)
+
+    blocked = jax.vmap(
+        lambda row: jax.lax.associative_scan(_cummax_fn, row)
+    )(is_obstacle.astype(jnp.float32))
+    blocked = blocked >= 0.5
+
+    # Visible = in bounds, not an obstacle, not blocked by prior obstacle
+    # Shift blocked one step: first cell on each ray is never blocked by prior
+    blocked_shifted = jnp.concatenate(
+        [jnp.zeros((n_rays, 1), dtype=bool), blocked[:, :-1]], axis=1
     )
+    visible_free = valid & ~is_obstacle & ~blocked_shifted
 
-    def step_fn(carry, t):
-        current_state, current_ctrl_state, ref_traj, grid, done_step = carry
+    # First obstacle on each ray is also observed (the wall you see)
+    visible_occ = valid & is_obstacle & ~blocked_shifted
 
-        if progress_callback is not None:
-            jax.debug.callback(progress_callback, t)
+    # Immediate measurement: observed free → _FREE_PROB, observed wall → _OCC_PROB
+    flat_gy = safe_gy.ravel()
+    flat_gx = safe_gx.ravel()
+    flat_vis_free = visible_free.ravel()
+    flat_vis_occ = visible_occ.ravel()
 
-        # Check if simulation is already done
-        current_info = current_state[13:]
-        all_zones_visited = jnp.all(current_info < INFO_DONE_THRESHOLD)
-        goal_dist = jnp.linalg.norm(current_state[:3] - GOAL_POS)
-        goal_reached = goal_dist < GOAL_DONE_THRESHOLD
-        newly_done = all_zones_visited & goal_reached
-        # Record the step at which we first finish (0 means not done yet)
-        done_step = jnp.where((done_step == 0) & newly_done, t, done_step)
-        is_done = done_step > 0
+    # Free cells: use .min (only decreases, safe for overlapping rays)
+    update_free = jnp.where(flat_vis_free, _FREE_PROB, grid[flat_gy, flat_gx])
+    updated_grid = grid.at[flat_gy, flat_gx].min(update_free)
 
-        # --- Active step (when not done) ---
+    # Obstacle cells: use .max (only increases toward certainty)
+    update_occ = jnp.where(flat_vis_occ, _OCC_PROB, updated_grid[flat_gy, flat_gx])
+    updated_grid = updated_grid.at[flat_gy, flat_gx].max(update_occ)
 
-        # Update grid: blend zone cells based on depleted info levels
-        updated_grid = _update_grid_from_info(
-            initial_grid, zone_masks, current_info
-        )
+    return updated_grid
 
-        # Layer 2: Full FSMI reference trajectory (slow, 5 Hz)
-        do_update = jnp.equal(jnp.mod(t, FSMI_STEPS), 0)
-        info_data = (updated_grid, current_info)
 
-        # Update the planner's grid map for FSMI gain computation
-        updated_planner = replace(
-            fsmi_planner,
-            grid_map=replace(fsmi_planner.grid_map, grid=updated_grid),
-        )
+# ---------------------------------------------------------------------------
+# Field-gradient reference trajectory
+# ---------------------------------------------------------------------------
 
-        new_ref_traj = jax.lax.cond(
-            do_update & ~is_done,
-            lambda _: updated_planner.get_reference_trajectory(
-                current_state, info_data, horizon, DT
-            )[0],
-            lambda _: ref_traj,
-            operand=None,
-        )
 
-        # Layer 3: Biased I-MPPI with Uniform-FSMI (fast, 50 Hz)
-        cost_fn = partial(
-            informative_running_cost,
-            target=new_ref_traj,
-            grid_map=updated_grid,
-            uniform_fsmi_fn=uniform_fsmi.compute,
-            info_weight=uniform_fsmi_config.info_weight,
-            grid_origin=grid_map_obj.origin,
-            grid_resolution=grid_map_obj.resolution,
-        )
+def field_gradient_trajectory(field, field_origin, field_res, start_xy,
+                              horizon, ref_speed, dt, altitude):
+    """Generate reference trajectory via gradient ascent on the info field.
 
-        U_ref_local = make_u_ref_from_traj(current_state, new_ref_traj)
+    Follows the steepest ascent of the FSMI field to generate a position
+    reference trajectory that MPPI can track.
 
-        # Dynamics with grid-based line-of-sight for info depletion
-        dynamics_fn = partial(
-            augmented_dynamics_with_grid,
-            dt=DT,
-            grid=updated_grid,
-            grid_origin=grid_map_obj.origin,
-            grid_resolution=grid_map_obj.resolution,
-        )
+    Args:
+        field: (Nx, Ny) FSMI information field
+        field_origin: (2,) world coordinates of field[0, 0]
+        field_res: scalar, meters per field cell
+        start_xy: (2,) starting position
+        horizon: number of trajectory steps
+        ref_speed: trajectory speed [m/s]
+        dt: time step [s]
+        altitude: constant z-coordinate
 
-        action, next_ctrl_state = biased_mppi_command(
-            config,
-            current_ctrl_state,
-            current_state,
-            dynamics_fn,
-            cost_fn,
-            U_ref_local,
-            bias_alpha=0.2,
-        )
+    Returns:
+        (horizon, 3) reference trajectory in world coordinates
+    """
+    grad_x = jnp.gradient(field, field_res, axis=0)
+    grad_y = jnp.gradient(field, field_res, axis=1)
 
-        # When done, use hover action instead
-        hover_action = U_INIT
-        action = jnp.where(is_done, hover_action, action)
+    step_dist = ref_speed * dt
 
-        next_state = dynamics_fn(current_state, action)
-        # When done, keep current state
-        next_state = jnp.where(is_done, current_state, next_state)
+    def step_fn(carry, _):
+        xy = carry
+        gx = interp2d(grad_x, field_origin, field_res, xy)
+        gy = interp2d(grad_y, field_origin, field_res, xy)
+        grad = jnp.array([gx, gy])
+        grad_norm = jnp.linalg.norm(grad)
+        direction = grad / jnp.maximum(grad_norm, 1e-6)
+        next_xy = xy + step_dist * direction
+        return next_xy, next_xy
 
-        return (
-            next_state,
-            next_ctrl_state,
-            new_ref_traj,
-            updated_grid,
-            done_step,
-        ), (
-            next_state,
-            current_info,
-            new_ref_traj[0],
-            action,
-        )
+    _, trajectory_xy = jax.lax.scan(step_fn, start_xy, None, length=horizon)
+    z_col = jnp.full((horizon, 1), altitude)
+    return jnp.concatenate([trajectory_xy, z_col], axis=1)
 
-    def sim_fn(initial_state, initial_ctrl_state):
-        info_data = (grid_map_obj.grid, initial_state[13:])
-        init_ref_traj, _ = fsmi_planner.get_reference_trajectory(
-            initial_state, info_data, horizon, DT
-        )
-        init_grid = grid_map_obj.grid
-        init_done_step = jnp.array(0, dtype=jnp.int32)
 
-        (
-            (final_state, final_ctrl_state, _, _, done_step),
-            (history_x, history_info, targets, actions),
-        ) = jax.lax.scan(
-            step_fn,
-            (
-                initial_state,
-                initial_ctrl_state,
-                init_ref_traj,
-                init_grid,
-                init_done_step,
-            ),
-            jnp.arange(sim_steps),
-        )
-        return final_state, history_x, history_info, targets, actions, done_step
-
-    return jax.jit(sim_fn)
+# ---------------------------------------------------------------------------
+# Utility functions
+# ---------------------------------------------------------------------------
 
 
 def interp2d(field, field_origin, field_res, positions):
@@ -343,49 +246,67 @@ def interp2d(field, field_origin, field_res, positions):
     return interp
 
 
+def compute_smoothness(
+    actions: jax.Array,
+    positions: jax.Array,
+    dt_val: float,
+) -> tuple[jax.Array, jax.Array]:
+    """Compute action jerk and trajectory jerk metrics."""
+    action_jerk = jnp.diff(actions, n=2, axis=0) / (dt_val**2)
+    action_jerk_mean = jnp.mean(jnp.linalg.norm(action_jerk, axis=1))
+
+    pos = positions[:, :3]
+    vel = jnp.diff(pos, axis=0) / dt_val
+    acc = jnp.diff(vel, axis=0) / dt_val
+    jerk = jnp.diff(acc, axis=0) / dt_val
+    traj_jerk_mean = jnp.mean(jnp.linalg.norm(jerk, axis=1))
+
+    return action_jerk_mean, traj_jerk_mean
+
+
+# ---------------------------------------------------------------------------
+# Parallel I-MPPI simulation builder
+# ---------------------------------------------------------------------------
+
+
 def build_parallel_sim_fn(
     mppi_config: Any,
     fsmi_module: Any,
     uniform_fsmi: Any,
     info_field_config: Any,
     grid_map_obj: Any,
-    info_zones: jax.Array,
     sim_steps: int,
     progress_callback: Callable[[int], None] | None = None,
 ) -> Any:
-
     """Build a JIT-compiled Parallel I-MPPI simulation function.
 
-    Single MPPI controller at 50 Hz guided by information potential field
-    updated at 5-10 Hz. No reference trajectory or biased sampling.
+    Single MPPI controller at 50 Hz guided by:
+    - Field-gradient reference trajectory (updated at 5 Hz)
+    - Uniform-FSMI local reactivity (50 Hz)
+    - FSMI field lookup in cost function
+
+    The occupancy grid is updated per step via FOV ray-casting: cells
+    visible to the UAV are blended toward known-free.
 
     Args:
         mppi_config: MPPI configuration.
         fsmi_module: FSMIModule for field computation.
         uniform_fsmi: UniformFSMI instance for local reactivity.
-        info_field_config: InfoFieldConfig with field parameters.
+        info_field_config: InfoFieldConfig with field and ref trajectory params.
         grid_map_obj: GridMap object for environment.
-        info_zones: (N, 4) array of info zones [cx, cy, w, h].
         sim_steps: Number of simulation steps.
         progress_callback: Optional callable(step) for progress.
 
     Returns:
-        Simulation function that takes (initial_state, initial_ctrl_state)
-        and returns (final_state, history_x, history_info, actions,
-                     done_step, history_field, history_field_origin).
+        Simulation function: (initial_state_13, initial_ctrl_state) ->
+            (final_state, history_x, actions, done_step,
+             history_field, history_field_origin, history_grid)
     """
     from jax_mppi import mppi
 
     initial_grid = grid_map_obj.grid
-
-    # Precompute zone masks
-    zone_masks = _build_zone_masks(
-        info_zones,
-        grid_map_obj.origin,
-        grid_map_obj.resolution,
-        grid_map_obj.width,
-        grid_map_obj.height,
-    )
+    grid_origin = grid_map_obj.origin
+    grid_resolution = grid_map_obj.resolution
 
     def step_fn(carry, t):
         (
@@ -394,85 +315,93 @@ def build_parallel_sim_fn(
             info_field,
             field_origin,
             grid,
+            ref_traj,
             done_step,
         ) = carry
 
         if progress_callback is not None:
             jax.debug.callback(progress_callback, t)
 
-        # Check if simulation is done
-        current_info = current_state[13:]
-        all_zones_visited = jnp.all(current_info < INFO_DONE_THRESHOLD)
+        # Check termination: goal reached
         goal_dist = jnp.linalg.norm(current_state[:3] - GOAL_POS)
         goal_reached = goal_dist < GOAL_DONE_THRESHOLD
-        newly_done = all_zones_visited & goal_reached
+        # Also check if field is mostly depleted (all explored)
+        field_max = jnp.max(info_field)
+        field_depleted = field_max < 0.3
+        newly_done = field_depleted & goal_reached
         done_step = jnp.where((done_step == 0) & newly_done, t, done_step)
         is_done = done_step > 0
 
-        # Update grid based on current info levels
-        updated_grid = _update_grid_from_info(
-            initial_grid, zone_masks, current_info
+        # --- FOV grid update ---
+        pos_xy = current_state[:2]
+        yaw = quat_to_yaw(current_state[6:10])
+        updated_grid = fov_grid_update(
+            grid, pos_xy, yaw, grid_origin, grid_resolution,
         )
 
-        # Low-rate: recompute field every field_update_interval steps
+        # --- Low-rate: recompute field + ref trajectory (every N steps) ---
         do_update = jnp.equal(
             jnp.mod(t, info_field_config.field_update_interval), 0
         )
         uav_pos = current_state[:3]
         new_field, new_origin = jax.lax.cond(
             do_update,
-            lambda: compute_info_field(fsmi_module, updated_grid, uav_pos, info_field_config),
+            lambda: compute_info_field(
+                fsmi_module, updated_grid, uav_pos, info_field_config
+            ),
             lambda: (info_field, field_origin),
         )
 
-        # High-rate: unbiased MPPI with field + local FSMI cost
-        # Use a dummy target = goal position for informative_running_cost
-        dummy_target = GOAL_POS
+        # Generate gradient-ascent reference trajectory
+        new_ref_traj = jax.lax.cond(
+            do_update,
+            lambda: field_gradient_trajectory(
+                new_field, new_origin, info_field_config.field_res,
+                pos_xy, info_field_config.ref_horizon,
+                info_field_config.ref_speed, DT, uav_pos[2],
+            ),
+            lambda: ref_traj,
+        )
 
+        # Target weight: normal when exploring, strong toward goal when depleted
+        target_w = jnp.where(
+            field_depleted,
+            info_field_config.goal_fallback_weight,
+            info_field_config.target_weight,
+        )
+
+        # When field is depleted, target GOAL instead of ref trajectory
+        goal_traj = jnp.broadcast_to(
+            GOAL_POS[None, :],
+            (info_field_config.ref_horizon, 3),
+        )
+        active_target = jnp.where(field_depleted, goal_traj, new_ref_traj)
+
+        # --- Cost function ---
         def cost_fn(x, u, t_step):
-            # Base cost from informative_running_cost but with field modifications
-            # Since we don't have a reference trajectory, we use GOAL_POS as target
             cost = informative_running_cost(
                 x, u, t_step,
-                target=dummy_target,
+                target=active_target,
                 grid_map=updated_grid,
                 uniform_fsmi_fn=uniform_fsmi.compute,
                 info_weight=info_field_config.lambda_local,
-                grid_origin=grid_map_obj.origin,
-                grid_resolution=grid_map_obj.resolution,
+                grid_origin=grid_origin,
+                grid_resolution=grid_resolution,
+                target_weight=target_w,
             )
-
-            # Add field-based guidance term
-            pos_xy = x[:2]
+            # Field-based guidance term
             field_value = interp2d(
-                new_field, new_origin, info_field_config.field_res, pos_xy
+                new_field, new_origin, info_field_config.field_res, x[:2]
             )
-            # Negative because MPPI minimizes cost, we want to maximize field value
             field_cost = -info_field_config.lambda_info * field_value
+            return cost + field_cost
 
-            # Adaptive goal attraction: increase when field is depleted
-            max_field_val = jnp.max(new_field)
-            field_depleted = max_field_val < info_field_config.min_field_threshold
-            goal_attraction = jnp.where(
-                field_depleted,
-                info_field_config.goal_fallback_weight,
-                info_field_config.goal_weight,
-            )
-            goal_dist = jnp.linalg.norm(pos_xy - GOAL_POS[:2])
-            goal_cost = goal_attraction * goal_dist
+        # --- Dynamics: pure quadrotor (13D) ---
+        # MPPI calls dynamics(state, action, t) with step_dependent_dynamics=True
+        def dynamics_fn(state, action, _t=None):
+            return step_quadrotor(state, action, DT)
 
-            return cost + field_cost + goal_cost
-
-        # Dynamics with grid-based line-of-sight
-        dynamics_fn = partial(
-            augmented_dynamics_with_grid,
-            dt=DT,
-            grid=updated_grid,
-            grid_origin=grid_map_obj.origin,
-            grid_resolution=grid_map_obj.resolution,
-        )
-
-        # Standard MPPI (unbiased)
+        # --- MPPI ---
         action, next_ctrl_state = mppi.command(
             mppi_config,
             current_ctrl_state,
@@ -482,10 +411,9 @@ def build_parallel_sim_fn(
         )
 
         # Hover when done
-        hover_action = U_INIT
-        action = jnp.where(is_done, hover_action, action)
+        action = jnp.where(is_done, U_INIT, action)
 
-        next_state = dynamics_fn(current_state, action)
+        next_state = step_quadrotor(current_state, action, DT)
         next_state = jnp.where(is_done, current_state, next_state)
 
         return (
@@ -494,25 +422,30 @@ def build_parallel_sim_fn(
             new_field,
             new_origin,
             updated_grid,
+            new_ref_traj,
             done_step,
         ), (
             next_state,
-            current_info,
             new_field,
             new_origin,
             action,
         )
 
     def sim_fn(initial_state, initial_ctrl_state):
-        # Initialize field
+        # Initialize field + ref trajectory
         init_field, init_origin = compute_info_field(
             fsmi_module, initial_grid, initial_state[:3], info_field_config
+        )
+        init_ref_traj = field_gradient_trajectory(
+            init_field, init_origin, info_field_config.field_res,
+            initial_state[:2], info_field_config.ref_horizon,
+            info_field_config.ref_speed, DT, initial_state[2],
         )
         init_done_step = jnp.array(0, dtype=jnp.int32)
 
         (
-            (final_state, final_ctrl_state, final_field, final_origin, _, done_step),
-            (history_x, history_info, history_field, history_field_origin, actions),
+            (final_state, _, final_field, final_origin, final_grid, _, done_step),
+            (history_x, history_field, history_field_origin, actions),
         ) = jax.lax.scan(
             step_fn,
             (
@@ -521,6 +454,7 @@ def build_parallel_sim_fn(
                 init_field,
                 init_origin,
                 initial_grid,
+                init_ref_traj,
                 init_done_step,
             ),
             jnp.arange(sim_steps),
@@ -528,11 +462,11 @@ def build_parallel_sim_fn(
         return (
             final_state,
             history_x,
-            history_info,
             actions,
             done_step,
             history_field,
             history_field_origin,
+            final_grid,
         )
 
     return jax.jit(sim_fn)

@@ -159,7 +159,7 @@ def _fov_coverage_with_los(
     return jnp.mean(jax.vmap(_visible)(pts))
 
 
-def _step_quadrotor(quad_state, action, dt):
+def step_quadrotor(quad_state, action, dt):
     """Advance quadrotor state by one RK4 step with clamped controls."""
     action_clipped = jnp.clip(action, _U_MIN, _U_MAX)
     next_quad_state = rk4_step(
@@ -222,7 +222,7 @@ def augmented_dynamics(
     quad_state = state[:13]
     info_levels = state[13:]
 
-    next_quad_state = _step_quadrotor(quad_state, action, dt)
+    next_quad_state = step_quadrotor(quad_state, action, dt)
 
     # Info Dynamics — deplete proportionally to FOV coverage of the zone
     pos = quad_state[:3]
@@ -260,7 +260,7 @@ def augmented_dynamics_with_grid(
     quad_state = state[:13]
     info_levels = state[13:]
 
-    next_quad_state = _step_quadrotor(quad_state, action, dt)
+    next_quad_state = step_quadrotor(quad_state, action, dt)
 
     pos = quad_state[:3]
     yaw = quat_to_yaw(quad_state[6:10])
@@ -355,6 +355,7 @@ def informative_running_cost(
     info_weight: float = 5.0,
     grid_origin: Optional[jax.Array] = None,
     grid_resolution: Optional[float] = None,
+    target_weight: float = 1.0,
 ) -> jax.Array:
     """
     Running cost with Layer 3 Uniform-FSMI informative term.
@@ -387,7 +388,7 @@ def informative_running_cost(
     else:
         target_pos = target
     dist_target = jnp.linalg.norm(pos - target_pos)
-    target_cost = 1.0 * dist_target
+    target_cost = target_weight * dist_target
 
     # Bounds cost
     bounds_cost = 0.0
