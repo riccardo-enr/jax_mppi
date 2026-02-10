@@ -28,6 +28,7 @@ dependencies = ["jax[cuda13]", "numpy", "jaxtyping", "chex", "pyyaml>=6.0.3"]
 [project.optional-dependencies]
 dev = [
   "pytest",
+  "pytest-benchmark",
   "lark",
   "gymnasium[classic_control]",
   "matplotlib",
@@ -63,7 +64,7 @@ line-ending = "auto"
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
-ignore = ["E501", "F401"]
+ignore = ["E501"]
 
 [tool.ruff.lint.pycodestyle]
 ignore-overlong-task-comments = true

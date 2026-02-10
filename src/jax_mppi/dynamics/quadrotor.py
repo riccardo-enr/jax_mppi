@@ -146,7 +146,7 @@ def quadrotor_dynamics_dt(
         State derivative dx/dt
     """
     # Extract state components
-    state[0:3]
+    pos = state[0:3]
     vel = state[3:6]
     quat = state[6:10]  # [qw, qx, qy, qz]
     omega = state[10:13]  # angular velocity in FRD body frame
