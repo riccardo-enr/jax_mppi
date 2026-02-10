@@ -84,7 +84,7 @@ def run_mppi_controller(
         costs_history.append(cost)
 
         print(
-            f"  Step {step:2d}: s=[{state[0]:.2f},{state[1]:.2f}], c={cost:.3f}"
+            f"  Step {step:2d}: s=[{state[0]:.2f},{state[1]:.2f}] c={cost:.2f}"
         )
 
     return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
@@ -153,7 +153,7 @@ def run_smppi_controller(
         costs_history.append(cost)
 
         print(
-            f"  Step {step:2d}: s=[{state[0]:.2f},{state[1]:.2f}], c={cost:.3f}"
+            f"  Step {step:2d}: s=[{state[0]:.2f},{state[1]:.2f}] c={cost:.2f}"
         )
 
     return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
@@ -226,7 +226,7 @@ def run_kmppi_controller(
         costs_history.append(cost)
 
         print(
-            f"  Step {step:2d}: s=[{state[0]:.2f},{state[1]:.2f}], c={cost:.3f}"
+            f"  Step {step:2d}: s=[{state[0]:.2f},{state[1]:.2f}] c={cost:.2f}"
         )
 
     return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
