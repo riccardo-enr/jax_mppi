@@ -30,23 +30,25 @@ def quaternion_to_rotation_matrix(q: Float[Array, "4"]) -> Float[Array, "3 3"]:
     qw, qx, qy, qz = q[0], q[1], q[2], q[3]
 
     # Rotation matrix from quaternion (body to world)
-    R = jnp.array([
+    R = jnp.array(
         [
-            1 - 2 * (qy**2 + qz**2),
-            2 * (qx * qy - qw * qz),
-            2 * (qx * qz + qw * qy),
-        ],
-        [
-            2 * (qx * qy + qw * qz),
-            1 - 2 * (qx**2 + qz**2),
-            2 * (qy * qz - qw * qx),
-        ],
-        [
-            2 * (qx * qz - qw * qy),
-            2 * (qy * qz + qw * qx),
-            1 - 2 * (qx**2 + qy**2),
-        ],
-    ])
+            [
+                1 - 2 * (qy**2 + qz**2),
+                2 * (qx * qy - qw * qz),
+                2 * (qx * qz + qw * qy),
+            ],
+            [
+                2 * (qx * qy + qw * qz),
+                1 - 2 * (qx**2 + qz**2),
+                2 * (qy * qz - qw * qx),
+            ],
+            [
+                2 * (qx * qz - qw * qy),
+                2 * (qy * qz + qw * qx),
+                1 - 2 * (qx**2 + qy**2),
+            ],
+        ]
+    )
 
     return R
 
@@ -80,12 +82,14 @@ def quaternion_multiply(
     w1, x1, y1, z1 = q1[0], q1[1], q1[2], q1[3]
     w2, x2, y2, z2 = q2[0], q2[1], q2[2], q2[3]
 
-    return jnp.array([
-        w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2,
-        w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
-        w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
-        w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2,
-    ])
+    return jnp.array(
+        [
+            w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2,
+            w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
+            w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
+            w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2,
+        ]
+    )
 
 
 def quaternion_derivative(
@@ -106,12 +110,14 @@ def quaternion_derivative(
     wx, wy, wz = omega[0], omega[1], omega[2]
 
     # q_dot = 0.5 * Omega(omega) @ q
-    q_dot = 0.5 * jnp.array([
-        -wx * qx - wy * qy - wz * qz,  # qw_dot
-        wx * qw + wz * qy - wy * qz,  # qx_dot
-        wy * qw - wz * qx + wx * qz,  # qy_dot
-        wz * qw + wy * qx - wx * qy,  # qz_dot
-    ])
+    q_dot = 0.5 * jnp.array(
+        [
+            -wx * qx - wy * qy - wz * qz,  # qw_dot
+            wx * qw + wz * qy - wy * qz,  # qx_dot
+            wy * qw - wz * qx + wx * qz,  # qy_dot
+            wz * qw + wy * qx - wx * qy,  # qz_dot
+        ]
+    )
 
     return q_dot
 
@@ -140,7 +146,7 @@ def quadrotor_dynamics_dt(
         State derivative dx/dt
     """
     # Extract state components
-    pos = state[0:3]
+    state[0:3]
     vel = state[3:6]
     quat = state[6:10]  # [qw, qx, qy, qz]
     omega = state[10:13]  # angular velocity in FRD body frame

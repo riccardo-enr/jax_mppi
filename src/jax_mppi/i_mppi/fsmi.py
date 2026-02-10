@@ -669,9 +669,7 @@ def _fov_cell_masks(
         dist = jnp.sqrt(dx**2 + dy**2)
         bearing = jnp.arctan2(dy, dx)
         # Angle difference wrapped to [-pi, pi]
-        angle_diff = jnp.arctan2(
-            jnp.sin(bearing - yaw), jnp.cos(bearing - yaw)
-        )
+        angle_diff = jnp.arctan2(jnp.sin(bearing - yaw), jnp.cos(bearing - yaw))
         in_fov = jnp.abs(angle_diff) <= (fov_rad / 2.0)
         in_range = dist <= max_range
         return in_fov & in_range
@@ -814,11 +812,15 @@ def fsmi_trajectory_filtered(
     pose_indices = jnp.arange(N)
 
     # first_hit[i, h, w] = True iff pose i is the first to see cell (h,w)
-    first_hit = (first_pose[None, :, :] == pose_indices[:, None, None]) & any_seen[None, :, :]
+    first_hit = (
+        first_pose[None, :, :] == pose_indices[:, None, None]
+    ) & any_seen[None, :, :]
 
     # Independent fraction: of this pose's FOV cells, how many are first-hits
     n_fov = jnp.sum(masks, axis=(1, 2)).astype(jnp.float32)  # (N,)
-    n_first = jnp.sum(first_hit & masks, axis=(1, 2)).astype(jnp.float32)  # (N,)
+    n_first = jnp.sum(first_hit & masks, axis=(1, 2)).astype(
+        jnp.float32
+    )  # (N,)
     independent_fraction = n_first / jnp.maximum(n_fov, 1.0)  # (N,)
 
     return jnp.sum(mi_per_pose * independent_fraction) * dt * subsample_rate
@@ -878,9 +880,9 @@ class FSMITrajectoryGenerator:
 
         if info_levels is not None:
             # Score zones by remaining info weighted against distance
-            dists = jax.vmap(
-                lambda p: jnp.linalg.norm(p - current_pos[:2])
-            )(candidates)
+            dists = jax.vmap(lambda p: jnp.linalg.norm(p - current_pos[:2]))(
+                candidates
+            )
             zone_scores = info_levels - self.config.dist_weight * dists
 
             # Mask out depleted zones
@@ -907,11 +909,13 @@ class FSMITrajectoryGenerator:
                 )
                 return score, gain
 
-            zone_scores, zone_gains = jax.vmap(
-                lambda p: score_candidate(p)
-            )(candidates)
+            zone_scores, zone_gains = jax.vmap(lambda p: score_candidate(p))(
+                candidates
+            )
             best_zone_idx = jnp.argmax(zone_scores)
-            go_to_zone = zone_gains[best_zone_idx] > self.config.min_gain_threshold
+            go_to_zone = (
+                zone_gains[best_zone_idx] > self.config.min_gain_threshold
+            )
 
         target_pos_2d = jax.lax.select(
             go_to_zone, candidates[best_zone_idx], goal
@@ -1142,10 +1146,12 @@ class FSMITrajectoryGenerator:
         goal_pos = self.config.goal_pos
 
         # Info zone positions (use zone centers at z=-2.0)
-        zone_targets = jnp.column_stack([
-            self.info_zones[:, :2],  # cx, cy
-            -2.0 * jnp.ones(self.info_zones.shape[0]),  # z coordinate
-        ])
+        zone_targets = jnp.column_stack(
+            [
+                self.info_zones[:, :2],  # cx, cy
+                -2.0 * jnp.ones(self.info_zones.shape[0]),  # z coordinate
+            ]
+        )
 
         # Concatenate: [goal, zone1, zone2, ...]
         candidates = jnp.vstack([goal_pos[None, :], zone_targets])
