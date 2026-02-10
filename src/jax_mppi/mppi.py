@@ -210,18 +210,23 @@ def _compute_noise_cost(
 ) -> jax.Array:
     if noise_abs_cost:
         abs_noise = jnp.abs(noise)
-        quad = jnp.einsum(
-            "ktd,df,ktf->kt", abs_noise, jnp.abs(noise_sigma_inv), abs_noise
-        )
+        # Optimized: dot product is faster than einsum for quadratic form
+        term = jnp.dot(abs_noise, jnp.abs(noise_sigma_inv))
+        quad = jnp.sum(term * abs_noise, axis=-1)
     else:
-        quad = jnp.einsum("ktd,df,ktf->kt", noise, noise_sigma_inv, noise)
+        # Optimized: dot product is faster than einsum for quadratic form
+        term = jnp.dot(noise, noise_sigma_inv)
+        quad = jnp.sum(term * noise, axis=-1)
     return 0.5 * jnp.sum(quad, axis=1)
 
 
 def _compute_weights(costs: jax.Array, lambda_: float) -> jax.Array:
     min_cost = jnp.min(costs)
+    # Manual softmax implementation avoids redundant max-finding
+    # (scaled max is already 0 by construction)
     scaled = -(costs - min_cost) / lambda_
-    return jax.nn.softmax(scaled)
+    exp_scaled = jnp.exp(scaled)
+    return exp_scaled / jnp.sum(exp_scaled)
 
 
 def create(
