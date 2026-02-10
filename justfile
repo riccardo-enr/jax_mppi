@@ -50,11 +50,16 @@ figure8-custom steps samples horizon lambda:
 test-cuda:
     uv run python examples/cuda/test_cuda_mppi.py
 
+# List available tests
+list-tests:
+    @find tests -name "test_*.py" -o -name "*_test.py" | sort
+
 # Run tests
 test:
     @just sync-deps
     uv run pytest tests/
 
+# Run a single test file
 test-single test-name:
     @just sync-deps
     uv run pytest tests/{{ test-name }}
