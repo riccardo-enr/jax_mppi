@@ -48,8 +48,9 @@ from sim_utils import (  # noqa: E402
 from tqdm import tqdm  # noqa: E402
 from viz_utils import (  # noqa: E402
     create_trajectory_gif,
-    plot_environment,
+    plot_control_inputs,
     plot_info_levels,
+    plot_trajectory_2d,
 )
 
 from jax_mppi import mppi  # noqa: E402
@@ -84,8 +85,8 @@ MEDIA_DIR = os.path.join(
     "_media",
     "i_mppi",
 )
-GIF_PATH = os.path.join(MEDIA_DIR, "i_mppi_trajectory.gif")
-SUMMARY_PATH = os.path.join(MEDIA_DIR, "i_mppi_summary.png")
+ANIMATION_PATH = os.path.join(MEDIA_DIR, "i_mppi_trajectory.html")
+SUMMARY_PATH = os.path.join(MEDIA_DIR, "i_mppi_summary.html")
 
 
 def main() -> None:
@@ -240,65 +241,70 @@ def main() -> None:
     print("=" * 60)
 
     # --- Visualization ---
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    from plotly.subplots import make_subplots
 
-    # 2D trajectory
-    ax = axes[0]
-    plot_environment(ax, grid_array, map_resolution, show_labels=False)
-    positions = np.array(history_x[:, :2])
-    n_pts = len(positions)
-    colors_traj = plt.colormaps["viridis"](np.linspace(0, 1, n_pts))
-    for i in range(n_pts - 1):
-        ax.plot(
-            positions[i : i + 2, 0],
-            positions[i : i + 2, 1],
-            color=colors_traj[i],
-            linewidth=2,
-        )
-    ax.set_title("I-MPPI Trajectory")
-
-    # Info zone depletion
-    plot_info_levels(axes[1], history_info, DT)
-    axes[1].set_title("Information Zone Depletion")
-
-    # Control inputs
-    acts = np.array(actions)
-    t_arr = np.arange(len(acts)) * DT
-    ax3 = axes[2]
-    ax3.plot(t_arr, acts[:, 0], color="#1f77b4", linewidth=1, label="Thrust")
-    ax3.plot(t_arr, acts[:, 1], color="#ff7f0e", linewidth=1, label="wx")
-    ax3.plot(t_arr, acts[:, 2], color="#2ca02c", linewidth=1, label="wy")
-    ax3.plot(t_arr, acts[:, 3], color="#d62728", linewidth=1, label="wz")
-    ax3.set_ylabel("Control Input")
-    ax3.set_xlabel("Time (s)")
-    ax3.set_title("Control Inputs")
-    ax3.legend(fontsize=8)
-    ax3.grid(True, alpha=0.3)
-
-    plt.suptitle(
-        f"I-MPPI: Full FSMI (Layer 2) + "
-        f"Biased MPPI with Uniform-FSMI (Layer 3) [{status}]",
-        fontsize=14,
+    # Create individual figures
+    fig_traj = plot_trajectory_2d(
+        history_x, grid_array, map_resolution, title="I-MPPI Trajectory"
     )
-    plt.tight_layout()
-    os.makedirs(MEDIA_DIR, exist_ok=True)
-    plt.savefig(SUMMARY_PATH, dpi=150)
-    print(f"\nSaved summary plot to {SUMMARY_PATH}")
-    plt.show()
+    fig_info = plot_info_levels(history_info, DT)
+    fig_controls = plot_control_inputs(actions, DT)
 
-    # --- GIF ---
-    print("Generating trajectory GIF ...")
-    gif_path = create_trajectory_gif(
+    # Create combined subplot figure
+    fig = make_subplots(
+        rows=1,
+        cols=3,
+        subplot_titles=("I-MPPI Trajectory", "Info Zone Depletion", "Control Inputs"),
+        specs=[[{"type": "xy"}, {"type": "xy"}, {"type": "xy"}]],
+        horizontal_spacing=0.08,
+        column_widths=[0.4, 0.3, 0.3],
+    )
+
+    # Add trajectory traces
+    for trace in fig_traj.data:
+        fig.add_trace(trace, row=1, col=1)
+
+    # Add info level traces
+    for trace in fig_info.data:
+        fig.add_trace(trace, row=1, col=2)
+
+    # Add control input traces (flatten 4 subplots into 1)
+    for trace in fig_controls.data:
+        fig.add_trace(trace, row=1, col=3)
+
+    # Update layout
+    fig.update_xaxes(title_text="X (m)", row=1, col=1)
+    fig.update_yaxes(title_text="Y (m)", row=1, col=1)
+    fig.update_xaxes(title_text="Time (s)", row=1, col=2)
+    fig.update_yaxes(title_text="Information Level", row=1, col=2)
+    fig.update_xaxes(title_text="Time (s)", row=1, col=3)
+    fig.update_yaxes(title_text="Control Input", row=1, col=3)
+
+    fig.update_layout(
+        title_text=f"I-MPPI: Full FSMI (Layer 2) + Biased MPPI with Uniform-FSMI (Layer 3) [{status}]",
+        showlegend=False,
+        height=600,
+        width=1800,
+    )
+
+    os.makedirs(MEDIA_DIR, exist_ok=True)
+    fig.write_html(SUMMARY_PATH)
+    print(f"\nSaved summary plot to {SUMMARY_PATH}")
+    fig.show()
+
+    # --- Animation ---
+    print("Generating trajectory animation ...")
+    animation_path = create_trajectory_gif(
         history_x,
         history_info,
         grid_array,
         map_resolution,
         DT,
-        save_path=GIF_PATH,
+        save_path=ANIMATION_PATH,
         fps=10,
         step_skip=2,
     )
-    print(f"Saved to: {gif_path}")
+    print(f"Saved to: {animation_path}")
 
 
 if __name__ == "__main__":

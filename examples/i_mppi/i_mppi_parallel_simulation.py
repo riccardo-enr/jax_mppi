@@ -51,10 +51,7 @@ from sim_utils import (  # noqa: E402
     compute_smoothness,
 )
 from tqdm import tqdm  # noqa: E402
-from viz_utils import (  # noqa: E402
-    _INFO_GAIN_CMAP,
-    plot_environment,
-)
+from viz_utils import plot_trajectory_2d  # noqa: E402
 
 from jax_mppi import mppi  # noqa: E402
 from jax_mppi.i_mppi.environment import GOAL_POS  # noqa: E402
@@ -104,7 +101,7 @@ MEDIA_DIR = os.path.join(
     "i_mppi",
 )
 MP4_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_trajectory.mp4")
-SUMMARY_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_summary.png")
+SUMMARY_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_summary.html")
 DATA_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_flight_data.npz")
 
 
@@ -119,6 +116,10 @@ def _quat_to_yaw_np(q: np.ndarray) -> float:
     siny = 2.0 * (qw * qz + qx * qy)
     cosy = 1.0 - 2.0 * (qy * qy + qz * qz)
     return float(np.arctan2(siny, cosy))
+
+
+# Local matplotlib colormap for info gain visualization (dark green → white → dark blue)
+_INFO_GAIN_CMAP = None
 
 
 def create_parallel_trajectory_mp4(
@@ -136,7 +137,27 @@ def create_parallel_trajectory_mp4(
     sensor_range: float = 4.0,
 ) -> str:
     """Create animated MP4 showing trajectory + info field heatmap + FOV."""
+    from matplotlib.colors import LinearSegmentedColormap
     from matplotlib.patches import Wedge
+
+    global _INFO_GAIN_CMAP
+    if _INFO_GAIN_CMAP is None:
+        _INFO_GAIN_CMAP = LinearSegmentedColormap.from_list(
+            "info_gain",
+            [
+                "#0d2905",
+                "#2d5016",
+                "#4a7c2e",
+                "#c8e6c9",
+                "#ffffff",
+                "#b3d9f2",
+                "#66b3cc",
+                "#3366aa",
+                "#1a4488",
+                "#003366",
+            ],
+            N=256,
+        )
 
     states = np.array(history_x)  # (N, 13)
     positions = states[:, :2]
@@ -496,23 +517,15 @@ def main() -> None:
     print(f"\nSaved flight data to {DATA_PATH}")
 
     # --- 2D trajectory figure ---
-    _fig, ax = plt.subplots(figsize=(8, 7))
-    plot_environment(ax, grid_array, map_resolution, show_labels=False)
-    positions = np.array(history_x[:, :2])
-    n_pts = len(positions)
-    colors_traj = plt.colormaps["viridis"](np.linspace(0, 1, n_pts))
-    for i in range(n_pts - 1):
-        _ = ax.plot(
-            positions[i : i + 2, 0],
-            positions[i : i + 2, 1],
-            color=colors_traj[i],
-            linewidth=2,
-        )
-    _ = ax.set_title(f"Parallel I-MPPI Trajectory [{status}]", fontsize=14)
-    plt.tight_layout()
-    plt.savefig(SUMMARY_PATH, dpi=150)
+    fig = plot_trajectory_2d(
+        history_x,
+        grid_array,
+        map_resolution,
+        title=f"Parallel I-MPPI Trajectory [{status}]",
+    )
+    fig.write_html(SUMMARY_PATH)
     print(f"Saved summary plot to {SUMMARY_PATH}")
-    plt.show()
+    fig.show()
 
     # --- GIF with info field (optional) ---
     if args.gif:
