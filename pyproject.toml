@@ -35,6 +35,7 @@ dev = [
   "tqdm",
   "basedpyright",
   "ruff>=0.14.14",
+  "nbstripout",
 ]
 autotuning = ["cma>=3.3.0", "evosax>=0.1.0"]
 autotuning-extra = [
