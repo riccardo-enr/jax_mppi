@@ -17,7 +17,7 @@ python = ">=3.11,<3.13"
 
 [pypi-dependencies]
 jax-mppi = { path = ".", editable = true }
-jax = { version = "*", extras = ["cuda13"] }
+jax = { version = ">=0.9.0", extras = ["cuda13"] }
 numpy = "*"
 jaxtyping = "*"
 chex = "*"
@@ -54,7 +54,6 @@ autotuning = { features = ["autotuning"], solve-group = "default" }
 # Examples
 hover = "python examples/quadrotor/hover_comparison.py --visualize"
 figure8 = "python examples/quadrotor/figure8_comparison.py --visualize"
-i-mppi-sim = { cmd = "python examples/i_mppi/simulation.py", env = { PYTHONPATH = "src" } }
 jit-pendulum = "python examples/cuda/pendulum_jit.py --visualization"
 test-cuda = "python examples/cuda/test_cuda_mppi.py"
 
@@ -69,3 +68,5 @@ lint = "ruff format . && ruff check . --fix"
 type-check = "basedpyright ."
 quarto-doc = "quarto preview docs"
 publish-doc = { cmd = "quarto publish gh-pages --no-browser --no-prompt", cwd = "docs" }
+# Examples
+i-mppi-sim = { cmd = "python examples/i_mppi/i_mppi_parallel_simulation.py", env = { PYTHONPATH = "src" } }

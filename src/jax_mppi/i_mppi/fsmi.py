@@ -553,10 +553,10 @@ def compute_info_field(
     fsmi_vmap_pos = jax.vmap(fsmi_fn, in_axes=(0, None))
     fsmi_vmap_yaw = jax.vmap(fsmi_vmap_pos, in_axes=(None, 0))
 
-    gains = fsmi_vmap_yaw(flat_positions, yaws)  # (Nx*Ny, n_yaw)
+    gains = fsmi_vmap_yaw(flat_positions, yaws)  # (n_yaw, Nx*Ny)
 
-    # Max over yaws and reshape to field grid
-    field = gains.max(axis=1).reshape(Nx, Ny)
+    # Max over yaws (axis 0) and reshape to field grid
+    field = gains.max(axis=0).reshape(Nx, Ny)
 
     # Field origin: world coordinates of field[0, 0]
     field_origin = jnp.array([field_xs[0], field_ys[0]])
@@ -982,7 +982,7 @@ class FSMITrajectoryGenerator:
             has_info = info_levels > self.config.info_threshold
             zone_scores = jnp.where(has_info, zone_scores, jnp.float32(-1e6))
 
-            best_zone_idx = int(jnp.argmax(zone_scores))
+            best_zone_idx = jnp.argmax(zone_scores)
             go_to_zone = has_info[best_zone_idx]
         else:
             # Fallback: FSMI-based scoring on grid

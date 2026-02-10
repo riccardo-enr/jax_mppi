@@ -39,8 +39,8 @@ import matplotlib.animation as animation  # noqa: E402
 import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
-from .env_setup import create_grid_map  # noqa: E402
-from .sim_utils import (  # noqa: E402
+from env_setup import create_grid_map  # noqa: E402
+from sim_utils import (  # noqa: E402
     CONTROL_HZ,
     DT,
     NOISE_SIGMA,
@@ -53,7 +53,7 @@ from .sim_utils import (  # noqa: E402
     compute_smoothness,
 )
 from tqdm import tqdm  # noqa: E402
-from .viz_utils import (  # noqa: E402
+from viz_utils import (  # noqa: E402
     plot_environment,
 )
 
