@@ -126,6 +126,7 @@ def create_parallel_trajectory_mp4(
     history_x: jax.Array,
     history_field: jax.Array,
     history_field_origin: jax.Array,
+    history_ref_traj: jax.Array,
     grid: jax.Array,
     resolution: float,
     field_res: float,
@@ -136,7 +137,7 @@ def create_parallel_trajectory_mp4(
     fov_rad: float = 1.57,
     sensor_range: float = 4.0,
 ) -> str:
-    """Create animated MP4 showing trajectory + info field heatmap + FOV."""
+    """Create animated MP4 showing trajectory + reference trajectory + info field heatmap + FOV."""
     from matplotlib.colors import LinearSegmentedColormap
     from matplotlib.patches import Wedge
 
@@ -163,6 +164,7 @@ def create_parallel_trajectory_mp4(
     positions = states[:, :2]
     fields = np.array(history_field)  # (N, Nx, Ny)
     field_origins = np.array(history_field_origin)  # (N, 2)
+    ref_trajs = np.array(history_ref_traj)  # (N, horizon, 3)
     n_steps = len(positions)
 
     frame_indices = list(range(0, n_steps, step_skip))
@@ -217,9 +219,11 @@ def create_parallel_trajectory_mp4(
     )
 
     # Animated elements
-    (trail_line,) = ax_map.plot([], [], "c-", linewidth=1.5, alpha=0.6)
+    (ref_line,) = ax_map.plot([], [], "m--", linewidth=2, alpha=0.7, label="Reference Traj")
+    (trail_line,) = ax_map.plot([], [], "c-", linewidth=1.5, alpha=0.6, label="Executed Traj")
     (uav_dot,) = ax_map.plot([], [], "co", markersize=8, zorder=10)
     title = ax_map.set_title("")
+    ax_map.legend(loc="upper right", fontsize=8)
 
     # FOV wedge (updated per frame)
     fov_wedge = Wedge(
@@ -239,6 +243,10 @@ def create_parallel_trajectory_mp4(
 
     def update(frame_idx: int) -> list[Any]:
         k = frame_indices[frame_idx]
+
+        # Reference trajectory (from current timestep)
+        ref_traj = ref_trajs[k]  # (horizon, 3)
+        ref_line.set_data(ref_traj[:, 0], ref_traj[:, 1])
 
         # Trail
         trail_line.set_data(positions[: k + 1, 0], positions[: k + 1, 1])
@@ -268,7 +276,7 @@ def create_parallel_trajectory_mp4(
             f"Parallel I-MPPI  t = {k * dt:.1f}s  |  field max = {field.max():.3f}"
         )
 
-        return [trail_line, uav_dot, field_img, title, fov_wedge]
+        return [ref_line, trail_line, uav_dot, field_img, title, fov_wedge]
 
     anim = animation.FuncAnimation(
         fig, update, frames=len(frame_indices), interval=1000 // fps, blit=True
@@ -315,6 +323,7 @@ def gif_from_data() -> None:
         data["history_x"],
         data["history_field"],
         data["history_field_origin"],
+        data["history_ref_traj"],
         data["grid"],
         float(data["map_resolution"]),
         FIELD_RES,
@@ -454,6 +463,7 @@ def main() -> None:
         history_field,
         history_field_origin,
         final_grid,
+        history_ref_traj,
     ) = sim_fn(x0, ctrl_state)
     final_state.block_until_ready()
     runtime = time.perf_counter() - t0
@@ -475,6 +485,7 @@ def main() -> None:
     actions = actions[:n_active]
     history_field = history_field[:n_active]
     history_field_origin = history_field_origin[:n_active]
+    history_ref_traj = history_ref_traj[:n_active]
 
     # --- Metrics ---
     action_jerk, traj_jerk = compute_smoothness(actions, history_x, DT)
@@ -505,6 +516,7 @@ def main() -> None:
         actions=np.array(actions),
         history_field=np.array(history_field),
         history_field_origin=np.array(history_field_origin),
+        history_ref_traj=np.array(history_ref_traj),
         grid=np.array(grid_array),
         final_grid=np.array(final_grid),
         map_resolution=map_resolution,
@@ -534,6 +546,7 @@ def main() -> None:
             history_x,
             history_field,
             history_field_origin,
+            history_ref_traj,
             grid_array,
             map_resolution,
             FIELD_RES,

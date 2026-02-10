@@ -300,7 +300,7 @@ def build_parallel_sim_fn(
     Returns:
         Simulation function: (initial_state_13, initial_ctrl_state) ->
             (final_state, history_x, actions, done_step,
-             history_field, history_field_origin, history_grid)
+             history_field, history_field_origin, history_grid, history_ref_traj)
     """
     from jax_mppi import mppi
 
@@ -421,6 +421,7 @@ def build_parallel_sim_fn(
             new_field,
             new_origin,
             action,
+            new_ref_traj,
         )
 
     def sim_fn(initial_state, initial_ctrl_state):
@@ -437,7 +438,7 @@ def build_parallel_sim_fn(
 
         (
             (final_state, _, final_field, final_origin, final_grid, _, done_step),
-            (history_x, history_field, history_field_origin, actions),
+            (history_x, history_field, history_field_origin, actions, history_ref_traj),
         ) = jax.lax.scan(
             step_fn,
             (
@@ -459,6 +460,7 @@ def build_parallel_sim_fn(
             history_field,
             history_field_origin,
             final_grid,
+            history_ref_traj,
         )
 
     return jax.jit(sim_fn)

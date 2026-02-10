@@ -208,14 +208,15 @@ def plot_trajectory_2d(history_x, grid, resolution, title="I-MPPI Trajectory"):
     positions = np.array(history_x[:, :2])
     n_steps = len(positions)
 
-    # Trajectory with color gradient
+    # Trajectory with color gradient (using markers to enable colorscale)
     colors = np.linspace(0, 1, n_steps)
     traces.append(
         go.Scatter(
             x=positions[:, 0],
             y=positions[:, 1],
-            mode="lines",
-            line=dict(color=colors, colorscale="Viridis", width=3),
+            mode="markers+lines",
+            marker=dict(color=colors, colorscale="Viridis", size=4),
+            line=dict(color="rgba(68, 68, 68, 0.3)", width=2),
             name="Trajectory",
             hovertemplate="Step: %{pointNumber}<br>X: %{x:.2f}m<br>Y: %{y:.2f}m",
         )
