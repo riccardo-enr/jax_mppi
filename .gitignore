@@ -28,3 +28,6 @@ _site/
 # IDEs
 .vscode/
 .zed/
+
+# Debug
+ruff_errors.txt
