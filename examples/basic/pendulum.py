@@ -39,7 +39,7 @@ def pendulum_dynamics(state: jax.Array, action: jax.Array) -> jax.Array:
     # Clip torque to reasonable bounds
     torque = jnp.clip(torque, -2.0, 2.0)
 
-    # Pendulum dynamics: theta_ddot = (torque - m*g*length*sin(theta)) / (m*length^2)
+    # theta_ddot = (torque - m*g*l*sin(theta)) / (m*l^2)
     theta_ddot = (torque - m * g * length * jnp.sin(theta)) / (
         m * length * length
     )
@@ -206,7 +206,7 @@ def run_pendulum_mppi(
             # Render if gymnasium environment is available
             if env is not None:
                 # Update gymnasium environment state to match our JAX state
-                # Gymnasium Pendulum-v1 state: [cos(theta), sin(theta), theta_dot]
+                # Gym state: [cos(theta), sin(theta), theta_dot]
                 theta, theta_dot = float(state[0]), float(state[1])
                 # Accessing .state on unwrapped env is dynamic,
                 # cast to Any to satisfy static analysis
@@ -240,7 +240,7 @@ def run_pendulum_mppi(
         env.close()
 
     print(
-        f"\nFinal state: theta={states[-1, 0]:.3f}, theta_dot={states[-1, 1]:.3f}"
+        f"\nFinal: theta={states[-1, 0]:.3f}, dt={states[-1, 1]:.3f}"
     )
     print(f"Total cost: {jnp.sum(costs_history):.2f}")
     print(f"Final 10-step avg cost: {jnp.mean(costs_history[-10:]):.3f}")
@@ -305,7 +305,7 @@ if __name__ == "__main__":
         "--steps",
         type=int,
         default=None,
-        help="Number of control steps (default: 100, or infinite with --render)",
+        help="Control steps (default: 100, or inf with --render)",
     )
     parser.add_argument(
         "--samples", type=int, default=1000, help="Number of MPPI samples"

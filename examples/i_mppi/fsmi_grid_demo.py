@@ -212,7 +212,7 @@ def compare_fsmi_modes():
     print("- Grid FSMI: Uses ray casting and occupancy probabilities")
     print("- Legacy: Uses geometric gates (FOV, range, proximity)")
     print(
-        f"- Ratio (Grid/Legacy): {info_gain_grid / (info_gain_legacy + 1e-6):.2f}"
+        f"Ratio: {info_gain_grid / (info_gain_legacy + 1e-6):.2f}"
     )
 
 

@@ -370,11 +370,11 @@ def run_quadrotor_hover_comparison(
 
     for name, key, fmt in metrics:
         values = [results[ct][key] for ct in ["mppi", "smppi", "kmppi"]]
-        value_strs = [
+        vals = [
             f"{v:{fmt}}" if v != float("inf") else "N/A" for v in values
         ]
         print(
-            f"{name:<5} {value_strs[0]:>8} {value_strs[1]:>8} {value_strs[2]:>8}"
+            f"{name:<5} {vals[0]:>8} {vals[1]:>8} {vals[2]:>8}"
         )
 
     print("=" * 70)

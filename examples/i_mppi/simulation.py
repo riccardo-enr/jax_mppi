@@ -483,7 +483,7 @@ def main():
         ) = sim_fn(state, ctrl_state)
         block_until_ready(final_state)
         elapsed = time.perf_counter() - start
-        print(f"  Runtime: {elapsed:.2f}s ({elapsed / sim_duration:.2f}x realtime)")
+        print(f"  Time: {elapsed:.2f}s ({elapsed/sim_duration:.2f}x)")
 
         action_jerk, traj_jerk = compute_smoothness(actions, history_x, dt)
 
@@ -533,7 +533,7 @@ def main():
         action_jerk = float(results[name]["action_jerk"])
         traj_jerk = float(results[name]["traj_jerk"])
         print(
-            f"{name:<12} {runtime_ms:>8.1f} {action_jerk:>8.4f} {traj_jerk:>8.4f}"
+            f"{name} {runtime_ms:>8.1f} {action_jerk:>8.4f} {traj_jerk:>8.4f}"
         )
     print("-" * 70)
 

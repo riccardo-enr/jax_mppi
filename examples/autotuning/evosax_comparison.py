@@ -5,7 +5,7 @@ This example demonstrates the performance differences between:
 2. CMA-ES from evosax (JAX-native, GPU-accelerated)
 3. Other evosax strategies (Sep-CMA-ES, OpenES)
 
-The comparison evaluates convergence speed, wall-clock time, and final performance
+Evaluates convergence speed, wall-clock time, final performance
 on a simple pendulum MPPI tuning task.
 """
 

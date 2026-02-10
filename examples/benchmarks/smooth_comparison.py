@@ -1,7 +1,7 @@
 """Smooth MPPI comparison example.
 
-This example compares MPPI, SMPPI, and KMPPI on a 2D navigation task with obstacles.
-The task is to navigate from [-3, -2] to [2, 2] while avoiding a Gaussian hill obstacle.
+Compares MPPI, SMPPI, KMPPI on 2D nav task.
+Navigate from [-3, -2] to [2, 2] avoiding obstacles.
 """
 
 from typing import Optional
@@ -84,7 +84,7 @@ def run_mppi_controller(
         costs_history.append(cost)
 
         print(
-            f"  Step {step:2d}: state=[{state[0]:6.3f}, {state[1]:6.3f}], cost={cost:.3f}"
+            f"  Step {step:2d}: s=[{state[0]:.2f},{state[1]:.2f}], c={cost:.3f}"
         )
 
     return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
@@ -153,7 +153,7 @@ def run_smppi_controller(
         costs_history.append(cost)
 
         print(
-            f"  Step {step:2d}: state=[{state[0]:6.3f}, {state[1]:6.3f}], cost={cost:.3f}"
+            f"  Step {step:2d}: s=[{state[0]:.2f},{state[1]:.2f}], c={cost:.3f}"
         )
 
     return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
@@ -226,7 +226,7 @@ def run_kmppi_controller(
         costs_history.append(cost)
 
         print(
-            f"  Step {step:2d}: state=[{state[0]:6.3f}, {state[1]:6.3f}], cost={cost:.3f}"
+            f"  Step {step:2d}: s=[{state[0]:.2f},{state[1]:.2f}], c={cost:.3f}"
         )
 
     return jnp.stack(states), jnp.stack(actions_taken), jnp.array(costs_history)
@@ -502,7 +502,7 @@ def main():
         total_cost = jnp.sum(costs)
         smoothness = jnp.sum(jnp.linalg.norm(jnp.diff(actions, axis=0), axis=1))
         print(
-            f"{name:10s}: Total Cost = {total_cost:8.2f}, Smoothness = {smoothness:6.3f}"
+            f"{name:10s}: Cost={total_cost:8.2f}, Smooth={smoothness:6.3f}"
         )
     print("=" * 60)
 
