@@ -225,7 +225,14 @@ class TestQuadrotorDynamics:
 
         # Command angular rates
         omega_cmd = jnp.array([1.0, 2.0, -1.0])
-        action = jnp.array([mass * 9.81, omega_cmd[0], omega_cmd[1], omega_cmd[2]])
+        action = jnp.array(
+            [
+                mass * 9.81,
+                omega_cmd[0],
+                omega_cmd[1],
+                omega_cmd[2],
+            ]
+        )
 
         # Simulate until convergence
         for _ in range(200):
@@ -359,7 +366,7 @@ class TestQuadrotorDynamicsIntegration:
         # High thrust
         action = jnp.array([2.0 * mass * gravity, 0.0, 0.0, 0.0])
 
-        initial_kinetic = 0.5 * mass * jnp.sum(state[3:6]**2)
+        initial_kinetic = 0.5 * mass * jnp.sum(state[3:6] ** 2)
         initial_potential = mass * gravity * state[2]
         initial_energy = initial_kinetic + initial_potential
 
@@ -367,7 +374,7 @@ class TestQuadrotorDynamicsIntegration:
         for _ in range(50):
             state = dynamics(state, action)
 
-        final_kinetic = 0.5 * mass * jnp.sum(state[3:6]**2)
+        final_kinetic = 0.5 * mass * jnp.sum(state[3:6] ** 2)
         final_potential = mass * gravity * state[2]
         final_energy = final_kinetic + final_potential
 

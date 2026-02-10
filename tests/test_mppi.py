@@ -19,7 +19,9 @@ def simple_dynamics(state: jax.Array, action: jax.Array) -> jax.Array:
         return state + action_padded
 
 
-def step_dependent_dynamics(state: jax.Array, action: jax.Array, t: int) -> jax.Array:
+def step_dependent_dynamics(
+    state: jax.Array, action: jax.Array, t: int
+) -> jax.Array:
     """Dynamics that depend on the time step."""
     return state + action + t * 0.1
 
@@ -29,7 +31,9 @@ def quadratic_cost(state: jax.Array, action: jax.Array) -> jax.Array:
     return jnp.sum(state**2) + 0.1 * jnp.sum(action**2)
 
 
-def step_dependent_cost(state: jax.Array, action: jax.Array, t: int) -> jax.Array:
+def step_dependent_cost(
+    state: jax.Array, action: jax.Array, t: int
+) -> jax.Array:
     """Cost that depends on the time step."""
     return jnp.sum(state**2) + 0.1 * jnp.sum(action**2) + t * 0.01
 
@@ -235,20 +239,36 @@ class TestMPPICommand:
 
         # Create two instances, one with large scale, one with small
         config_small, state_small = mppi.create(
-            nx=nx, nu=nu, noise_sigma=noise_sigma, u_scale=0.01, key=jax.random.PRNGKey(0)
+            nx=nx,
+            nu=nu,
+            noise_sigma=noise_sigma,
+            u_scale=0.01,
+            key=jax.random.PRNGKey(0),
         )
         config_large, state_large = mppi.create(
-            nx=nx, nu=nu, noise_sigma=noise_sigma, u_scale=100.0, key=jax.random.PRNGKey(0)
+            nx=nx,
+            nu=nu,
+            noise_sigma=noise_sigma,
+            u_scale=100.0,
+            key=jax.random.PRNGKey(0),
         )
 
         current_obs = jnp.zeros(nx)
 
         action_small, _ = mppi.command(
-            config_small, state_small, current_obs, simple_dynamics, quadratic_cost
+            config_small,
+            state_small,
+            current_obs,
+            simple_dynamics,
+            quadratic_cost,
         )
 
         action_large, _ = mppi.command(
-            config_large, state_large, current_obs, simple_dynamics, quadratic_cost
+            config_large,
+            state_large,
+            current_obs,
+            simple_dynamics,
+            quadratic_cost,
         )
 
         # The large scale should result in larger magnitude actions typically
@@ -355,6 +375,7 @@ class TestMPPIUtilities:
         )
         assert batched_rollouts.shape == (2, 2, horizon + 1, nx)
 
+
 class TestMPPIIntegration:
     """Integration tests for MPPI."""
 
@@ -412,7 +433,7 @@ class TestMPPIIntegration:
             return quadratic_cost(next_s, a)
 
         cost_high = eval_cost(action_high)
-        cost_low = eval_cost(action_low)
+        eval_cost(action_low)
         cost_idle = eval_cost(jnp.zeros(nu))
 
         # Check that temperature parameter has an effect
@@ -444,6 +465,7 @@ class TestMPPIIntegration:
 
         # Cost should decrease significantly
         assert costs[-1] < costs[0]
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
