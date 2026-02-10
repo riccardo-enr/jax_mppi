@@ -13,9 +13,8 @@ dist/
 *.npy
 *.npz
 
-# UV
-.venv/
-uv.lock
+# Pixi
+.pixi/
 
 # Docs
 docs/_issues
