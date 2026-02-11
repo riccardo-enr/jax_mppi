@@ -21,6 +21,11 @@ This library embraces JAX's functional paradigm:
 - **Core MPPI**: Robust implementation of the standard MPPI algorithm.
 - **Smooth MPPI (SMPPI)**: Maintains action sequences and smoothness costs for better trajectory generation.
 - **Kernel MPPI (KMPPI)**: Uses kernel interpolation for control points, reducing the parameter space.
+- **I-MPPI (Informative MPPI)**: Two-layer hierarchical architecture for autonomous exploration:
+  - **Layer 2 (FSMI)**: Fast Shannon Mutual Information trajectory generation (~5 Hz)
+  - **Layer 3 (Biased MPPI)**: Information-aware tracking control (~50 Hz)
+  - Occupancy grid-based exploration with GPU acceleration
+  - Interactive Colab notebook for real-time parameter tuning
 - **Autotuning**: Built-in hyperparameter optimization with multiple backends:
   - **CMA-ES** (via \`cma\` library) - Classic evolution strategy
   - **CMA-ES, Sep-CMA-ES, OpenES** (via \`evosax\`) - JAX-native, GPU-accelerated ⚡
@@ -190,6 +195,41 @@ optimizer = CMAESOpt(population=10, sigma=0.1)
 - 📦 **Pure Python** - no external C++ dependencies
 
 See `examples/autotuning/evosax_comparison.py` for a detailed performance comparison.
+
+## I-MPPI: Informative Path Planning
+
+I-MPPI extends the MPPI framework with information-theoretic path planning for autonomous exploration. The system uses a hierarchical architecture that combines global strategic planning with reactive control:
+
+### Architecture
+
+- **Layer 2 (FSMI Planner)**: Generates information-rich reference trajectories using Fast Shannon Mutual Information
+- **Layer 3 (Biased MPPI)**: Tracks references while gathering local information via Uniform-FSMI
+- **Occupancy Grid**: Represents environment uncertainty and enables information gain computation
+
+### Key Capabilities
+
+- **Autonomous Exploration**: Seeks high-information regions while avoiding obstacles
+- **Real-time Performance**: ~5 Hz for global planning, ~50 Hz for local control
+- **GPU Accelerated**: Full JAX implementation for efficient computation
+- **Interactive Tuning**: Jupyter notebook with widgets for parameter exploration
+
+### Getting Started with I-MPPI
+
+```python
+from jax_mppi.i_mppi import FSMIConfig, create_fsmi_state
+
+# Configure information-driven planner
+config = FSMIConfig(
+    grid_resolution=0.1,  # 10cm grid cells
+    sensor_range=5.0,     # 5m sensing range
+    info_weight=1.0       # Information gain weight
+)
+
+# Run I-MPPI simulation
+# See examples/i_mppi/simulation.py for complete example
+```
+
+For detailed theory and implementation, see the [I-MPPI documentation](docs/src/i_mppi.qmd).
 
 ## Project Structure
 
