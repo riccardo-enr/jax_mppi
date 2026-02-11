@@ -149,52 +149,60 @@ def create_parallel_trajectory_gif(
     k0 = frame_indices[0]
     Nx, Ny = fields[k0].shape
 
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, (ax_map, ax_field) = plt.subplots(
+        1, 2, figsize=(16, 8),
+        gridspec_kw={"width_ratios": [0.55, 0.45]},
+    )
 
-    # Occupancy grid (static)
-    ax.imshow(
+    # --- Map panel ---
+    ax_map.imshow(
         grid_np, cmap="Greys", origin="lower", extent=extent,
         vmin=0, vmax=1, alpha=0.8, aspect="equal",
     )
+    ax_map.plot(START_X, START_Y, "o", color="green", markersize=8)
+    ax_map.plot(float(GOAL_POS[0]), float(GOAL_POS[1]), "*", color="red", markersize=12)
 
-    # Info field overlay (animated)
+    # Reference trajectory (animated)
+    ref_traj_0 = ref_trajs[k0]
+    (ref_line,) = ax_map.plot(
+        ref_traj_0[:, 0], ref_traj_0[:, 1],
+        color="magenta", linewidth=2, linestyle="--", label="Reference Traj",
+    )
+    (trail_line,) = ax_map.plot([], [], color="cyan", linewidth=2, label="Executed Traj")
+    (uav_marker,) = ax_map.plot([], [], "o", color="cyan", markersize=8)
+
+    ax_map.set_xlim(-0.5, 14.5)
+    ax_map.set_ylim(-0.5, 12.5)
+    ax_map.set_xlabel("X (m)")
+    ax_map.set_ylabel("Y (m)")
+    ax_map.set_title("Trajectory")
+    ax_map.set_aspect("equal")
+    ax_map.legend(loc="upper right")
+
+    # --- Info field panel ---
+    ax_field.imshow(
+        grid_np, cmap="Greys", origin="lower", extent=extent,
+        vmin=0, vmax=1, alpha=0.3, aspect="equal",
+    )
     fo_0 = field_origins[k0]
     field_extent_0 = [
         fo_0[0], fo_0[0] + Nx * field_res,
         fo_0[1], fo_0[1] + Ny * field_res,
     ]
-    field_masked = np.ma.masked_where(fields[k0] <= 0, fields[k0])
-    field_im = ax.imshow(
-        field_masked, cmap=_INFO_GAIN_CMAP, origin="lower",
-        extent=field_extent_0, vmin=0, vmax=field_vmax, alpha=0.6, aspect="equal",
+    field_im = ax_field.imshow(
+        fields[k0], cmap=_INFO_GAIN_CMAP, origin="lower",
+        extent=field_extent_0, vmin=0, vmax=field_vmax, aspect="equal",
     )
-    plt.colorbar(field_im, ax=ax, label="FSMI", shrink=0.7)
+    plt.colorbar(field_im, ax=ax_field, label="FSMI", shrink=0.7)
+    (field_uav_marker,) = ax_field.plot([], [], "o", color="red", markersize=8)
 
-    # Start and goal (static)
-    ax.plot(START_X, START_Y, "o", color="green", markersize=8)
-    ax.plot(float(GOAL_POS[0]), float(GOAL_POS[1]), "*", color="red", markersize=12)
+    ax_field.set_xlim(-0.5, 14.5)
+    ax_field.set_ylim(-0.5, 12.5)
+    ax_field.set_xlabel("X (m)")
+    ax_field.set_title("Information Field")
+    ax_field.set_aspect("equal")
 
-    # Reference trajectory (animated)
-    ref_traj_0 = ref_trajs[k0]
-    (ref_line,) = ax.plot(
-        ref_traj_0[:, 0], ref_traj_0[:, 1],
-        color="magenta", linewidth=2, linestyle="--", label="Reference Traj",
-    )
-
-    # Trajectory trail (animated)
-    (trail_line,) = ax.plot([], [], color="cyan", linewidth=2, label="Executed Traj")
-
-    # UAV marker (animated)
-    (uav_marker,) = ax.plot([], [], "o", color="cyan", markersize=8)
-
-    ax.set_xlim(-0.5, 14.5)
-    ax.set_ylim(-0.5, 12.5)
-    ax.set_xlabel("X (m)")
-    ax.set_ylabel("Y (m)")
-    ax.set_aspect("equal")
-    ax.legend(loc="upper right")
-
-    title_text = ax.set_title(
+    title_text = fig.suptitle(
         f"Parallel I-MPPI  t = 0.0s  |  field max = {fields[k0].max():.3f}"
     )
 
@@ -202,13 +210,13 @@ def create_parallel_trajectory_gif(
         k = frame_indices[frame_idx]
         x, y = positions[k, 0], positions[k, 1]
 
-        # Info field
+        # Info field panel
         field = fields[k]
         fo = field_origins[k]
         field_ext = [fo[0], fo[0] + Nx * field_res, fo[1], fo[1] + Ny * field_res]
-        field_masked = np.ma.masked_where(field <= 0, field)
-        field_im.set_data(field_masked)
+        field_im.set_data(field)
         field_im.set_extent(field_ext)
+        field_uav_marker.set_data([x], [y])
 
         # Reference trajectory
         ref_traj = ref_trajs[k]
@@ -221,11 +229,11 @@ def create_parallel_trajectory_gif(
         uav_marker.set_data([x], [y])
 
         # Title
-        ax.set_title(
+        title_text.set_text(
             f"Parallel I-MPPI  t = {k * dt:.1f}s  |  field max = {field.max():.3f}"
         )
 
-        return [field_im, ref_line, trail_line, uav_marker]
+        return [field_im, field_uav_marker, ref_line, trail_line, uav_marker]
 
     anim = FuncAnimation(
         fig, update, frames=len(frame_indices),

@@ -18,23 +18,16 @@ from jax_mppi.i_mppi.environment import (
 # --- Style setup ---
 _SCIENCE_STYLE = ["science", "no-latex"]
 
-# --- Information gain colormap (dark green -> white -> dark blue) ---
-_INFO_GAIN_COLORS = [
-    (0.0, "#0d2905"),
-    (0.1, "#2d5016"),
-    (0.2, "#4a7c2e"),
-    (0.3, "#c8e6c9"),
-    (0.5, "#ffffff"),
-    (0.7, "#b3d9f2"),
-    (0.8, "#66b3cc"),
-    (0.9, "#3366aa"),
-    (0.95, "#1a4488"),
-    (1.0, "#003366"),
-]
-
+# --- Information gain colormap (transparent -> yellow -> orange -> red) ---
 _INFO_GAIN_CMAP = mcolors.LinearSegmentedColormap.from_list(
     "info_gain",
-    [(pos, col) for pos, col in _INFO_GAIN_COLORS],
+    [
+        (0.0, (1.0, 1.0, 0.4, 0.0)),   # transparent
+        (0.2, (1.0, 1.0, 0.3, 0.4)),   # light yellow
+        (0.5, (1.0, 0.8, 0.0, 0.6)),   # yellow-orange
+        (0.75, (1.0, 0.4, 0.0, 0.75)),  # orange
+        (1.0, (0.8, 0.0, 0.0, 0.85)),  # dark red
+    ],
 )
 
 # --- FOV visualisation helpers ---
@@ -335,26 +328,11 @@ def create_trajectory_gif(
     H, W = grid_np.shape
     extent = [0, W * resolution, 0, H * resolution]
 
-    # Precompute cumulative seen masks
-    cumulative_seen = np.zeros(grid_np.shape, dtype=bool)
-    seen_snapshots = []
-    fi = 0
-    for k in range(n_steps):
-        seen_k = _compute_seen_mask(
-            positions[k, 0], positions[k, 1], yaws[k],
-            grid_np, resolution, SENSOR_MAX_RANGE, origin,
-        )
-        cumulative_seen = cumulative_seen | seen_k
-        if fi < len(frame_indices) and frame_indices[fi] == k:
-            seen_snapshots.append(cumulative_seen.copy())
-            fi += 1
-    while len(seen_snapshots) < len(frame_indices):
-        seen_snapshots.append(cumulative_seen.copy())
-
     # Precompute info gain frames if provided
     ig_frames = None
     ig_vmax = 1.0
-    if info_gain_field is not None:
+    has_ig = info_gain_field is not None
+    if has_ig:
         info_gain_arr = np.array(info_gain_field)
         is_time_varying = info_gain_arr.ndim == 3
         ig_frames = []
@@ -367,22 +345,29 @@ def create_trajectory_gif(
             ig_frames.append(ig_frame)
         ig_vmax = max(np.nanmax(f[f > 0]) if np.any(f > 0) else 1.0 for f in ig_frames)
 
-    # Create figure with two panels
-    fig, (ax_map, ax_info) = plt.subplots(
-        1, 2, figsize=(14, 7),
-        gridspec_kw={"width_ratios": [0.6, 0.4]},
-    )
+    # Create figure — 3 panels when info field provided, 2 otherwise
+    if has_ig:
+        fig, (ax_map, ax_field, ax_info) = plt.subplots(
+            1, 3, figsize=(18, 7),
+            gridspec_kw={"width_ratios": [0.4, 0.35, 0.25]},
+        )
+    else:
+        fig, (ax_map, ax_info) = plt.subplots(
+            1, 2, figsize=(14, 7),
+            gridspec_kw={"width_ratios": [0.6, 0.4]},
+        )
+        ax_field = None
 
     t_all = np.arange(n_steps) * dt
     zone_colors = sns.color_palette("tab10", info.shape[1])
 
-    # --- Static elements on map axes ---
+    # --- Map panel ---
     ax_map.imshow(
         grid_np, cmap="Greys", origin="lower", extent=extent,
         vmin=0, vmax=1, alpha=0.8, aspect="equal",
     )
 
-    # Info zones (static outlines)
+    # Info zones
     zone_patches = []
     for i in range(len(INFO_ZONES)):
         cx, cy = float(INFO_ZONES[i, 0]), float(INFO_ZONES[i, 1])
@@ -390,7 +375,8 @@ def create_trajectory_gif(
         rect = Rectangle(
             (cx - w / 2, cy - h / 2), w, h,
             linewidth=2, edgecolor="orange",
-            facecolor="yellow", alpha=0.3,
+            facecolor="none" if has_ig else "yellow",
+            alpha=1.0 if has_ig else 0.3,
         )
         ax_map.add_patch(rect)
         zone_patches.append(rect)
@@ -401,27 +387,8 @@ def create_trajectory_gif(
     ax_map.set_ylim(-0.5, 12.5)
     ax_map.set_xlabel("X (m)")
     ax_map.set_ylabel("Y (m)")
+    ax_map.set_title("Trajectory")
     ax_map.set_aspect("equal")
-
-    # --- Animated elements ---
-    # Info gain overlay
-    ig_im = None
-    if ig_frames is not None:
-        ig_masked = np.ma.masked_where(ig_frames[0] <= 0, ig_frames[0])
-        ig_im = ax_map.imshow(
-            ig_masked, cmap=_INFO_GAIN_CMAP, origin="lower", extent=extent,
-            vmin=0, vmax=ig_vmax, alpha=0.6, aspect="equal",
-        )
-
-    # Explored overlay
-    explored_cmap = mcolors.ListedColormap(["none", "rgba"])
-    explored_cmap = mcolors.LinearSegmentedColormap.from_list(
-        "explored", [(0, (0.2, 0.8, 0.2, 0.0)), (1, (0.2, 0.8, 0.2, 0.3))]
-    )
-    explored_im = ax_map.imshow(
-        seen_snapshots[0].astype(float), cmap=explored_cmap, origin="lower",
-        extent=extent, vmin=0, vmax=1, aspect="equal",
-    )
 
     # Trail
     (trail_line,) = ax_map.plot([], [], color="cyan", linewidth=2)
@@ -436,6 +403,26 @@ def create_trajectory_gif(
         closed=True, facecolor="cyan", alpha=0.2, edgecolor="cyan", linewidth=0.5,
     )
     ax_map.add_patch(fov_patch)
+
+    # --- Info field panel (separate from map) ---
+    ig_im = None
+    field_uav_marker = None
+    if ax_field is not None and ig_frames is not None:
+        ax_field.imshow(
+            grid_np, cmap="Greys", origin="lower", extent=extent,
+            vmin=0, vmax=1, alpha=0.3, aspect="equal",
+        )
+        ig_im = ax_field.imshow(
+            ig_frames[0], cmap=_INFO_GAIN_CMAP, origin="lower", extent=extent,
+            vmin=0, vmax=ig_vmax, aspect="equal",
+        )
+        plt.colorbar(ig_im, ax=ax_field, label="Info Gain", shrink=0.7)
+        (field_uav_marker,) = ax_field.plot([], [], "o", color="red", markersize=8)
+        ax_field.set_xlim(-0.5, 14.5)
+        ax_field.set_ylim(-0.5, 12.5)
+        ax_field.set_xlabel("X (m)")
+        ax_field.set_title("Information Field")
+        ax_field.set_aspect("equal")
 
     # --- Info level plot ---
     ax_info.set_xlabel("Time (s)")
@@ -467,25 +454,27 @@ def create_trajectory_gif(
         # FOV
         fov_verts = _fov_polygon(x, y, yaw, grid_np, resolution, origin=origin)
         fov_patch.set_xy(fov_verts)
-        # Explored
-        explored_im.set_data(seen_snapshots[frame_idx].astype(float))
-        # Info gain overlay
+        # Info field panel
         if ig_im is not None and ig_frames is not None:
-            ig_masked = np.ma.masked_where(ig_frames[frame_idx] <= 0, ig_frames[frame_idx])
-            ig_im.set_data(ig_masked)
-        # Zone alpha
-        for i, rect in enumerate(zone_patches):
-            alpha = max(0.05, info[min(k, len(info) - 1), i] / 100.0 * 0.4)
-            rect.set_alpha(alpha)
+            ig_im.set_data(ig_frames[frame_idx])
+        if field_uav_marker is not None:
+            field_uav_marker.set_data([x], [y])
+        # Zone alpha (only when zones have fill)
+        if not has_ig:
+            for i, rect in enumerate(zone_patches):
+                alpha = max(0.05, info[min(k, len(info) - 1), i] / 100.0 * 0.4)
+                rect.set_alpha(alpha)
         # Info lines
         for i, line in enumerate(info_lines):
             line.set_data(t_all[: k + 1], info[: k + 1, i])
         # Title
         title_text.set_text(f"I-MPPI Trajectory  t = {k * dt:.1f}s")
 
-        artists = [trail_line, uav_marker, heading_line, fov_patch, explored_im, title_text]
+        artists = [trail_line, uav_marker, heading_line, fov_patch, title_text]
         if ig_im is not None:
             artists.append(ig_im)
+        if field_uav_marker is not None:
+            artists.append(field_uav_marker)
         artists.extend(zone_patches)
         artists.extend(info_lines)
         return artists
