@@ -14,6 +14,7 @@ dist/
 # Simulation and data outputs
 *.npy
 *.npz
+*.csv
 
 # Pixi
 .pixi/
