@@ -22,4 +22,4 @@ jobs:
                   locked: false
 
             - name: Run tests
-              run: pixi run -e ci pytest tests/
+              run: pixi run -e ci test

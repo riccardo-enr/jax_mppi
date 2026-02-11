@@ -29,10 +29,10 @@ jobs:
                   node-version: "20"
 
             - name: Run ruff check
-              run: pixi run -e ci ruff check .
+              run: pixi run -e ci ruff-check
 
             - name: Run ruff format
-              run: pixi run -e ci ruff format --check .
+              run: pixi run -e ci ruff-format
 
             - name: Install and Run Markdown Lint
               run: |

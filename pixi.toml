@@ -75,6 +75,12 @@ seaborn = "*"
 SciencePlots = "*"
 pytz = "*"
 
+[feature.ci.tasks]
+test = "pytest tests/"
+ruff-check = "python -m ruff check ."
+ruff-format = "python -m ruff format --check ."
+type-check = "python -m basedpyright ."
+
 [environments]
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
