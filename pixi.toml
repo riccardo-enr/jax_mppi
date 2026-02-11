@@ -62,6 +62,9 @@ test-cuda = "python examples/cuda/test_cuda_mppi.py"
 # Git submodules
 submodule-update = "git submodule update --init --recursive"
 
+# C++ development
+cuda-mppi-build = { cmd = "cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && cmake --build build", cwd = "third_party/cuda-mppi" }
+
 # Dev tasks (require dev environment)
 [feature.dev.tasks]
 test = "PYTHONPATH= pytest tests/"
