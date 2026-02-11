@@ -17,7 +17,6 @@ import argparse
 import os
 import sys
 import time
-from typing import Any
 
 # ---------------------------------------------------------------------------
 # Path setup – make helper modules importable regardless of working dir.
@@ -129,7 +128,7 @@ def create_parallel_trajectory_html(
     positions = states[:, :2]
     # Extract yaw from quaternion
     quats = np.array(states[:, 6:10])
-    yaws = np.arctan2(
+    np.arctan2(
         2 * (quats[:, 0] * quats[:, 3] + quats[:, 1] * quats[:, 2]),
         1 - 2 * (quats[:, 2] ** 2 + quats[:, 3] ** 2),
     )
@@ -279,7 +278,9 @@ def create_parallel_trajectory_html(
             go.Scatter(x=[START_X], y=[START_Y]),  # Start
             go.Scatter(x=[float(GOAL_POS[0])], y=[float(GOAL_POS[1])]),  # Goal
             go.Scatter(x=ref_traj[:, 0], y=ref_traj[:, 1]),  # Reference traj
-            go.Scatter(x=positions[: k + 1, 0], y=positions[: k + 1, 1]),  # Trail
+            go.Scatter(
+                x=positions[: k + 1, 0], y=positions[: k + 1, 1]
+            ),  # Trail
             go.Scatter(x=[x], y=[y]),  # UAV
         ]
 
@@ -299,7 +300,9 @@ def create_parallel_trajectory_html(
     fig.update_layout(
         title=f"Parallel I-MPPI  t = 0.0s  |  field max = {field_0.max():.3f}",
         xaxis=dict(title="X (m)", range=[-0.5, 14.5]),
-        yaxis=dict(title="Y (m)", range=[-0.5, 12.5], scaleanchor="x", scaleratio=1),
+        yaxis=dict(
+            title="Y (m)", range=[-0.5, 12.5], scaleanchor="x", scaleratio=1
+        ),
         width=1000,
         height=800,
         showlegend=True,
@@ -315,7 +318,10 @@ def create_parallel_trajectory_html(
                         args=[
                             None,
                             {
-                                "frame": {"duration": 1000 // fps, "redraw": True},
+                                "frame": {
+                                    "duration": 1000 // fps,
+                                    "redraw": True,
+                                },
                                 "fromcurrent": True,
                                 "mode": "immediate",
                             },

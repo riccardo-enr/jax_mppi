@@ -433,7 +433,7 @@ class TestMPPIIntegration:
             return quadratic_cost(next_s, a)
 
         cost_high = eval_cost(action_high)
-        cost_low = eval_cost(action_low)
+        eval_cost(action_low)
         cost_idle = eval_cost(jnp.zeros(nu))
 
         # Check that temperature parameter has an effect

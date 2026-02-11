@@ -137,8 +137,8 @@ def _create_environment_traces(grid, resolution, show_labels=True):
         w, h = float(INFO_ZONES[i, 2]), float(INFO_ZONES[i, 3])
         traces.append(
             go.Scatter(
-                x=[cx - w/2, cx + w/2, cx + w/2, cx - w/2, cx - w/2],
-                y=[cy - h/2, cy - h/2, cy + h/2, cy + h/2, cy - h/2],
+                x=[cx - w / 2, cx + w / 2, cx + w / 2, cx - w / 2, cx - w / 2],
+                y=[cy - h / 2, cy - h / 2, cy + h / 2, cy + h / 2, cy - h / 2],
                 fill="toself",
                 fillcolor="rgba(255, 255, 0, 0.3)",
                 line=dict(color="orange", width=2),
@@ -192,7 +192,9 @@ def plot_environment(grid, resolution, show_labels=True):
     fig = go.Figure(data=traces)
     fig.update_layout(
         xaxis=dict(title="X (m)", range=[-0.5, 14.5]),
-        yaxis=dict(title="Y (m)", range=[-0.5, 12.5], scaleanchor="x", scaleratio=1),
+        yaxis=dict(
+            title="Y (m)", range=[-0.5, 12.5], scaleanchor="x", scaleratio=1
+        ),
         width=800,
         height=700,
         showlegend=True,
@@ -246,7 +248,9 @@ def plot_trajectory_2d(history_x, grid, resolution, title="I-MPPI Trajectory"):
     fig.update_layout(
         title=title,
         xaxis=dict(title="X (m)", range=[-0.5, 14.5]),
-        yaxis=dict(title="Y (m)", range=[-0.5, 12.5], scaleanchor="x", scaleratio=1),
+        yaxis=dict(
+            title="Y (m)", range=[-0.5, 12.5], scaleanchor="x", scaleratio=1
+        ),
         width=900,
         height=700,
         showlegend=True,
@@ -520,7 +524,13 @@ def create_trajectory_gif(
                 colorbar=dict(title="Info Gain", x=0.45),
                 hoverinfo="z",
                 zmin=0,
-                zmax=np.nanmax([np.nanmax(f) for f in ig_frames]) if any(np.nanmax(f) > 0 for f in ig_frames if not np.all(np.isnan(f))) else 1,
+                zmax=np.nanmax([np.nanmax(f) for f in ig_frames])
+                if any(
+                    np.nanmax(f) > 0
+                    for f in ig_frames
+                    if not np.all(np.isnan(f))
+                )
+                else 1,
             ),
             row=1,
             col=1,
@@ -532,8 +542,8 @@ def create_trajectory_gif(
         w, h = float(INFO_ZONES[i, 2]), float(INFO_ZONES[i, 3])
         fig.add_trace(
             go.Scatter(
-                x=[cx - w/2, cx + w/2, cx + w/2, cx - w/2, cx - w/2],
-                y=[cy - h/2, cy - h/2, cy + h/2, cy + h/2, cy - h/2],
+                x=[cx - w / 2, cx + w / 2, cx + w / 2, cx - w / 2, cx - w / 2],
+                y=[cy - h / 2, cy - h / 2, cy + h / 2, cy + h / 2, cy - h / 2],
                 fill="toself",
                 fillcolor=f"rgba(255, 255, 0, {max(0.05, info[0, i] / 100.0 * 0.4)})",
                 line=dict(color="orange", width=2),
@@ -618,7 +628,12 @@ def create_trajectory_gif(
 
     # FOV wedge (animated)
     fov_verts = _fov_polygon(
-        positions[0, 0], positions[0, 1], yaws[0], grid_np, resolution, origin=origin
+        positions[0, 0],
+        positions[0, 1],
+        yaws[0],
+        grid_np,
+        resolution,
+        origin=origin,
     )
     fig.add_trace(
         go.Scatter(
@@ -643,7 +658,10 @@ def create_trajectory_gif(
             z=explored_z,
             x=np.linspace(0, extent[1], grid.shape[1]),
             y=np.linspace(0, extent[3], grid.shape[0]),
-            colorscale=[[0, "rgba(50, 200, 50, 0)"], [1, "rgba(50, 200, 50, 0.3)"]],
+            colorscale=[
+                [0, "rgba(50, 200, 50, 0)"],
+                [1, "rgba(50, 200, 50, 0.3)"],
+            ],
             showscale=False,
             hoverinfo="skip",
         ),
@@ -688,9 +706,7 @@ def create_trajectory_gif(
 
         # Update info gain field if present
         if info_gain_field is not None:
-            frame_data.append(
-                go.Heatmap(z=ig_frames[frame_idx])
-            )
+            frame_data.append(go.Heatmap(z=ig_frames[frame_idx]))
 
         # Update info zones with fading alpha
         for i in range(len(INFO_ZONES)):
@@ -699,17 +715,31 @@ def create_trajectory_gif(
             alpha = max(0.05, info[min(k, len(info) - 1), i] / 100.0 * 0.4)
             frame_data.append(
                 go.Scatter(
-                    x=[cx - w/2, cx + w/2, cx + w/2, cx - w/2, cx - w/2],
-                    y=[cy - h/2, cy - h/2, cy + h/2, cy + h/2, cy - h/2],
+                    x=[
+                        cx - w / 2,
+                        cx + w / 2,
+                        cx + w / 2,
+                        cx - w / 2,
+                        cx - w / 2,
+                    ],
+                    y=[
+                        cy - h / 2,
+                        cy - h / 2,
+                        cy + h / 2,
+                        cy + h / 2,
+                        cy - h / 2,
+                    ],
                     fillcolor=f"rgba(255, 255, 0, {alpha})",
                 )
             )
 
         # Static start/goal
-        frame_data.extend([
-            go.Scatter(x=[1.0], y=[5.0]),
-            go.Scatter(x=[float(GOAL_POS[0])], y=[float(GOAL_POS[1])]),
-        ])
+        frame_data.extend(
+            [
+                go.Scatter(x=[1.0], y=[5.0]),
+                go.Scatter(x=[float(GOAL_POS[0])], y=[float(GOAL_POS[1])]),
+            ]
+        )
 
         # Update trajectory trail
         frame_data.append(
@@ -735,9 +765,7 @@ def create_trajectory_gif(
 
         # Update info level lines
         for i in range(info.shape[1]):
-            frame_data.append(
-                go.Scatter(x=t_all[: k + 1], y=info[: k + 1, i])
-            )
+            frame_data.append(go.Scatter(x=t_all[: k + 1], y=info[: k + 1, i]))
 
         frames.append(
             go.Frame(
@@ -764,7 +792,10 @@ def create_trajectory_gif(
                         args=[
                             None,
                             {
-                                "frame": {"duration": 1000 // fps, "redraw": True},
+                                "frame": {
+                                    "duration": 1000 // fps,
+                                    "redraw": True,
+                                },
                                 "fromcurrent": True,
                                 "mode": "immediate",
                             },
@@ -817,10 +848,17 @@ def create_trajectory_gif(
     # Update layout
     fig.update_xaxes(title_text="X (m)", range=[-0.5, 14.5], row=1, col=1)
     fig.update_yaxes(
-        title_text="Y (m)", range=[-0.5, 12.5], scaleanchor="x", scaleratio=1, row=1, col=1
+        title_text="Y (m)",
+        range=[-0.5, 12.5],
+        scaleanchor="x",
+        scaleratio=1,
+        row=1,
+        col=1,
     )
     fig.update_xaxes(title_text="Time (s)", range=[0, t_all[-1]], row=1, col=2)
-    fig.update_yaxes(title_text="Information Level", range=[-5, 105], row=1, col=2)
+    fig.update_yaxes(
+        title_text="Information Level", range=[-5, 105], row=1, col=2
+    )
 
     fig.update_layout(
         width=1400,

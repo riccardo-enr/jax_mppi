@@ -313,7 +313,7 @@ def biased_kmppi_command(
     # We can use the kernel interpolation matrix to solve for control points
     # that best approximate U_ref
     K_matrix = kernel_fn(kmppi_state.Hs, kmppi_state.Tk)  # (T, num_support_pts)
-    Ktktk = kernel_fn(
+    kernel_fn(
         kmppi_state.Tk, kmppi_state.Tk
     )  # (num_support_pts, num_support_pts)
 

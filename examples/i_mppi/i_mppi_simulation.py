@@ -30,8 +30,6 @@ for _d in _candidates:
 
 import jax  # noqa: E402
 import jax.numpy as jnp  # noqa: E402
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
 from env_setup import create_grid_map  # noqa: E402
 from sim_utils import (  # noqa: E402
     CONTROL_HZ,
@@ -254,7 +252,11 @@ def main() -> None:
     fig = make_subplots(
         rows=1,
         cols=3,
-        subplot_titles=("I-MPPI Trajectory", "Info Zone Depletion", "Control Inputs"),
+        subplot_titles=(
+            "I-MPPI Trajectory",
+            "Info Zone Depletion",
+            "Control Inputs",
+        ),
         specs=[[{"type": "xy"}, {"type": "xy"}, {"type": "xy"}]],
         horizontal_spacing=0.08,
         column_widths=[0.4, 0.3, 0.3],

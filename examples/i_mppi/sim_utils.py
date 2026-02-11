@@ -105,9 +105,9 @@ def fov_grid_update(
     def _cummax_fn(a, b):
         return jnp.maximum(a, b)
 
-    blocked = jax.vmap(
-        lambda row: jax.lax.associative_scan(_cummax_fn, row)
-    )(is_obstacle.astype(jnp.float32))
+    blocked = jax.vmap(lambda row: jax.lax.associative_scan(_cummax_fn, row))(
+        is_obstacle.astype(jnp.float32)
+    )
     blocked = blocked >= 0.5
 
     # Visible = in bounds, not an obstacle, not blocked by prior obstacle
@@ -131,7 +131,9 @@ def fov_grid_update(
     updated_grid = grid.at[flat_gy, flat_gx].min(update_free)
 
     # Obstacle cells: use .max (only increases toward certainty)
-    update_occ = jnp.where(flat_vis_occ, _OCC_PROB, updated_grid[flat_gy, flat_gx])
+    update_occ = jnp.where(
+        flat_vis_occ, _OCC_PROB, updated_grid[flat_gy, flat_gx]
+    )
     updated_grid = updated_grid.at[flat_gy, flat_gx].max(update_occ)
 
     return updated_grid
@@ -142,8 +144,9 @@ def fov_grid_update(
 # ---------------------------------------------------------------------------
 
 
-def field_gradient_trajectory(field, field_origin, field_res, start_xy,
-                              horizon, ref_speed, dt, altitude):
+def field_gradient_trajectory(
+    field, field_origin, field_res, start_xy, horizon, ref_speed, dt, altitude
+):
     """Generate reference trajectory via gradient ascent on the info field.
 
     Follows the steepest ascent of the FSMI field to generate a position
@@ -338,7 +341,11 @@ def build_parallel_sim_fn(
         pos_xy = current_state[:2]
         yaw = quat_to_yaw(current_state[6:10])
         updated_grid = fov_grid_update(
-            grid, pos_xy, yaw, grid_origin, grid_resolution,
+            grid,
+            pos_xy,
+            yaw,
+            grid_origin,
+            grid_resolution,
         )
 
         # --- Low-rate: recompute field + ref trajectory (every N steps) ---
@@ -358,9 +365,14 @@ def build_parallel_sim_fn(
         new_ref_traj = jax.lax.cond(
             do_update,
             lambda: field_gradient_trajectory(
-                new_field, new_origin, info_field_config.field_res,
-                pos_xy, info_field_config.ref_horizon,
-                info_field_config.ref_speed, DT, uav_pos[2],
+                new_field,
+                new_origin,
+                info_field_config.field_res,
+                pos_xy,
+                info_field_config.ref_horizon,
+                info_field_config.ref_speed,
+                DT,
+                uav_pos[2],
             ),
             lambda: ref_traj,
         )
@@ -368,7 +380,9 @@ def build_parallel_sim_fn(
         # --- Cost function ---
         def cost_fn(x, u, t_step):
             cost = informative_running_cost(
-                x, u, t_step,
+                x,
+                u,
+                t_step,
                 target=new_ref_traj,
                 grid_map=updated_grid,
                 uniform_fsmi_fn=uniform_fsmi.compute,
@@ -430,15 +444,34 @@ def build_parallel_sim_fn(
             fsmi_module, initial_grid, initial_state[:3], info_field_config
         )
         init_ref_traj = field_gradient_trajectory(
-            init_field, init_origin, info_field_config.field_res,
-            initial_state[:2], info_field_config.ref_horizon,
-            info_field_config.ref_speed, DT, initial_state[2],
+            init_field,
+            init_origin,
+            info_field_config.field_res,
+            initial_state[:2],
+            info_field_config.ref_horizon,
+            info_field_config.ref_speed,
+            DT,
+            initial_state[2],
         )
         init_done_step = jnp.array(0, dtype=jnp.int32)
 
         (
-            (final_state, _, final_field, final_origin, final_grid, _, done_step),
-            (history_x, history_field, history_field_origin, actions, history_ref_traj),
+            (
+                final_state,
+                _,
+                final_field,
+                final_origin,
+                final_grid,
+                _,
+                done_step,
+            ),
+            (
+                history_x,
+                history_field,
+                history_field_origin,
+                actions,
+                history_ref_traj,
+            ),
         ) = jax.lax.scan(
             step_fn,
             (

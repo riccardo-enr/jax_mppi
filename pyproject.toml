@@ -23,7 +23,33 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering",
 ]
-dependencies = []
+dependencies = [
+    "jax",
+    "jaxlib",
+    "numpy",
+    "jaxtyping",
+    "chex",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-benchmark",
+    "lark",
+    "gymnasium[classic_control]",
+    "matplotlib",
+    "ipywidgets",
+    "tqdm",
+    "basedpyright",
+    "ruff>=0.14.14",
+    "nbstripout",
+    "plotly>=6.5.2",
+]
+autotuning = [
+    "cma>=3.3.0",
+    "evosax>=0.1.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/riccardo-enr/jax_mppi"
