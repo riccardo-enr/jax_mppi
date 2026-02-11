@@ -467,6 +467,23 @@ window.Quarto = {
 </header>
 
 
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Quick Start
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>I-MPPI</strong> is a hierarchical framework combining information-theoretic planning with MPPI control for autonomous UAV exploration.</p>
+<p><strong>Core Concept</strong>: Navigate to maximize information gain (reduce map uncertainty) while avoiding obstacles.</p>
+<p><strong>Two-Layer Architecture</strong>: - <strong>Layer 2 (FSMI)</strong>: Generates informative reference trajectories (~5 Hz) - <strong>Layer 3 (Biased MPPI)</strong>: Tracks trajectories with local information gathering (~50 Hz)</p>
+<p><strong>Key Components</strong>: - Occupancy grid representing environment uncertainty - Fast Shannon Mutual Information (FSMI) for efficient information gain computation - Biased sampling integrating information potential into MPPI</p>
+<p><strong>Try It</strong>: See <code>examples/i_mppi/simulation.py</code> or the interactive Colab notebook.</p>
+</div>
+</div>
 <section id="introduction-the-evolution-of-autonomous-exploration" class="level1">
 <h1>Introduction: The Evolution of Autonomous Exploration</h1>
 <p>The field of autonomous Unmanned Aerial Vehicle (UAV) exploration has transitioned from simple geometric coverage to complex, information-driven strategic maneuvers. In unstructured environments, a robot faces a fundamental duality: the global coverage problem (“where to go”) and the reactive control problem (“how to move safely”). Traditional approaches often decouple these modules, resulting in “myopic” local planners that fail to escape local minima of uncertainty, or deterministic global planners that produce coarse, “jagged” paths unsuitable for the high-speed, non-linear dynamics of agile flight.</p>

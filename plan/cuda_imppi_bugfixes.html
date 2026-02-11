@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>quadrotor_trajectory_following – jax-mppi</title>
+<title>cuda_imppi_bugfixes – jax-mppi</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,6 +19,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -257,23 +292,24 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#quadrotor-trajectory-following-with-mppi" id="toc-quadrotor-trajectory-following-with-mppi" class="nav-link active" data-scroll-target="#quadrotor-trajectory-following-with-mppi">Quadrotor Trajectory Following with MPPI</a>
+  <li><a href="#fix-cuda-i-mppi-simulation-issues" id="toc-fix-cuda-i-mppi-simulation-issues" class="nav-link active" data-scroll-target="#fix-cuda-i-mppi-simulation-issues">Fix CUDA I-MPPI Simulation Issues</a>
   <ul class="collapse">
-  <li><a href="#objective" id="toc-objective" class="nav-link" data-scroll-target="#objective">Objective</a></li>
-  <li><a href="#background" id="toc-background" class="nav-link" data-scroll-target="#background">Background</a></li>
-  <li><a href="#system-overview" id="toc-system-overview" class="nav-link" data-scroll-target="#system-overview">System Overview</a></li>
-  <li><a href="#implementation-summary" id="toc-implementation-summary" class="nav-link" data-scroll-target="#implementation-summary">Implementation Summary</a>
+  <li><a href="#context" id="toc-context" class="nav-link" data-scroll-target="#context">Context</a></li>
+  <li><a href="#issues" id="toc-issues" class="nav-link" data-scroll-target="#issues">Issues</a>
   <ul class="collapse">
-  <li><a href="#phase-1-core-components" id="toc-phase-1-core-components" class="nav-link" data-scroll-target="#phase-1-core-components">Phase 1: Core Components ✅</a></li>
-  <li><a href="#phase-2-trajectory-generators" id="toc-phase-2-trajectory-generators" class="nav-link" data-scroll-target="#phase-2-trajectory-generators">Phase 2: Trajectory Generators ✅</a></li>
-  <li><a href="#phase-3-basic-examples" id="toc-phase-3-basic-examples" class="nav-link" data-scroll-target="#phase-3-basic-examples">Phase 3: Basic Examples ✅</a></li>
-  <li><a href="#phase-4-advanced-examples" id="toc-phase-4-advanced-examples" class="nav-link" data-scroll-target="#phase-4-advanced-examples">Phase 4: Advanced Examples ✅</a></li>
-  <li><a href="#phase-5-documentation" id="toc-phase-5-documentation" class="nav-link" data-scroll-target="#phase-5-documentation">Phase 5: Documentation</a></li>
+  <li><a href="#issue-1-controller-cost-is-stale-critical" id="toc-issue-1-controller-cost-is-stale-critical" class="nav-link" data-scroll-target="#issue-1-controller-cost-is-stale-critical">Issue 1: Controller cost is stale (CRITICAL)</a></li>
+  <li><a href="#issue-2-eigencuda-constexpr-warnings" id="toc-issue-2-eigencuda-constexpr-warnings" class="nav-link" data-scroll-target="#issue-2-eigencuda-constexpr-warnings">Issue 2: Eigen/CUDA constexpr warnings</a></li>
+  <li><a href="#issue-3-stale-pixi-installed-cuda_mppi.so" id="toc-issue-3-stale-pixi-installed-cuda_mppi.so" class="nav-link" data-scroll-target="#issue-3-stale-pixi-installed-cuda_mppi.so">Issue 3: Stale pixi-installed <code>cuda_mppi.so</code></a></li>
   </ul></li>
-  <li><a href="#key-features-delivered" id="toc-key-features-delivered" class="nav-link" data-scroll-target="#key-features-delivered">Key Features Delivered</a></li>
-  <li><a href="#file-structure" id="toc-file-structure" class="nav-link" data-scroll-target="#file-structure">File Structure</a></li>
-  <li><a href="#performance-metrics" id="toc-performance-metrics" class="nav-link" data-scroll-target="#performance-metrics">Performance Metrics</a></li>
-  <li><a href="#future-enhancements-optional" id="toc-future-enhancements-optional" class="nav-link" data-scroll-target="#future-enhancements-optional">Future Enhancements (Optional)</a></li>
+  <li><a href="#implementation" id="toc-implementation" class="nav-link" data-scroll-target="#implementation">Implementation</a>
+  <ul class="collapse">
+  <li><a href="#step-1-add-set_cost-to-mppicontroller" id="toc-step-1-add-set_cost-to-mppicontroller" class="nav-link" data-scroll-target="#step-1-add-set_cost-to-mppicontroller">Step 1: Add <code>set_cost()</code> to MPPIController</a></li>
+  <li><a href="#step-2-fix-informative_sim.cu-sim-loop" id="toc-step-2-fix-informative_sim.cu-sim-loop" class="nav-link" data-scroll-target="#step-2-fix-informative_sim.cu-sim-loop">Step 2: Fix informative_sim.cu sim loop</a></li>
+  <li><a href="#step-3-suppress-eigencuda-warnings" id="toc-step-3-suppress-eigencuda-warnings" class="nav-link" data-scroll-target="#step-3-suppress-eigencuda-warnings">Step 3: Suppress Eigen/CUDA warnings</a></li>
+  <li><a href="#step-4-rebuild-pixi-package" id="toc-step-4-rebuild-pixi-package" class="nav-link" data-scroll-target="#step-4-rebuild-pixi-package">Step 4: Rebuild pixi package</a></li>
+  <li><a href="#additional-issues-found-during-implementation" id="toc-additional-issues-found-during-implementation" class="nav-link" data-scroll-target="#additional-issues-found-during-implementation">Additional Issues Found During Implementation</a></li>
+  </ul></li>
+  <li><a href="#verification-completed" id="toc-verification-completed" class="nav-link" data-scroll-target="#verification-completed">Verification (completed)</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -284,101 +320,91 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<section id="quadrotor-trajectory-following-with-mppi" class="level1">
-<h1>Quadrotor Trajectory Following with MPPI</h1>
-<p><strong>Status</strong>: ✅ Complete (Phases 1-4) <strong>Branch</strong>: <code>feat/quadrotor-traj-foll-example</code> <strong>Created</strong>: 2026-02-01 <strong>Completed</strong>: 2026-02-02</p>
-<section id="objective" class="level2">
-<h2 class="anchored" data-anchor-id="objective">Objective</h2>
-<p>Implement a comprehensive set of examples demonstrating quadrotor trajectory following using MPPI control. Showcases the JAX-MPPI library’s capabilities on a realistic robotic system with nonlinear dynamics.</p>
+<section id="fix-cuda-i-mppi-simulation-issues" class="level1">
+<h1>Fix CUDA I-MPPI Simulation Issues</h1>
+<section id="context" class="level2">
+<h2 class="anchored" data-anchor-id="context">Context</h2>
+<p>The C++/CUDA I-MPPI feature parity implementation (Phase 1-8) is complete and builds successfully. FSMI unit tests pass, but the full <code>informative_sim</code> diverges because the controller never receives updated cost parameters (info field, reference trajectory) during the simulation loop. There are also build quality issues (Eigen/CUDA warnings) and the pixi-installed <code>.so</code> is stale.</p>
 </section>
-<section id="background" class="level2">
-<h2 class="anchored" data-anchor-id="background">Background</h2>
-<p>The current JAX-MPPI library includes three MPPI variants (standard, SMPPI, KMPPI), examples (pendulum, 2D navigation), and autotuning infrastructure. A quadrotor trajectory following example demonstrates MPPI on a high-dimensional nonlinear system (13D state space) with realistic robotics benchmarks.</p>
+<section id="issues" class="level2">
+<h2 class="anchored" data-anchor-id="issues">Issues</h2>
+<section id="issue-1-controller-cost-is-stale-critical" class="level3">
+<h3 class="anchored" data-anchor-id="issue-1-controller-cost-is-stale-critical">Issue 1: Controller cost is stale (CRITICAL)</h3>
+<p><strong>Root cause</strong>: <code>MPPIController</code> stores <code>cost_</code> by value (line 170 of <code>mppi.cuh</code>). The <code>rollout_kernel</code> receives <code>cost</code> by value at each kernel launch, copying the controller’s internal <code>cost_</code> member. In <code>informative_sim.cu</code>, the sim loop updates a <em>local</em> <code>cost</code> variable (lines 200-202) but never propagates these changes to <code>controller.cost_</code>.</p>
+<p>The existing <code>update_cost_params(goal, lambda_goal)</code> in <code>i_mppi.cuh:63</code> only updates two fields. The info field pointer (<code>info_field.d_field</code>), field origin/dimensions, and reference trajectory pointer are never updated.</p>
+<p><strong>Fix</strong>: Add <code>set_cost(const Cost&amp; c)</code> method to <code>MPPIController</code> that replaces <code>cost_</code> entirely. Then call it from the sim loop after updating cost fields.</p>
+<p><strong>Files</strong>: - <code>third_party/cuda-mppi/include/mppi/controllers/mppi.cuh</code> — add <code>set_cost()</code> to base class - <code>third_party/cuda-mppi/src/informative_sim.cu</code> — call <code>controller.set_cost(cost)</code> after updating cost fields</p>
 </section>
-<section id="system-overview" class="level2">
-<h2 class="anchored" data-anchor-id="system-overview">System Overview</h2>
-<p><strong>State Space (13D)</strong>: Position (3D), velocity (3D), orientation (quaternion, 4D), angular velocity (3D) - Frame: NED (North-East-Down) world frame, FRD (Forward-Right-Down) body frame</p>
-<p><strong>Control Input (4D)</strong>: Total thrust + body angular rates (roll, pitch, yaw rates)</p>
-<p><strong>Dynamics</strong>: 6-DOF rigid body with quaternion-based attitude representation - For detailed mathematical formulations, see <code>docs/src/dynamics.qmd</code></p>
-<p><strong>Cost Function</strong>: Position/velocity tracking error + control effort penalty</p>
+<section id="issue-2-eigencuda-constexpr-warnings" class="level3">
+<h3 class="anchored" data-anchor-id="issue-2-eigencuda-constexpr-warnings">Issue 2: Eigen/CUDA constexpr warnings</h3>
+<p><strong>Root cause</strong>: Eigen’s CUDA complex number headers trigger <code>calling a constexpr __host__ function from a __host__ __device__ function</code> warnings. These are cosmetic but noisy.</p>
+<p><strong>Fix</strong>: Add <code>--expt-relaxed-constexpr</code> to CUDA compile flags in CMakeLists.txt.</p>
+<p><strong>Files</strong>: - <code>third_party/cuda-mppi/CMakeLists.txt</code> — add <code>target_compile_options</code> with <code>--expt-relaxed-constexpr</code></p>
 </section>
-<section id="implementation-summary" class="level2">
-<h2 class="anchored" data-anchor-id="implementation-summary">Implementation Summary</h2>
-<section id="phase-1-core-components" class="level3">
-<h3 class="anchored" data-anchor-id="phase-1-core-components">Phase 1: Core Components ✅</h3>
-<p><strong>Completed Components</strong>: - Quadrotor dynamics module (<code>src/jax_mppi/dynamics/quadrotor.py</code>) - Quaternion utilities and kinematics - 6-DOF dynamics with RK4 integration - Unit tests for quaternion norm preservation and energy conservation - Trajectory cost functions (<code>src/jax_mppi/costs/quadrotor.py</code>) - Position/velocity tracking, attitude tracking, terminal costs - Unit tests for all cost functions</p>
-</section>
-<section id="phase-2-trajectory-generators" class="level3">
-<h3 class="anchored" data-anchor-id="phase-2-trajectory-generators">Phase 2: Trajectory Generators ✅</h3>
-<p><strong>Completed</strong>: - Trajectory generation utilities (<code>examples/quadrotor/trajectories.py</code>) - Circular, figure-8, hover, helix trajectories - Waypoint interpolation with cubic Hermite splines - Trajectory metrics computation - 28 unit tests (all passing)</p>
-</section>
-<section id="phase-3-basic-examples" class="level3">
-<h3 class="anchored" data-anchor-id="phase-3-basic-examples">Phase 3: Basic Examples ✅</h3>
-<p><strong>Example 1</strong>: <code>quadrotor_hover.py</code> - Stabilization around fixed setpoint - Visualization of state evolution, performance metrics (settling time, overshoot)</p>
-<p><strong>Example 2</strong>: <code>quadrotor_circle.py</code> - Circular trajectory tracking - Tracking error visualization, control inputs, 3D trajectory plots</p>
-<p><strong>Integration Tests</strong>: 11 tests covering both examples</p>
-</section>
-<section id="phase-4-advanced-examples" class="level3">
-<h3 class="anchored" data-anchor-id="phase-4-advanced-examples">Phase 4: Advanced Examples ✅</h3>
-<p><strong>Example 3</strong>: <code>quadrotor_figure8_comparison.py</code> - MPPI variant comparison - Side-by-side comparison of MPPI, SMPPI, and KMPPI on aggressive figure-8 - Comprehensive metrics: tracking accuracy, control smoothness, energy consumption - 6-subplot visualization with performance comparison table - Demonstrates SMPPI produces smoother control (lower jerk)</p>
-<p><strong>Example 4</strong>: <code>quadrotor_custom_trajectory.py</code> - Waypoint following - User-defined waypoint trajectories with smooth interpolation - Command-line interface for custom waypoint specification - Default square pattern demonstration</p>
-<p><strong>Integration Tests</strong>: 13 tests for advanced examples</p>
-</section>
-<section id="phase-5-documentation" class="level3">
-<h3 class="anchored" data-anchor-id="phase-5-documentation">Phase 5: Documentation</h3>
-<ul class="task-list">
-<li><label><input type="checkbox" checked="">Implementation plan (this document)</label></li>
-<li><label><input type="checkbox" checked="">README for quadrotor examples</label></li>
-<li><label><input type="checkbox" checked="">Update main README with quadrotor section</label></li>
-</ul>
+<section id="issue-3-stale-pixi-installed-cuda_mppi.so" class="level3">
+<h3 class="anchored" data-anchor-id="issue-3-stale-pixi-installed-cuda_mppi.so">Issue 3: Stale pixi-installed <code>cuda_mppi.so</code></h3>
+<p><strong>Root cause</strong>: The <code>.so</code> in <code>.pixi/envs/dev/lib/python3.12/site-packages/</code> is from a previous build and lacks the new types (OccupancyGrid2D, InfoField, QuadrotorDynamics, etc.). Python imports pick up the stale one.</p>
+<p><strong>Fix</strong>: Rebuild via <code>pixi run</code> or <code>pip install</code> from the build directory so the installed <code>.so</code> matches the source.</p>
+<p><strong>Files</strong>: - Run <code>pixi run</code> build task or <code>pip install -e third_party/cuda-mppi/</code> to update</p>
 </section>
 </section>
-<section id="key-features-delivered" class="level2">
-<h2 class="anchored" data-anchor-id="key-features-delivered">Key Features Delivered</h2>
-<p>✅ 6-DOF quadrotor dynamics with quaternion representation ✅ Multiple reference trajectory types (circle, figure-8, hover, custom waypoints) ✅ Comprehensive cost functions for trajectory tracking ✅ Four complete examples demonstrating different capabilities ✅ 50+ unit and integration tests (all passing) ✅ Publication-quality visualizations saved to <code>docs/_media/quadrotor/</code> ✅ 50 Hz control rate (JIT-compiled) for real-time performance ✅ Proper NED/FRD frame conventions throughout</p>
+<section id="implementation" class="level2">
+<h2 class="anchored" data-anchor-id="implementation">Implementation</h2>
+<section id="step-1-add-set_cost-to-mppicontroller" class="level3">
+<h3 class="anchored" data-anchor-id="step-1-add-set_cost-to-mppicontroller">Step 1: Add <code>set_cost()</code> to MPPIController</h3>
+<p>In <code>third_party/cuda-mppi/include/mppi/controllers/mppi.cuh</code>, add to the public section:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode cpp code-with-copy"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> set_cost<span class="op">(</span><span class="at">const</span> Cost<span class="op">&amp;</span> cost<span class="op">)</span> <span class="op">{</span> <span class="va">cost_</span> <span class="op">=</span> cost<span class="op">;</span> <span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This is safe because the cost struct is trivially copyable (all POD + device pointers). The next <code>compute()</code> call will pass the updated <code>cost_</code> to the rollout kernel.</p>
+<p>Also add a getter for symmetry:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode cpp code-with-copy"><code class="sourceCode cpp"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> Cost<span class="op">&amp;</span> cost<span class="op">()</span> <span class="at">const</span> <span class="op">{</span> <span class="cf">return</span> <span class="va">cost_</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>Cost<span class="op">&amp;</span> cost<span class="op">()</span> <span class="op">{</span> <span class="cf">return</span> <span class="va">cost_</span><span class="op">;</span> <span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="file-structure" class="level2">
-<h2 class="anchored" data-anchor-id="file-structure">File Structure</h2>
-<pre><code>jax_mppi/
-├── src/jax_mppi/
-│   ├── dynamics/quadrotor.py      # 6-DOF dynamics with quaternions
-│   └── costs/quadrotor.py         # Trajectory tracking costs
-├── examples/quadrotor/
-│   ├── trajectories.py            # Trajectory generation utilities
-│   ├── quadrotor_hover.py         # Example 1: Hover control
-│   ├── quadrotor_circle.py        # Example 2: Circle following
-│   ├── quadrotor_figure8_comparison.py  # Example 3: MPPI comparison
-│   └── quadrotor_custom_trajectory.py   # Example 4: Waypoint following
-├── tests/
-│   ├── test_quadrotor_dynamics.py
-│   ├── test_quadrotor_costs.py
-│   └── test_quadrotor_trajectories.py
-└── docs/_media/quadrotor/
-    ├── quadrotor_hover_mppi.png
-    ├── quadrotor_circle_mppi.png
-    ├── quadrotor_hover_comparison.png
-    └── quadrotor_figure8_comparison.png</code></pre>
+<section id="step-2-fix-informative_sim.cu-sim-loop" class="level3">
+<h3 class="anchored" data-anchor-id="step-2-fix-informative_sim.cu-sim-loop">Step 2: Fix informative_sim.cu sim loop</h3>
+<p>Replace lines 197-207 in <code>informative_sim.cu</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode cpp code-with-copy"><code class="sourceCode cpp"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Update cost fields</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>cost<span class="op">.</span>ref_trajectory <span class="op">=</span> d_ref_traj<span class="op">;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>cost<span class="op">.</span>ref_horizon    <span class="op">=</span> ifc<span class="op">.</span>ref_horizon<span class="op">;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>cost<span class="op">.</span>info_field     <span class="op">=</span> info_field<span class="op">;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">// Propagate to controller</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>controller<span class="op">.</span>set_cost<span class="op">(</span>cost<span class="op">);</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="performance-metrics" class="level2">
-<h2 class="anchored" data-anchor-id="performance-metrics">Performance Metrics</h2>
-<ul>
-<li><strong>Control Rate</strong>: 50 Hz (JIT-compiled)</li>
-<li><strong>Tracking Accuracy</strong>: &lt;0.1m RMS error on circle trajectory</li>
-<li><strong>Smoothness</strong>: SMPPI shows 30-40% lower jerk than standard MPPI</li>
-<li><strong>Energy</strong>: Comparable across all three variants for same tracking performance</li>
-</ul>
+<section id="step-3-suppress-eigencuda-warnings" class="level3">
+<h3 class="anchored" data-anchor-id="step-3-suppress-eigencuda-warnings">Step 3: Suppress Eigen/CUDA warnings</h3>
+<p>In <code>third_party/cuda-mppi/CMakeLists.txt</code>, after the CUDA standard setting:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode cmake code-with-copy"><code class="sourceCode cmake"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">add_compile_options</span>(<span class="ot">$&lt;$&lt;</span><span class="kw">COMPILE_LANGUAGE</span><span class="ot">:CUDA&gt;:--expt-relaxed-constexpr&gt;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="future-enhancements-optional" class="level2">
-<h2 class="anchored" data-anchor-id="future-enhancements-optional">Future Enhancements (Optional)</h2>
-<ul>
-<li>Obstacle avoidance during trajectory following</li>
-<li>Full Euler dynamics for rotational motion</li>
-<li>Wind disturbance modeling</li>
-<li>Autotuning example for quadrotor hyperparameters</li>
-<li>Real-time animated visualization</li>
-</ul>
-<hr>
-<p><strong>Last Updated</strong>: 2026-02-02 <strong>Status</strong>: Implementation complete, documentation in progress</p>
+<section id="step-4-rebuild-pixi-package" class="level3">
+<h3 class="anchored" data-anchor-id="step-4-rebuild-pixi-package">Step 4: Rebuild pixi package</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run build-cuda  <span class="co"># or equivalent task</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>If no pixi build task exists for cuda-mppi, install manually:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> third_party/cuda-mppi <span class="kw">&amp;&amp;</span> <span class="ex">pip</span> install .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="additional-issues-found-during-implementation" class="level3">
+<h3 class="anchored" data-anchor-id="additional-issues-found-during-implementation">Additional Issues Found During Implementation</h3>
+<section id="issue-4-get_action-returns-unscaled-controls" class="level4">
+<h4 class="anchored" data-anchor-id="issue-4-get_action-returns-unscaled-controls">Issue 4: <code>get_action()</code> returns unscaled controls</h4>
+<p>The rollout kernel applies <code>u = (u_nom + noise) * u_scale</code>, but <code>get_action()</code> returns raw <code>u_nom</code> without scaling. The sim loop must scale: <code>action = get_action() * u_scale</code>.</p>
+</section>
+<section id="issue-5-hardcoded-learning_rate-0.1f-in-mppi-update" class="level4">
+<h4 class="anchored" data-anchor-id="issue-5-hardcoded-learning_rate-0.1f-in-mppi-update">Issue 5: Hardcoded <code>learning_rate = 0.1f</code> in MPPI update</h4>
+<p><code>weighted_update_kernel</code> was called with hardcoded 0.1f learning rate in both <code>mppi.cuh</code> and <code>i_mppi.cuh</code>. Standard MPPI uses 1.0. Made it configurable via <code>MPPIConfig::learning_rate</code> (default 1.0).</p>
+</section>
+<section id="issue-6-zero-initialized-u_nom-for-quadrotor" class="level4">
+<h4 class="anchored" data-anchor-id="issue-6-zero-initialized-u_nom-for-quadrotor">Issue 6: Zero-initialized <code>u_nom</code> for quadrotor</h4>
+<p><code>u_nom</code> starts at 0, but hover requires thrust = mass * gravity ≈ 19.62N. With <code>u_scale=10</code>, initialized <code>u_nom[t][0] = 1.962</code> (hover/u_scale) so the controller starts at equilibrium.</p>
+</section>
+</section>
+</section>
+<section id="verification-completed" class="level2">
+<h2 class="anchored" data-anchor-id="verification-completed">Verification (completed)</h2>
+<ol type="1">
+<li>Build: all targets compile clean, no warnings</li>
+<li><code>fsmi_unit_test</code>: 6/6 tests pass</li>
+<li><code>informative_sim</code>: quadrotor maintains stable flight (z ≈ -2.0), depletes zone 0 from 99→5</li>
+<li>Python bindings build successfully</li>
+</ol>
 
 
 </section>
