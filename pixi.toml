@@ -38,7 +38,9 @@ tqdm = "*"
 basedpyright = "*"
 ruff = ">=0.14.14"
 nbstripout = "*"
-plotly = ">=6.5.2"
+seaborn = "*"
+SciencePlots = "*"
+pytz = "*"
 
 # Autotuning feature
 [feature.autotuning.pypi-dependencies]

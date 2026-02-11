@@ -28,8 +28,8 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+import matplotlib.pyplot as plt
+import scienceplots  # noqa: F401
 
 from jax_mppi import kmppi, mppi, smppi
 from jax_mppi.i_mppi.environment import (
@@ -555,241 +555,100 @@ def main():
     # Visualization
     print("\nGenerating visualization...")
 
-    fig = make_subplots(
-        rows=2,
-        cols=2,
-        specs=[
-            [{"type": "xy"}, {"type": "scene"}],
-            [{"type": "xy", "colspan": 2}, None],
-        ],
-        subplot_titles=(
-            "I-MPPI with Two-Layer Architecture (2D)",
-            "3D Trajectory View",
-            "Occupancy Grid with Trajectories",
-        ),
-        vertical_spacing=0.12,
-        horizontal_spacing=0.1,
-    )
-
-    # Row 1, Col 1: Trajectories
-    for w in WALLS:
-        fig.add_shape(
-            type="rect",
-            x0=w[0],
-            y0=w[1],
-            x1=w[2],
-            y1=w[3],
-            fillcolor="gray",
-            opacity=0.5,
-            line_width=0,
-            row=1,
-            col=1,
-        )
-
-    for i in range(len(INFO_ZONES)):
-        cx, cy = INFO_ZONES[i, 0], INFO_ZONES[i, 1]
-        w, h = INFO_ZONES[i, 2], INFO_ZONES[i, 3]
-        fig.add_shape(
-            type="rect",
-            x0=cx - w / 2,
-            y0=cy - h / 2,
-            x1=cx + w / 2,
-            y1=cy + h / 2,
-            fillcolor="yellow",
-            opacity=0.3,
-            line_width=0,
-            row=1,
-            col=1,
-        )
-
-    fig.add_trace(
-        go.Scatter(
-            x=[None],
-            y=[None],
-            mode="markers",
-            marker=dict(color="yellow"),
-            name="Info Zone",
-            showlegend=True,
-        ),
-        row=1,
-        col=1,
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=[GOAL_POS[0]],
-            y=[GOAL_POS[1]],
-            mode="markers",
-            marker=dict(color="red", symbol="star", size=14),
-            name="Goal",
-        ),
-        row=1,
-        col=1,
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=[start_pos[0]],
-            y=[start_pos[1]],
-            mode="markers",
-            marker=dict(color="green", symbol="circle", size=10),
-            name="Start",
-        ),
-        row=1,
-        col=1,
-    )
-
-    colors = {"mppi": "blue", "smppi": "green", "kmppi": "orange"}
-    for name in controllers:
-        history_x = results[name]["history_x"]
-        fig.add_trace(
-            go.Scatter(
-                x=history_x[:, 0],
-                y=history_x[:, 1],
-                mode="lines",
-                line=dict(color=colors[name], width=2),
-                name=f"{name.upper()}",
-            ),
-            row=1,
-            col=1,
-        )
-
-    # Row 1, Col 2: 3D View
-    for i in range(len(INFO_ZONES)):
-        cx, cy = INFO_ZONES[i, 0], INFO_ZONES[i, 1]
-        w, h = INFO_ZONES[i, 2], INFO_ZONES[i, 3]
-        zone_z = GOAL_POS[2]
-        x0, x1 = cx - w / 2, cx + w / 2
-        y0, y1 = cy - h / 2, cy + h / 2
-        xs = [x0, x1, x1, x0]
-        ys = [y0, y0, y1, y1]
-        zs = [zone_z, zone_z, zone_z, zone_z]
-        fig.add_trace(
-            go.Mesh3d(
-                x=xs,
-                y=ys,
-                z=zs,
-                i=[0, 0],
-                j=[1, 2],
-                k=[2, 3],
-                color="yellow",
-                opacity=0.25,
-                showlegend=False,
-            ),
-            row=1,
-            col=2,
-        )
-
-    for name in controllers:
-        history_x = results[name]["history_x"]
-        fig.add_trace(
-            go.Scatter3d(
-                x=history_x[:, 0],
-                y=history_x[:, 1],
-                z=history_x[:, 2],
-                mode="lines",
-                line=dict(color=colors[name], width=2),
-                showlegend=False,
-            ),
-            row=1,
-            col=2,
-        )
-
-    fig.add_trace(
-        go.Scatter3d(
-            x=[start_pos[0]],
-            y=[start_pos[1]],
-            z=[start_pos[2]],
-            mode="markers",
-            marker=dict(color="green", size=5),
-            showlegend=False,
-        ),
-        row=1,
-        col=2,
-    )
-    fig.add_trace(
-        go.Scatter3d(
-            x=[GOAL_POS[0]],
-            y=[GOAL_POS[1]],
-            z=[GOAL_POS[2]],
-            mode="markers",
-            marker=dict(color="red", size=7, symbol="diamond"),
-            showlegend=False,
-        ),
-        row=1,
-        col=2,
-    )
-
-    # Row 2: Occupancy Grid
     import numpy as np
+    from matplotlib.patches import Rectangle
 
-    extent = [
-        0,
-        grid_map.shape[1] * map_resolution,
-        0,
-        grid_map.shape[0] * map_resolution,
-    ]
+    with plt.style.context(["science", "no-latex"]):
+        fig = plt.figure(figsize=(16, 10))
+        gs = fig.add_gridspec(2, 2, height_ratios=[1, 1], hspace=0.25, wspace=0.15)
 
-    fig.add_trace(
-        go.Heatmap(
-            z=np.array(grid_map),
-            x=np.linspace(extent[0], extent[1], grid_map.shape[1]),
-            y=np.linspace(extent[2], extent[3], grid_map.shape[0]),
-            colorscale="Gray",
-            reversescale=True,
-            showscale=True,
-            colorbar=dict(title="Occupancy", x=1.02),
-            zmin=0,
-            zmax=1,
-        ),
-        row=2,
-        col=1,
-    )
+        # Row 1, Col 1: 2D Trajectories
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax1.set_title("I-MPPI with Two-Layer Architecture (2D)")
 
-    for name in ["mppi"]:
-        history_x = results[name]["history_x"]
-        fig.add_trace(
-            go.Scatter(
-                x=history_x[:, 0],
-                y=history_x[:, 1],
-                mode="lines",
-                line=dict(color="cyan", width=2),
-                name=f"{name.upper()} Path",
-                showlegend=False,
-            ),
-            row=2,
-            col=1,
+        for w in WALLS:
+            rect = Rectangle(
+                (w[0], w[1]), w[2] - w[0], w[3] - w[1],
+                facecolor="gray", alpha=0.5, edgecolor="none",
+            )
+            ax1.add_patch(rect)
+
+        for i in range(len(INFO_ZONES)):
+            cx, cy = INFO_ZONES[i, 0], INFO_ZONES[i, 1]
+            w, h = INFO_ZONES[i, 2], INFO_ZONES[i, 3]
+            rect = Rectangle(
+                (cx - w / 2, cy - h / 2), w, h,
+                facecolor="yellow", alpha=0.3, edgecolor="none",
+            )
+            ax1.add_patch(rect)
+
+        ax1.plot([], [], "s", color="yellow", label="Info Zone")
+        ax1.plot(GOAL_POS[0], GOAL_POS[1], "*", color="red", markersize=14, label="Goal")
+        ax1.plot(start_pos[0], start_pos[1], "o", color="green", markersize=10, label="Start")
+
+        colors = {"mppi": "blue", "smppi": "green", "kmppi": "orange"}
+        for name in controllers:
+            history_x = results[name]["history_x"]
+            ax1.plot(history_x[:, 0], history_x[:, 1], color=colors[name], linewidth=2, label=name.upper())
+
+        ax1.set_xlim(-1, 14)
+        ax1.set_ylim(-1, 12)
+        ax1.set_aspect("equal")
+        ax1.legend(loc="upper right", fontsize=7)
+
+        # Row 1, Col 2: 3D View
+        ax2 = fig.add_subplot(gs[0, 1], projection="3d")
+        ax2.set_title("3D Trajectory View")
+
+        for i in range(len(INFO_ZONES)):
+            cx, cy = INFO_ZONES[i, 0], INFO_ZONES[i, 1]
+            w, h = INFO_ZONES[i, 2], INFO_ZONES[i, 3]
+            zone_z = float(GOAL_POS[2])
+            x0, x1 = float(cx - w / 2), float(cx + w / 2)
+            y0, y1 = float(cy - h / 2), float(cy + h / 2)
+            xs = [x0, x1, x1, x0, x0]
+            ys = [y0, y0, y1, y1, y0]
+            zs = [zone_z] * 5
+            ax2.plot(xs, ys, zs, color="yellow", alpha=0.5)
+
+        for name in controllers:
+            history_x = results[name]["history_x"]
+            ax2.plot(history_x[:, 0], history_x[:, 1], history_x[:, 2], color=colors[name], linewidth=2)
+
+        ax2.scatter(*start_pos, color="green", s=40)
+        ax2.scatter(*GOAL_POS, color="red", s=60, marker="D")
+        ax2.set_xlim(-1, 14)
+        ax2.set_ylim(-1, 12)
+        ax2.set_zlim(-4, 1)
+        ax2.set_xlabel("X (m)")
+        ax2.set_ylabel("Y (m)")
+        ax2.set_zlabel("Z (m)")
+
+        # Row 2: Occupancy Grid (spanning both columns)
+        ax3 = fig.add_subplot(gs[1, :])
+        ax3.set_title("Occupancy Grid with Trajectories")
+
+        extent = [0, grid_map.shape[1] * map_resolution, 0, grid_map.shape[0] * map_resolution]
+        im = ax3.imshow(
+            np.array(grid_map), cmap="Greys", origin="lower", extent=extent,
+            vmin=0, vmax=1, aspect="equal",
         )
+        plt.colorbar(im, ax=ax3, label="Occupancy", shrink=0.6)
 
-    fig.update_xaxes(range=[-1, 14], row=1, col=1)
-    fig.update_yaxes(
-        range=[-1, 12], scaleanchor="x", scaleratio=1, row=1, col=1
-    )
+        history_x = results["mppi"]["history_x"]
+        ax3.plot(history_x[:, 0], history_x[:, 1], color="cyan", linewidth=2)
+        ax3.set_xlabel("X (m)")
+        ax3.set_ylabel("Y (m)")
 
-    fig.update_xaxes(title="X (m)", row=2, col=1)
-    fig.update_yaxes(title="Y (m)", row=2, col=1)
-
-    fig.update_scenes(
-        xaxis=dict(range=[-1, 14]),
-        yaxis=dict(range=[-1, 12]),
-        zaxis=dict(range=[-4, 1]),
-        row=1,
-        col=2,
-    )
-
-    fig.update_layout(
-        width=1400,
-        height=900,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.08),
-        title=dict(
-            text="I-MPPI: Layer 2 (Full FSMI, 5Hz) + Layer 3 (Uniform-FSMI, 50Hz)",
-            x=0.5,
-            xanchor="center",
-        ),
-    )
+        fig.suptitle(
+            "I-MPPI: Layer 2 (Full FSMI, 5Hz) + Layer 3 (Uniform-FSMI, 50Hz)",
+            fontsize=14,
+        )
 
     output_path = "docs/_media/i_mppi/i_mppi_simulation.png"
     os.makedirs("docs/_media/i_mppi", exist_ok=True)
-    fig.write_image(output_path)
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
     print(f"Visualization saved to {output_path}")
 
     print("\n" + "=" * 70)

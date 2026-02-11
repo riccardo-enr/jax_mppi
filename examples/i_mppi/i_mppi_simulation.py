@@ -85,8 +85,8 @@ MEDIA_DIR = os.path.join(
     "_media",
     "i_mppi",
 )
-ANIMATION_PATH = os.path.join(MEDIA_DIR, "i_mppi_trajectory.html")
-SUMMARY_PATH = os.path.join(MEDIA_DIR, "i_mppi_summary.html")
+ANIMATION_PATH = os.path.join(MEDIA_DIR, "i_mppi_trajectory.gif")
+SUMMARY_PATH = os.path.join(MEDIA_DIR, "i_mppi_summary.png")
 
 
 def main() -> None:
@@ -241,56 +241,18 @@ def main() -> None:
     print("=" * 60)
 
     # --- Visualization ---
-    from plotly.subplots import make_subplots
-
-    # Create individual figures
     fig_traj = plot_trajectory_2d(
         history_x, grid_array, map_resolution, title="I-MPPI Trajectory"
     )
     fig_info = plot_info_levels(history_info, DT)
     fig_controls = plot_control_inputs(actions, DT)
 
-    # Create combined subplot figure
-    fig = make_subplots(
-        rows=1,
-        cols=3,
-        subplot_titles=("I-MPPI Trajectory", "Info Zone Depletion", "Control Inputs"),
-        specs=[[{"type": "xy"}, {"type": "xy"}, {"type": "xy"}]],
-        horizontal_spacing=0.08,
-        column_widths=[0.4, 0.3, 0.3],
-    )
-
-    # Add trajectory traces
-    for trace in fig_traj.data:
-        fig.add_trace(trace, row=1, col=1)
-
-    # Add info level traces
-    for trace in fig_info.data:
-        fig.add_trace(trace, row=1, col=2)
-
-    # Add control input traces (flatten 4 subplots into 1)
-    for trace in fig_controls.data:
-        fig.add_trace(trace, row=1, col=3)
-
-    # Update layout
-    fig.update_xaxes(title_text="X (m)", row=1, col=1)
-    fig.update_yaxes(title_text="Y (m)", row=1, col=1)
-    fig.update_xaxes(title_text="Time (s)", row=1, col=2)
-    fig.update_yaxes(title_text="Information Level", row=1, col=2)
-    fig.update_xaxes(title_text="Time (s)", row=1, col=3)
-    fig.update_yaxes(title_text="Control Input", row=1, col=3)
-
-    fig.update_layout(
-        title_text=f"I-MPPI: Full FSMI (Layer 2) + Biased MPPI with Uniform-FSMI (Layer 3) [{status}]",
-        showlegend=False,
-        height=600,
-        width=1800,
-    )
-
     os.makedirs(MEDIA_DIR, exist_ok=True)
-    fig.write_html(SUMMARY_PATH)
+
+    # Save individual figures
+    fig_traj.savefig(SUMMARY_PATH, dpi=150, bbox_inches="tight")
     print(f"\nSaved summary plot to {SUMMARY_PATH}")
-    fig.show()
+    plt.show()
 
     # --- Animation ---
     print("Generating trajectory animation ...")

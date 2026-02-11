@@ -35,7 +35,7 @@ for _d in _candidates:
 import jax  # noqa: E402
 import jax.numpy as jnp  # noqa: E402
 import numpy as np  # noqa: E402
-import plotly.graph_objects as go  # noqa: E402
+import matplotlib.pyplot as plt  # noqa: E402
 from env_setup import create_grid_map  # noqa: E402
 from sim_utils import (  # noqa: E402
     CONTROL_HZ,
@@ -99,8 +99,8 @@ MEDIA_DIR = os.path.join(
     "_media",
     "i_mppi",
 )
-HTML_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_trajectory.html")
-SUMMARY_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_summary.html")
+GIF_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_trajectory.gif")
+SUMMARY_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_summary.png")
 DATA_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_flight_data.npz")
 
 
@@ -109,7 +109,7 @@ DATA_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_flight_data.npz")
 # ---------------------------------------------------------------------------
 
 
-def create_parallel_trajectory_html(
+def create_parallel_trajectory_gif(
     history_x: jax.Array,
     history_field: jax.Array,
     history_field_origin: jax.Array,
@@ -122,17 +122,13 @@ def create_parallel_trajectory_html(
     fps: int = 10,
     step_skip: int = 5,
 ) -> str:
-    """Create animated HTML showing trajectory + reference trajectory + info field heatmap."""
-    from viz_utils import _INFO_GAIN_COLORSCALE
+    """Create animated GIF showing trajectory + reference trajectory + info field heatmap."""
+    from matplotlib.animation import FuncAnimation, PillowWriter
+
+    from viz_utils import _INFO_GAIN_CMAP
 
     states = np.array(history_x)  # (N, 13)
     positions = states[:, :2]
-    # Extract yaw from quaternion
-    quats = np.array(states[:, 6:10])
-    yaws = np.arctan2(
-        2 * (quats[:, 0] * quats[:, 3] + quats[:, 1] * quats[:, 2]),
-        1 - 2 * (quats[:, 2] ** 2 + quats[:, 3] ** 2),
-    )
     fields = np.array(history_field)  # (N, Nx, Ny)
     field_origins = np.array(history_field_origin)  # (N, 2)
     ref_trajs = np.array(history_ref_traj)  # (N, horizon, 3)
@@ -145,228 +141,98 @@ def create_parallel_trajectory_html(
     grid_np = np.array(grid)
     extent = [0, grid.shape[1] * resolution, 0, grid.shape[0] * resolution]
 
-    fig = go.Figure()
-
-    # Occupancy grid
-    fig.add_trace(
-        go.Heatmap(
-            z=grid_np,
-            x=np.linspace(0, extent[1], grid.shape[1]),
-            y=np.linspace(0, extent[3], grid.shape[0]),
-            colorscale="Greys",
-            reversescale=True,
-            zmin=0,
-            zmax=1,
-            opacity=0.8,
-            showscale=False,
-            hoverinfo="skip",
-        )
-    )
-
-    # Info field overlay (animated)
     field_vmax = (
         float(np.percentile(fields[fields > 0], 99))
         if np.any(fields > 0)
         else 1.0
     )
     k0 = frame_indices[0]
-    field_0 = fields[k0]
+    Nx, Ny = fields[k0].shape
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    # Occupancy grid (static)
+    ax.imshow(
+        grid_np, cmap="Greys", origin="lower", extent=extent,
+        vmin=0, vmax=1, alpha=0.8, aspect="equal",
+    )
+
+    # Info field overlay (animated)
     fo_0 = field_origins[k0]
-    Nx, Ny = field_0.shape
-    fx0_0 = fo_0[0]
-    fy0_0 = fo_0[1]
-    fx1_0 = fx0_0 + Nx * field_res
-    fy1_0 = fy0_0 + Ny * field_res
-    field_masked = np.where(field_0 > 0, field_0, np.nan)
+    field_extent_0 = [
+        fo_0[0], fo_0[0] + Nx * field_res,
+        fo_0[1], fo_0[1] + Ny * field_res,
+    ]
+    field_masked = np.ma.masked_where(fields[k0] <= 0, fields[k0])
+    field_im = ax.imshow(
+        field_masked, cmap=_INFO_GAIN_CMAP, origin="lower",
+        extent=field_extent_0, vmin=0, vmax=field_vmax, alpha=0.6, aspect="equal",
+    )
+    plt.colorbar(field_im, ax=ax, label="FSMI", shrink=0.7)
 
-    fig.add_trace(
-        go.Heatmap(
-            z=field_masked,
-            x=np.linspace(fx0_0, fx1_0, Nx),
-            y=np.linspace(fy0_0, fy1_0, Ny),
-            colorscale=_INFO_GAIN_COLORSCALE,
-            opacity=0.6,
-            showscale=True,
-            colorbar=dict(title="FSMI", x=1.02),
-            hoverinfo="z",
-            zmin=0,
-            zmax=field_vmax,
-        )
-    )
-
-    # Start and goal
-    fig.add_trace(
-        go.Scatter(
-            x=[START_X],
-            y=[START_Y],
-            mode="markers",
-            marker=dict(size=10, color="green", symbol="circle"),
-            name="Start",
-            showlegend=False,
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=[float(GOAL_POS[0])],
-            y=[float(GOAL_POS[1])],
-            mode="markers",
-            marker=dict(size=15, color="red", symbol="star"),
-            name="Goal",
-            showlegend=False,
-        )
-    )
+    # Start and goal (static)
+    ax.plot(START_X, START_Y, "o", color="green", markersize=8)
+    ax.plot(float(GOAL_POS[0]), float(GOAL_POS[1]), "*", color="red", markersize=12)
 
     # Reference trajectory (animated)
     ref_traj_0 = ref_trajs[k0]
-    fig.add_trace(
-        go.Scatter(
-            x=ref_traj_0[:, 0],
-            y=ref_traj_0[:, 1],
-            mode="lines",
-            line=dict(color="magenta", width=2, dash="dash"),
-            name="Reference Traj",
-        )
+    (ref_line,) = ax.plot(
+        ref_traj_0[:, 0], ref_traj_0[:, 1],
+        color="magenta", linewidth=2, linestyle="--", label="Reference Traj",
     )
 
     # Trajectory trail (animated)
-    fig.add_trace(
-        go.Scatter(
-            x=positions[:1, 0],
-            y=positions[:1, 1],
-            mode="lines",
-            line=dict(color="cyan", width=2),
-            name="Executed Traj",
-        )
+    (trail_line,) = ax.plot([], [], color="cyan", linewidth=2, label="Executed Traj")
+
+    # UAV marker (animated)
+    (uav_marker,) = ax.plot([], [], "o", color="cyan", markersize=8)
+
+    ax.set_xlim(-0.5, 14.5)
+    ax.set_ylim(-0.5, 12.5)
+    ax.set_xlabel("X (m)")
+    ax.set_ylabel("Y (m)")
+    ax.set_aspect("equal")
+    ax.legend(loc="upper right")
+
+    title_text = ax.set_title(
+        f"Parallel I-MPPI  t = 0.0s  |  field max = {fields[k0].max():.3f}"
     )
 
-    # UAV position (animated)
-    fig.add_trace(
-        go.Scatter(
-            x=[positions[k0, 0]],
-            y=[positions[k0, 1]],
-            mode="markers",
-            marker=dict(size=10, color="cyan", symbol="circle"),
-            name="UAV",
-            showlegend=False,
-        )
-    )
-
-    # Create animation frames
-    frames = []
-    for frame_idx in range(len(frame_indices)):
+    def update(frame_idx):
         k = frame_indices[frame_idx]
         x, y = positions[k, 0], positions[k, 1]
 
-        # Info field for this frame
+        # Info field
         field = fields[k]
         fo = field_origins[k]
-        fx0 = fo[0]
-        fy0 = fo[1]
-        fx1 = fx0 + Nx * field_res
-        fy1 = fy0 + Ny * field_res
-        field_masked = np.where(field > 0, field, np.nan)
+        field_ext = [fo[0], fo[0] + Nx * field_res, fo[1], fo[1] + Ny * field_res]
+        field_masked = np.ma.masked_where(field <= 0, field)
+        field_im.set_data(field_masked)
+        field_im.set_extent(field_ext)
 
         # Reference trajectory
         ref_traj = ref_trajs[k]
+        ref_line.set_data(ref_traj[:, 0], ref_traj[:, 1])
 
-        frame_data = [
-            go.Heatmap(z=grid_np),  # Grid (static)
-            go.Heatmap(
-                z=field_masked,
-                x=np.linspace(fx0, fx1, Nx),
-                y=np.linspace(fy0, fy1, Ny),
-            ),  # Info field
-            go.Scatter(x=[START_X], y=[START_Y]),  # Start
-            go.Scatter(x=[float(GOAL_POS[0])], y=[float(GOAL_POS[1])]),  # Goal
-            go.Scatter(x=ref_traj[:, 0], y=ref_traj[:, 1]),  # Reference traj
-            go.Scatter(x=positions[: k + 1, 0], y=positions[: k + 1, 1]),  # Trail
-            go.Scatter(x=[x], y=[y]),  # UAV
-        ]
+        # Trail
+        trail_line.set_data(positions[: k + 1, 0], positions[: k + 1, 1])
 
-        frames.append(
-            go.Frame(
-                data=frame_data,
-                name=f"frame_{frame_idx}",
-                layout=go.Layout(
-                    title_text=f"Parallel I-MPPI  t = {k * dt:.1f}s  |  field max = {field.max():.3f}"
-                ),
-            )
+        # UAV
+        uav_marker.set_data([x], [y])
+
+        # Title
+        ax.set_title(
+            f"Parallel I-MPPI  t = {k * dt:.1f}s  |  field max = {field.max():.3f}"
         )
 
-    fig.frames = frames
+        return [field_im, ref_line, trail_line, uav_marker]
 
-    # Add play/pause buttons
-    fig.update_layout(
-        title=f"Parallel I-MPPI  t = 0.0s  |  field max = {field_0.max():.3f}",
-        xaxis=dict(title="X (m)", range=[-0.5, 14.5]),
-        yaxis=dict(title="Y (m)", range=[-0.5, 12.5], scaleanchor="x", scaleratio=1),
-        width=1000,
-        height=800,
-        showlegend=True,
-        hovermode="closest",
-        updatemenus=[
-            dict(
-                type="buttons",
-                showactive=False,
-                buttons=[
-                    dict(
-                        label="Play",
-                        method="animate",
-                        args=[
-                            None,
-                            {
-                                "frame": {"duration": 1000 // fps, "redraw": True},
-                                "fromcurrent": True,
-                                "mode": "immediate",
-                            },
-                        ],
-                    ),
-                    dict(
-                        label="Pause",
-                        method="animate",
-                        args=[
-                            [None],
-                            {
-                                "frame": {"duration": 0, "redraw": False},
-                                "mode": "immediate",
-                            },
-                        ],
-                    ),
-                ],
-                x=0.1,
-                y=0,
-                xanchor="left",
-                yanchor="top",
-            )
-        ],
-        sliders=[
-            dict(
-                active=0,
-                steps=[
-                    dict(
-                        args=[
-                            [f"frame_{i}"],
-                            {
-                                "frame": {"duration": 0, "redraw": True},
-                                "mode": "immediate",
-                            },
-                        ],
-                        label=f"{frame_indices[i] * dt:.1f}s",
-                        method="animate",
-                    )
-                    for i in range(len(frame_indices))
-                ],
-                x=0.1,
-                y=0,
-                len=0.8,
-                xanchor="left",
-                yanchor="top",
-            )
-        ],
+    anim = FuncAnimation(
+        fig, update, frames=len(frame_indices),
+        interval=1000 // fps, blit=False,
     )
-
-    fig.write_html(save_path)
-    fig.show()
+    anim.save(save_path, writer=PillowWriter(fps=fps))
+    plt.close(fig)
     return save_path
 
 
@@ -403,7 +269,7 @@ def animation_from_data() -> None:
     dt = float(data["dt"])
     step_skip = 2
     fps = int(1.0 / (step_skip * dt))  # 1:1 real-time (25 fps)
-    anim_path = create_parallel_trajectory_html(
+    anim_path = create_parallel_trajectory_gif(
         data["history_x"],
         data["history_field"],
         data["history_field_origin"],
@@ -412,7 +278,7 @@ def animation_from_data() -> None:
         float(data["map_resolution"]),
         FIELD_RES,
         dt,
-        save_path=HTML_PATH,
+        save_path=GIF_PATH,
         step_skip=step_skip,
         fps=fps,
     )
@@ -619,14 +485,14 @@ def main() -> None:
         map_resolution,
         title=f"Parallel I-MPPI Trajectory [{status}]",
     )
-    fig.write_html(SUMMARY_PATH)
+    fig.savefig(SUMMARY_PATH, dpi=150, bbox_inches="tight")
     print(f"Saved summary plot to {SUMMARY_PATH}")
-    fig.show()
+    plt.show()
 
     # --- Animation with info field (optional) ---
     if args.animation:
         print("Generating trajectory animation with info field ...")
-        anim_path = create_parallel_trajectory_html(
+        anim_path = create_parallel_trajectory_gif(
             history_x,
             history_field,
             history_field_origin,
@@ -635,7 +501,7 @@ def main() -> None:
             map_resolution,
             FIELD_RES,
             DT,
-            save_path=HTML_PATH,
+            save_path=GIF_PATH,
             step_skip=2,
             fps=int(1.0 / (2 * DT)),  # 1:1 real-time (25 fps)
         )
