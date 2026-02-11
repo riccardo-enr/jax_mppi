@@ -6,15 +6,17 @@ This script runs the CUDA I-MPPI controller using proper RK4 quadrotor dynamics
 
 Run from repo root:
     pixi run -e dev python examples/i_mppi/i_mppi_cuda_simulation.py
+    pixi run -e dev python examples/i_mppi/i_mppi_cuda_simulation.py --animation-only
 """
 
+import argparse
 import os
 import sys
 import time
 
 # IMPORTANT: Import CUDA module FIRST, before JAX!
 # This prevents CUDA context conflicts
-sys.path.insert(0, 'third_party/cuda-mppi/build')
+sys.path.insert(0, "third_party/cuda-mppi/build")
 import cuda_mppi
 
 # Path setup
@@ -33,6 +35,7 @@ import matplotlib.pyplot as plt
 from env_setup import create_grid_map
 from sim_utils import DT, CONTROL_HZ
 from tqdm import tqdm
+from viz_utils import create_trajectory_gif
 
 from jax_mppi.i_mppi.environment import GOAL_POS, INFO_ZONES
 
@@ -50,23 +53,29 @@ HOVER_THRUST = MASS * GRAVITY  # 9.81 N
 def quat_to_rot(q):
     """Quaternion [qw,qx,qy,qz] to rotation matrix (body FRD -> world NED)."""
     qw, qx, qy, qz = q[0], q[1], q[2], q[3]
-    return np.array([
-        [1 - 2*(qy**2 + qz**2), 2*(qx*qy - qw*qz),     2*(qx*qz + qw*qy)],
-        [2*(qx*qy + qw*qz),     1 - 2*(qx**2 + qz**2),  2*(qy*qz - qw*qx)],
-        [2*(qx*qz - qw*qy),     2*(qy*qz + qw*qx),      1 - 2*(qx**2 + qy**2)],
-    ], dtype=np.float64)
+    return np.array(
+        [
+            [1 - 2 * (qy**2 + qz**2), 2 * (qx * qy - qw * qz), 2 * (qx * qz + qw * qy)],
+            [2 * (qx * qy + qw * qz), 1 - 2 * (qx**2 + qz**2), 2 * (qy * qz - qw * qx)],
+            [2 * (qx * qz - qw * qy), 2 * (qy * qz + qw * qx), 1 - 2 * (qx**2 + qy**2)],
+        ],
+        dtype=np.float64,
+    )
 
 
 def quat_deriv(q, omega):
     """Quaternion derivative: q_dot = 0.5 * q x [0, omega]."""
     qw, qx, qy, qz = q[0], q[1], q[2], q[3]
     wx, wy, wz = omega[0], omega[1], omega[2]
-    return 0.5 * np.array([
-        -wx*qx - wy*qy - wz*qz,
-         wx*qw + wz*qy - wy*qz,
-         wy*qw - wz*qx + wx*qz,
-         wz*qw + wy*qx - wx*qy,
-    ], dtype=np.float64)
+    return 0.5 * np.array(
+        [
+            -wx * qx - wy * qy - wz * qz,
+            wx * qw + wz * qy - wy * qz,
+            wy * qw - wz * qx + wx * qz,
+            wz * qw + wy * qx - wx * qy,
+        ],
+        dtype=np.float64,
+    )
 
 
 def quadrotor_deriv(state, action):
@@ -99,7 +108,7 @@ def rk4_step(state, action, dt):
     k3 = quadrotor_deriv(s + 0.5 * dt * k2, u)
     k4 = quadrotor_deriv(s + dt * k3, u)
 
-    s_next = s + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
+    s_next = s + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
 
     # Normalize quaternion
     qnorm = np.linalg.norm(s_next[6:10]) + 1e-8
@@ -111,8 +120,19 @@ def rk4_step(state, action, dt):
 def quat_to_yaw(q):
     """Extract yaw from quaternion [qw, qx, qy, qz]."""
     qw, qx, qy, qz = q[0], q[1], q[2], q[3]
-    return float(np.arctan2(2*(qw*qz + qx*qy), 1 - 2*(qy**2 + qz**2)))
+    return float(np.arctan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy**2 + qz**2)))
 
+
+# ---------------------------------------------------------------------------
+# Parse arguments
+# ---------------------------------------------------------------------------
+parser = argparse.ArgumentParser(description="CUDA I-MPPI simulation")
+parser.add_argument(
+    "--animation-only",
+    action="store_true",
+    help="Skip simulation and create GIF from saved data",
+)
+args = parser.parse_args()
 
 # ---------------------------------------------------------------------------
 # Simulation parameters
@@ -121,6 +141,11 @@ START_X = 1.0
 START_Y = 5.0
 START_Z = -2.0  # NED: negative Z is up
 SIM_DURATION = 60.0
+
+# Data files
+DATA_DIR = "docs/_media/i_mppi"
+FLIGHT_DATA_FILE = os.path.join(DATA_DIR, "cuda_imppi_flight_data.npz")
+GIF_FILE = os.path.join(DATA_DIR, "cuda_imppi_animation.gif")
 
 # MPPI parameters
 NUM_SAMPLES = 1000
@@ -164,6 +189,47 @@ print("=" * 60)
 print("CUDA I-MPPI Simulation")
 print("=" * 60)
 
+if args.animation_only:
+    print("Animation-only mode: loading saved flight data...")
+    if not os.path.exists(FLIGHT_DATA_FILE):
+        print(f"Error: Flight data not found at {FLIGHT_DATA_FILE}")
+        print("Run simulation first without --animation-only flag")
+        sys.exit(1)
+
+    # Load data
+    data = np.load(FLIGHT_DATA_FILE)
+    history_x = data["history_x"]
+    grid_array = data["grid_array"]
+    map_resolution = float(data["map_resolution"])
+    n_active = len(history_x)
+
+    print(f"Loaded {n_active} steps from saved data")
+
+    # Create animation using viz_utils
+    print("Generating animation...")
+    # CUDA simulation doesn't track info zones in state, so create dummy info levels
+    dummy_info = np.zeros((n_active, len(INFO_ZONES)), dtype=np.float32)
+
+    # Real-time playback: step_skip frames at 1/(step_skip*dt) fps
+    step_skip = 5
+    fps = int(1.0 / (step_skip * DT))  # Real-time: 10 fps for skip=5, dt=0.02
+
+    create_trajectory_gif(
+        history_x=history_x,
+        history_info=dummy_info,
+        grid=grid_array,
+        resolution=map_resolution,
+        dt=DT,
+        save_path=GIF_FILE,
+        fps=fps,
+        step_skip=step_skip,
+        origin=(0.0, 0.0),
+        info_gain_field=None,
+    )
+    print(f"Saved animation to {GIF_FILE}")
+    print("\nAnimation created successfully!")
+    sys.exit(0)
+
 grid_map_obj, grid_array, map_origin, map_resolution = create_grid_map()
 grid_flat = np.array(grid_array).flatten().astype(np.float32)
 height, width = grid_array.shape
@@ -173,8 +239,7 @@ print(f"Goal: {GOAL_POS}")
 
 # CUDA grid
 cuda_grid = cuda_mppi.OccupancyGrid2D(
-    width, height, map_resolution,
-    float(map_origin[0]), float(map_origin[1])
+    width, height, map_resolution, float(map_origin[0]), float(map_origin[1])
 )
 cuda_grid.upload(grid_flat)
 
@@ -216,9 +281,7 @@ controller = cuda_mppi.QuadrotorIMPPI(config, dynamics, cost)
 controller.update_cost_grid(cuda_grid)
 
 # Initialize control reference to hover (T=mg, zero angular rates)
-hover_ref = np.tile(
-    np.array([HOVER_THRUST, 0.0, 0.0, 0.0], dtype=np.float32), HORIZON
-)
+hover_ref = np.tile(np.array([HOVER_THRUST, 0.0, 0.0, 0.0], dtype=np.float32), HORIZON)
 controller.set_reference_trajectory(hover_ref)
 
 # Trajectory generator for reference trajectory
@@ -237,9 +300,14 @@ traj_gen = cuda_mppi.TrajectoryGenerator(tg_config, zones_list)
 # Compute initial info field and reference trajectory
 info_field.compute(
     cuda_grid,
-    uav_x=START_X, uav_y=START_Y,
-    field_res=FIELD_RES, field_extent=FIELD_EXTENT, n_yaw=FIELD_N_YAW,
-    num_beams=FSMI_BEAMS, max_range=FSMI_RANGE, ray_step=RAY_STEP,
+    uav_x=START_X,
+    uav_y=START_Y,
+    field_res=FIELD_RES,
+    field_extent=FIELD_EXTENT,
+    n_yaw=FIELD_N_YAW,
+    num_beams=FSMI_BEAMS,
+    max_range=FSMI_RANGE,
+    ray_step=RAY_STEP,
 )
 controller.update_cost_info_field(info_field)
 
@@ -247,9 +315,18 @@ controller.update_cost_info_field(info_field)
 field_data = info_field.download()
 field_Nx, field_Ny = info_field.Nx, info_field.Ny
 ref_traj_flat = traj_gen.field_gradient_trajectory(
-    field_data, field_Nx, field_Ny,
-    info_field.origin_x, info_field.origin_y, info_field.res,
-    START_X, START_Y, REF_HORIZON, REF_SPEED, DT, START_Z,
+    field_data,
+    field_Nx,
+    field_Ny,
+    info_field.origin_x,
+    info_field.origin_y,
+    info_field.res,
+    START_X,
+    START_Y,
+    REF_HORIZON,
+    REF_SPEED,
+    DT,
+    START_Z,
 )
 controller.set_position_reference(ref_traj_flat, REF_HORIZON)
 print(f"Initial ref trajectory: {len(ref_traj_flat)//3} waypoints")
@@ -295,9 +372,14 @@ for step in range(sim_steps):
     if step % FIELD_UPDATE_INTERVAL == 0:
         info_field.compute(
             cuda_grid,
-            uav_x=float(state[0]), uav_y=float(state[1]),
-            field_res=FIELD_RES, field_extent=FIELD_EXTENT, n_yaw=FIELD_N_YAW,
-            num_beams=FSMI_BEAMS, max_range=FSMI_RANGE, ray_step=RAY_STEP,
+            uav_x=float(state[0]),
+            uav_y=float(state[1]),
+            field_res=FIELD_RES,
+            field_extent=FIELD_EXTENT,
+            n_yaw=FIELD_N_YAW,
+            num_beams=FSMI_BEAMS,
+            max_range=FSMI_RANGE,
+            ray_step=RAY_STEP,
         )
         controller.update_cost_info_field(info_field)
 
@@ -305,10 +387,18 @@ for step in range(sim_steps):
         field_data = info_field.download()
         field_Nx, field_Ny = info_field.Nx, info_field.Ny
         ref_traj_flat = traj_gen.field_gradient_trajectory(
-            field_data, field_Nx, field_Ny,
-            info_field.origin_x, info_field.origin_y, info_field.res,
-            float(state[0]), float(state[1]),
-            REF_HORIZON, REF_SPEED, DT, float(state[2]),
+            field_data,
+            field_Nx,
+            field_Ny,
+            info_field.origin_x,
+            info_field.origin_y,
+            info_field.res,
+            float(state[0]),
+            float(state[1]),
+            REF_HORIZON,
+            REF_SPEED,
+            DT,
+            float(state[2]),
         )
         controller.set_position_reference(ref_traj_flat, REF_HORIZON)
 
@@ -319,10 +409,13 @@ for step in range(sim_steps):
     # --- FOV grid update ---
     yaw = quat_to_yaw(state[6:10])
     cuda_grid.update_fov(
-        uav_x=float(state[0]), uav_y=float(state[1]),
+        uav_x=float(state[0]),
+        uav_y=float(state[1]),
         yaw=float(yaw),
-        fov_rad=FOV_RAD, max_range=SENSOR_RANGE,
-        n_rays=FOV_N_RAYS, ray_step=FOV_RAY_STEP,
+        fov_rad=FOV_RAD,
+        max_range=SENSOR_RANGE,
+        n_rays=FOV_N_RAYS,
+        ray_step=FOV_RAY_STEP,
     )
     controller.update_cost_grid(cuda_grid)
 
@@ -377,6 +470,22 @@ print(f"{'Avg Thrust (N)':<25} {np.mean(history_actions[:, 0]):>15.2f}")
 print("=" * 60)
 
 # ---------------------------------------------------------------------------
+# Save flight data
+# ---------------------------------------------------------------------------
+os.makedirs(DATA_DIR, exist_ok=True)
+np.savez(
+    FLIGHT_DATA_FILE,
+    history_x=history_x,
+    history_actions=history_actions,
+    grid_array=grid_array,
+    map_resolution=map_resolution,
+    info_zones=info_zones_np,
+    n_active=n_active,
+    status=status,
+)
+print(f"\nSaved flight data to {FLIGHT_DATA_FILE}")
+
+# ---------------------------------------------------------------------------
 # Plot
 # ---------------------------------------------------------------------------
 fig, axes = plt.subplots(1, 2, figsize=(16, 7))
@@ -384,41 +493,71 @@ fig, axes = plt.subplots(1, 2, figsize=(16, 7))
 # Left: trajectory on map
 ax = axes[0]
 extent = [0, width * map_resolution, 0, height * map_resolution]
-ax.imshow(grid_array, cmap='Greys', origin='lower', extent=extent, alpha=0.8)
-ax.plot(history_x[:, 0], history_x[:, 1], 'cyan', linewidth=2, label='Trajectory')
-ax.plot(START_X, START_Y, 'go', markersize=10, label='Start')
-ax.plot(float(GOAL_POS[0]), float(GOAL_POS[1]), 'r*', markersize=15, label='Goal')
+ax.imshow(grid_array, cmap="Greys", origin="lower", extent=extent, alpha=0.8)
+ax.plot(history_x[:, 0], history_x[:, 1], "cyan", linewidth=2, label="Trajectory")
+ax.plot(START_X, START_Y, "go", markersize=10, label="Start")
+ax.plot(float(GOAL_POS[0]), float(GOAL_POS[1]), "r*", markersize=15, label="Goal")
 for z in info_zones_np:
     from matplotlib.patches import Rectangle
+
     rect = Rectangle(
-        (z[0] - z[2]/2, z[1] - z[3]/2), z[2], z[3],
-        linewidth=2, edgecolor='orange', facecolor='yellow', alpha=0.2,
+        (z[0] - z[2] / 2, z[1] - z[3] / 2),
+        z[2],
+        z[3],
+        linewidth=2,
+        edgecolor="orange",
+        facecolor="yellow",
+        alpha=0.2,
     )
     ax.add_patch(rect)
-ax.set_xlabel('X (m)')
-ax.set_ylabel('Y (m)')
-ax.set_title(f'CUDA I-MPPI Trajectory [{status}]')
+ax.set_xlabel("X (m)")
+ax.set_ylabel("Y (m)")
+ax.set_title(f"CUDA I-MPPI Trajectory [{status}]")
 ax.legend()
-ax.set_aspect('equal')
+ax.set_aspect("equal")
 ax.grid(True, alpha=0.3)
 
 # Right: control inputs
 ax2 = axes[1]
 t = np.arange(n_active) * DT
-ax2.plot(t, history_actions[:, 0], label='Thrust (N)')
-ax2.plot(t, history_actions[:, 1], label='wx_cmd')
-ax2.plot(t, history_actions[:, 2], label='wy_cmd')
-ax2.plot(t, history_actions[:, 3], label='wz_cmd')
-ax2.axhline(HOVER_THRUST, color='gray', linestyle='--', alpha=0.5, label='Hover')
-ax2.set_xlabel('Time (s)')
-ax2.set_ylabel('Control')
-ax2.set_title('Control Inputs [T, wx, wy, wz]')
+ax2.plot(t, history_actions[:, 0], label="Thrust (N)")
+ax2.plot(t, history_actions[:, 1], label="wx_cmd")
+ax2.plot(t, history_actions[:, 2], label="wy_cmd")
+ax2.plot(t, history_actions[:, 3], label="wz_cmd")
+ax2.axhline(HOVER_THRUST, color="gray", linestyle="--", alpha=0.5, label="Hover")
+ax2.set_xlabel("Time (s)")
+ax2.set_ylabel("Control")
+ax2.set_title("Control Inputs [T, wx, wy, wz]")
 ax2.legend()
 ax2.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig('docs/_media/i_mppi/cuda_imppi_test.png', dpi=150)
-print("\nSaved plot to docs/_media/i_mppi/cuda_imppi_test.png")
+plot_file = os.path.join(DATA_DIR, "cuda_imppi_test.png")
+plt.savefig(plot_file, dpi=150)
+print(f"\nSaved plot to {plot_file}")
 plt.show()
+
+# Create animation using viz_utils
+print("\nGenerating trajectory animation...")
+# CUDA simulation doesn't track info zones in state, so create dummy info levels
+dummy_info = np.zeros((n_active, len(INFO_ZONES)), dtype=np.float32)
+
+# Real-time playback: step_skip frames at 1/(step_skip*dt) fps
+step_skip = 5
+fps = int(1.0 / (step_skip * DT))  # Real-time: 10 fps for skip=5, dt=0.02
+
+create_trajectory_gif(
+    history_x=history_x,
+    history_info=dummy_info,
+    grid=grid_array,
+    resolution=map_resolution,
+    dt=DT,
+    save_path=GIF_FILE,
+    fps=fps,
+    step_skip=step_skip,
+    origin=(0.0, 0.0),
+    info_gain_field=None,
+)
+print(f"Saved animation to {GIF_FILE}")
 
 print("\nCUDA I-MPPI simulation completed!")
