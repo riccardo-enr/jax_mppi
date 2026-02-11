@@ -124,11 +124,18 @@ def create_parallel_trajectory_gif(
 ) -> str:
     """Create animated GIF showing trajectory + reference trajectory + info field heatmap."""
     from matplotlib.animation import FuncAnimation, PillowWriter
+    from matplotlib.patches import Polygon
 
-    from viz_utils import _INFO_GAIN_CMAP
+    from viz_utils import _INFO_GAIN_CMAP, _fov_polygon
 
     states = np.array(history_x)  # (N, 13)
     positions = states[:, :2]
+    quats = states[:, 6:10]  # quaternions [qw, qx, qy, qz]
+    # Extract yaw from quaternions
+    yaws = np.arctan2(
+        2 * (quats[:, 0] * quats[:, 3] + quats[:, 1] * quats[:, 2]),
+        1 - 2 * (quats[:, 2] ** 2 + quats[:, 3] ** 2),
+    )
     fields = np.array(history_field)  # (N, Nx, Ny)
     field_origins = np.array(history_field_origin)  # (N, 2)
     ref_trajs = np.array(history_ref_traj)  # (N, horizon, 3)
@@ -171,6 +178,17 @@ def create_parallel_trajectory_gif(
     (trail_line,) = ax_map.plot([], [], color="cyan", linewidth=2, label="Executed Traj")
     (uav_marker,) = ax_map.plot([], [], "o", color="cyan", markersize=8)
 
+    # FOV wedge
+    fov_patch = Polygon(
+        _fov_polygon(positions[k0, 0], positions[k0, 1], yaws[k0], grid_np, resolution),
+        closed=True, facecolor="cyan", alpha=0.2, edgecolor="cyan", linewidth=0.5,
+    )
+    ax_map.add_patch(fov_patch)
+
+    # Heading arrow
+    arrow_len = 0.5
+    (heading_line,) = ax_map.plot([], [], color="cyan", linewidth=2.5)
+
     ax_map.set_xlim(-0.5, 14.5)
     ax_map.set_ylim(-0.5, 12.5)
     ax_map.set_xlabel("X (m)")
@@ -209,6 +227,7 @@ def create_parallel_trajectory_gif(
     def update(frame_idx):
         k = frame_indices[frame_idx]
         x, y = positions[k, 0], positions[k, 1]
+        yaw = yaws[k]
 
         # Info field panel
         field = fields[k]
@@ -228,12 +247,21 @@ def create_parallel_trajectory_gif(
         # UAV
         uav_marker.set_data([x], [y])
 
+        # Heading arrow
+        dx = arrow_len * np.cos(yaw)
+        dy = arrow_len * np.sin(yaw)
+        heading_line.set_data([x, x + dx], [y, y + dy])
+
+        # FOV wedge
+        fov_verts = _fov_polygon(x, y, yaw, grid_np, resolution)
+        fov_patch.set_xy(fov_verts)
+
         # Title
         title_text.set_text(
             f"Parallel I-MPPI  t = {k * dt:.1f}s  |  field max = {field.max():.3f}"
         )
 
-        return [field_im, field_uav_marker, ref_line, trail_line, uav_marker]
+        return [field_im, field_uav_marker, ref_line, trail_line, uav_marker, heading_line, fov_patch]
 
     anim = FuncAnimation(
         fig, update, frames=len(frame_indices),
