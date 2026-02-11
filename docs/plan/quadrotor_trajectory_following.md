@@ -75,8 +75,8 @@ The current JAX-MPPI library includes three MPPI variants (standard, SMPPI, KMPP
 ### Phase 5: Documentation
 
 - [x] Implementation plan (this document)
-- [ ] README for quadrotor examples
-- [ ] Update main README
+- [x] README for quadrotor examples
+- [x] Update main README with quadrotor section
 
 ## Key Features Delivered
 

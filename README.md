@@ -231,6 +231,38 @@ config = FSMIConfig(
 
 For detailed theory and implementation, see the [I-MPPI documentation](docs/src/i_mppi.qmd).
 
+## Quadrotor Examples
+
+JAX-MPPI includes comprehensive quadrotor control examples demonstrating trajectory tracking with nonlinear 6-DOF dynamics:
+
+### Features
+
+- **6-DOF Dynamics**: Full quaternion-based attitude representation with NED/FRD frame conventions
+- **Multiple Trajectories**: Hover, circle, figure-8, and custom waypoint-based paths
+- **MPPI Variant Comparison**: Side-by-side performance analysis of MPPI, SMPPI, and KMPPI
+- **Real-time Performance**: 50 Hz control loops with JIT compilation
+- **Rich Visualizations**: Trajectory plots, tracking errors, control inputs, and performance metrics
+
+### Available Examples
+
+```python
+# Basic stabilization
+python examples/quadrotor/hover.py
+
+# Trajectory tracking
+python examples/quadrotor/circle.py
+
+# Waypoint navigation
+python examples/quadrotor/custom_trajectory.py
+
+# Compare MPPI variants
+python examples/quadrotor/figure8_comparison.py
+```
+
+**Key Results**: SMPPI achieves 30-40% smoother control (lower jerk) compared to standard MPPI while maintaining similar tracking accuracy (<0.1m RMS error).
+
+See [`examples/quadrotor/`](examples/quadrotor/) for more details.
+
 ## Project Structure
 
 ```text
