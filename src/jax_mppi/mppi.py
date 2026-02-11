@@ -209,12 +209,17 @@ def _compute_noise_cost(
     noise_abs_cost: bool,
 ) -> jax.Array:
     if noise_abs_cost:
-        abs_noise = jnp.abs(noise)
-        quad = jnp.einsum(
-            "ktd,df,ktf->kt", abs_noise, jnp.abs(noise_sigma_inv), abs_noise
-        )
+        noise_val = jnp.abs(noise)
+        sigma_inv_val = jnp.abs(noise_sigma_inv)
     else:
-        quad = jnp.einsum("ktd,df,ktf->kt", noise, noise_sigma_inv, noise)
+        noise_val = noise
+        sigma_inv_val = noise_sigma_inv
+
+    # Optimized quadratic cost calculation: x^T * Sigma^-1 * x
+    # Using dot product is faster than einsum or nested vmap
+    term = jnp.dot(noise_val, sigma_inv_val)
+    quad = jnp.sum(term * noise_val, axis=-1)
+
     return 0.5 * jnp.sum(quad, axis=1)
 
 

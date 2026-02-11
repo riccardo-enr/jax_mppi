@@ -339,10 +339,9 @@ def _compute_noise_cost(
         return jnp.sum(jnp.abs(noise), axis=(1, 2))
     else:
         # Quadratic cost: noise^T Sigma^-1 noise
-        # For each sample and timestep: nu^T Sigma^-1 nu
-        costs_per_timestep = jax.vmap(
-            jax.vmap(lambda n: n @ noise_sigma_inv @ n)
-        )(noise)
+        # Optimized: use dot product instead of nested vmap
+        term = jnp.dot(noise, noise_sigma_inv)
+        costs_per_timestep = jnp.sum(term * noise, axis=-1)
         return jnp.sum(costs_per_timestep, axis=1)
 
 
