@@ -21,6 +21,11 @@ from jax.tree_util import register_pytree_node_class
 from .map import GridMap
 
 
+def _entropy_proxy(p: jax.Array) -> jax.Array:
+    """Entropy proxy: 4*p*(1-p). Used to weight information gain by cell uncertainty."""
+    return 4.0 * p * (1.0 - p)
+
+
 @dataclass
 class FSMIConfig:
     info_threshold: float = 20.0
