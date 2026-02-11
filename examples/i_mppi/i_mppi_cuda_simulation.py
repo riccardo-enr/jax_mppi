@@ -55,9 +55,21 @@ def quat_to_rot(q):
     qw, qx, qy, qz = q[0], q[1], q[2], q[3]
     return np.array(
         [
-            [1 - 2 * (qy**2 + qz**2), 2 * (qx * qy - qw * qz), 2 * (qx * qz + qw * qy)],
-            [2 * (qx * qy + qw * qz), 1 - 2 * (qx**2 + qz**2), 2 * (qy * qz - qw * qx)],
-            [2 * (qx * qz - qw * qy), 2 * (qy * qz + qw * qx), 1 - 2 * (qx**2 + qy**2)],
+            [
+                1 - 2 * (qy**2 + qz**2),
+                2 * (qx * qy - qw * qz),
+                2 * (qx * qz + qw * qy),
+            ],
+            [
+                2 * (qx * qy + qw * qz),
+                1 - 2 * (qx**2 + qz**2),
+                2 * (qy * qz - qw * qx),
+            ],
+            [
+                2 * (qx * qz - qw * qy),
+                2 * (qy * qz + qw * qx),
+                1 - 2 * (qx**2 + qy**2),
+            ],
         ],
         dtype=np.float64,
     )
@@ -281,7 +293,9 @@ controller = cuda_mppi.QuadrotorIMPPI(config, dynamics, cost)
 controller.update_cost_grid(cuda_grid)
 
 # Initialize control reference to hover (T=mg, zero angular rates)
-hover_ref = np.tile(np.array([HOVER_THRUST, 0.0, 0.0, 0.0], dtype=np.float32), HORIZON)
+hover_ref = np.tile(
+    np.array([HOVER_THRUST, 0.0, 0.0, 0.0], dtype=np.float32), HORIZON
+)
 controller.set_reference_trajectory(hover_ref)
 
 # Trajectory generator for reference trajectory
@@ -329,7 +343,7 @@ ref_traj_flat = traj_gen.field_gradient_trajectory(
     START_Z,
 )
 controller.set_position_reference(ref_traj_flat, REF_HORIZON)
-print(f"Initial ref trajectory: {len(ref_traj_flat)//3} waypoints")
+print(f"Initial ref trajectory: {len(ref_traj_flat) // 3} waypoints")
 
 # ---------------------------------------------------------------------------
 # Initial state
@@ -463,9 +477,9 @@ print("-" * 60)
 print(f"{'Status':<25} {status:>15}")
 print(f"{'Sim Duration (s)':<25} {actual_duration:>15.1f}")
 print(f"{'Runtime (s)':<25} {runtime:>15.2f}")
-print(f"{'Realtime Factor':<25} {actual_duration/runtime:>15.2f}x")
+print(f"{'Realtime Factor':<25} {actual_duration / runtime:>15.2f}x")
 print(f"{'Goal Distance (m)':<25} {goal_dist:>15.2f}")
-print(f"{'Hz (effective)':<25} {n_active/runtime:>15.1f}")
+print(f"{'Hz (effective)':<25} {n_active / runtime:>15.1f}")
 print(f"{'Avg Thrust (N)':<25} {np.mean(history_actions[:, 0]):>15.2f}")
 print("=" * 60)
 
@@ -494,9 +508,13 @@ fig, axes = plt.subplots(1, 2, figsize=(16, 7))
 ax = axes[0]
 extent = [0, width * map_resolution, 0, height * map_resolution]
 ax.imshow(grid_array, cmap="Greys", origin="lower", extent=extent, alpha=0.8)
-ax.plot(history_x[:, 0], history_x[:, 1], "cyan", linewidth=2, label="Trajectory")
+ax.plot(
+    history_x[:, 0], history_x[:, 1], "cyan", linewidth=2, label="Trajectory"
+)
 ax.plot(START_X, START_Y, "go", markersize=10, label="Start")
-ax.plot(float(GOAL_POS[0]), float(GOAL_POS[1]), "r*", markersize=15, label="Goal")
+ax.plot(
+    float(GOAL_POS[0]), float(GOAL_POS[1]), "r*", markersize=15, label="Goal"
+)
 for z in info_zones_np:
     from matplotlib.patches import Rectangle
 
@@ -524,7 +542,9 @@ ax2.plot(t, history_actions[:, 0], label="Thrust (N)")
 ax2.plot(t, history_actions[:, 1], label="wx_cmd")
 ax2.plot(t, history_actions[:, 2], label="wy_cmd")
 ax2.plot(t, history_actions[:, 3], label="wz_cmd")
-ax2.axhline(HOVER_THRUST, color="gray", linestyle="--", alpha=0.5, label="Hover")
+ax2.axhline(
+    HOVER_THRUST, color="gray", linestyle="--", alpha=0.5, label="Hover"
+)
 ax2.set_xlabel("Time (s)")
 ax2.set_ylabel("Control")
 ax2.set_title("Control Inputs [T, wx, wy, wz]")

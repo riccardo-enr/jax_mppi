@@ -935,9 +935,7 @@ class FSMITrajectoryGenerator:
         )
 
         grid_map, _info_levels = info_data
-        info_gain = self._info_gain_grid(
-            ref_traj, view_dir_xy, grid_map, dt
-        )
+        info_gain = self._info_gain_grid(ref_traj, view_dir_xy, grid_map, dt)
 
         return motion_cost - self.config.info_weight * info_gain
 

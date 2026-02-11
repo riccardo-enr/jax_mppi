@@ -22,9 +22,9 @@ _SCIENCE_STYLE = ["science", "no-latex"]
 _INFO_GAIN_CMAP = mcolors.LinearSegmentedColormap.from_list(
     "info_gain",
     [
-        (0.0, (1.0, 1.0, 0.4, 0.0)),   # transparent
-        (0.2, (1.0, 1.0, 0.3, 0.4)),   # light yellow
-        (0.5, (1.0, 0.8, 0.0, 0.6)),   # yellow-orange
+        (0.0, (1.0, 1.0, 0.4, 0.0)),  # transparent
+        (0.2, (1.0, 1.0, 0.3, 0.4)),  # light yellow
+        (0.5, (1.0, 0.8, 0.0, 0.6)),  # yellow-orange
         (0.75, (1.0, 0.4, 0.0, 0.75)),  # orange
         (1.0, (0.8, 0.0, 0.0, 0.85)),  # dark red
     ],
@@ -137,21 +137,31 @@ def _draw_environment(ax, grid, resolution, show_labels=True):
         cx, cy = float(INFO_ZONES[i, 0]), float(INFO_ZONES[i, 1])
         w, h = float(INFO_ZONES[i, 2]), float(INFO_ZONES[i, 3])
         rect = Rectangle(
-            (cx - w / 2, cy - h / 2), w, h,
-            linewidth=2, edgecolor="orange",
-            facecolor="yellow", alpha=0.3,
+            (cx - w / 2, cy - h / 2),
+            w,
+            h,
+            linewidth=2,
+            edgecolor="orange",
+            facecolor="yellow",
+            alpha=0.3,
         )
         ax.add_patch(rect)
         if show_labels:
-            ax.text(cx, cy, f"Info {i + 1}", ha="center", va="center", fontsize=8)
+            ax.text(
+                cx, cy, f"Info {i + 1}", ha="center", va="center", fontsize=8
+            )
 
     # Start position
     ax.plot(1.0, 5.0, "o", color="green", markersize=8, label="Start")
 
     # Goal position
     ax.plot(
-        float(GOAL_POS[0]), float(GOAL_POS[1]),
-        "*", color="red", markersize=12, label="Goal",
+        float(GOAL_POS[0]),
+        float(GOAL_POS[1]),
+        "*",
+        color="red",
+        markersize=12,
+        label="Goal",
     )
 
     ax.set_xlim(-0.5, 14.5)
@@ -182,22 +192,40 @@ def plot_trajectory_2d(history_x, grid, resolution, title="I-MPPI Trajectory"):
         colors = np.linspace(0, 1, n_steps)
 
         ax.scatter(
-            positions[:, 0], positions[:, 1],
-            c=colors, cmap="viridis", s=4, zorder=5,
+            positions[:, 0],
+            positions[:, 1],
+            c=colors,
+            cmap="viridis",
+            s=4,
+            zorder=5,
         )
         ax.plot(
-            positions[:, 0], positions[:, 1],
-            color="gray", linewidth=1, alpha=0.3, zorder=4,
+            positions[:, 0],
+            positions[:, 1],
+            color="gray",
+            linewidth=1,
+            alpha=0.3,
+            zorder=4,
         )
 
         # Start and end markers
         ax.plot(
-            positions[0, 0], positions[0, 1],
-            "o", color="green", markersize=10, zorder=6, label="Start",
+            positions[0, 0],
+            positions[0, 1],
+            "o",
+            color="green",
+            markersize=10,
+            zorder=6,
+            label="Start",
         )
         ax.plot(
-            positions[-1, 0], positions[-1, 1],
-            "s", color="blue", markersize=8, zorder=6, label="End",
+            positions[-1, 0],
+            positions[-1, 1],
+            "s",
+            color="blue",
+            markersize=8,
+            zorder=6,
+            label="End",
         )
 
         ax.set_xlabel("X (m)")
@@ -264,17 +292,28 @@ def plot_position_3d(history_x):
         # Trajectory colored by progress
         for i in range(n - 1):
             ax.plot(
-                pos[i : i + 2, 0], pos[i : i + 2, 1], pos[i : i + 2, 2],
-                color=plt.cm.viridis(colors[i]), linewidth=2,
+                pos[i : i + 2, 0],
+                pos[i : i + 2, 1],
+                pos[i : i + 2, 2],
+                color=plt.cm.viridis(colors[i]),
+                linewidth=2,
             )
 
         # Start marker
-        ax.scatter(*pos[0], color="green", s=60, label="Start", depthshade=False)
+        ax.scatter(
+            *pos[0], color="green", s=60, label="Start", depthshade=False
+        )
 
         # Goal marker
         ax.scatter(
-            float(GOAL_POS[0]), float(GOAL_POS[1]), -float(GOAL_POS[2]),
-            color="red", s=80, marker="D", label="Goal", depthshade=False,
+            float(GOAL_POS[0]),
+            float(GOAL_POS[1]),
+            -float(GOAL_POS[2]),
+            color="red",
+            s=80,
+            marker="D",
+            label="Goal",
+            depthshade=False,
         )
 
         ax.set_xlabel("X (m)")
@@ -343,17 +382,23 @@ def create_trajectory_gif(
             else:
                 ig_frame = info_gain_arr
             ig_frames.append(ig_frame)
-        ig_vmax = max(np.nanmax(f[f > 0]) if np.any(f > 0) else 1.0 for f in ig_frames)
+        ig_vmax = max(
+            np.nanmax(f[f > 0]) if np.any(f > 0) else 1.0 for f in ig_frames
+        )
 
     # Create figure — 3 panels when info field provided, 2 otherwise
     if has_ig:
         fig, (ax_map, ax_field, ax_info) = plt.subplots(
-            1, 3, figsize=(18, 7),
+            1,
+            3,
+            figsize=(18, 7),
             gridspec_kw={"width_ratios": [0.4, 0.35, 0.25]},
         )
     else:
         fig, (ax_map, ax_info) = plt.subplots(
-            1, 2, figsize=(14, 7),
+            1,
+            2,
+            figsize=(14, 7),
             gridspec_kw={"width_ratios": [0.6, 0.4]},
         )
         ax_field = None
@@ -363,8 +408,14 @@ def create_trajectory_gif(
 
     # --- Map panel ---
     ax_map.imshow(
-        grid_np, cmap="Greys", origin="lower", extent=extent,
-        vmin=0, vmax=1, alpha=0.8, aspect="equal",
+        grid_np,
+        cmap="Greys",
+        origin="lower",
+        extent=extent,
+        vmin=0,
+        vmax=1,
+        alpha=0.8,
+        aspect="equal",
     )
 
     # Info zones
@@ -373,8 +424,11 @@ def create_trajectory_gif(
         cx, cy = float(INFO_ZONES[i, 0]), float(INFO_ZONES[i, 1])
         w, h = float(INFO_ZONES[i, 2]), float(INFO_ZONES[i, 3])
         rect = Rectangle(
-            (cx - w / 2, cy - h / 2), w, h,
-            linewidth=2, edgecolor="orange",
+            (cx - w / 2, cy - h / 2),
+            w,
+            h,
+            linewidth=2,
+            edgecolor="orange",
             facecolor="none" if has_ig else "yellow",
             alpha=1.0 if has_ig else 0.3,
         )
@@ -382,7 +436,9 @@ def create_trajectory_gif(
         zone_patches.append(rect)
 
     ax_map.plot(1.0, 5.0, "o", color="green", markersize=8)
-    ax_map.plot(float(GOAL_POS[0]), float(GOAL_POS[1]), "*", color="red", markersize=12)
+    ax_map.plot(
+        float(GOAL_POS[0]), float(GOAL_POS[1]), "*", color="red", markersize=12
+    )
     ax_map.set_xlim(-0.5, 14.5)
     ax_map.set_ylim(-0.5, 12.5)
     ax_map.set_xlabel("X (m)")
@@ -399,8 +455,19 @@ def create_trajectory_gif(
     (heading_line,) = ax_map.plot([], [], color="red", linewidth=2.5)
     # FOV wedge
     fov_patch = Polygon(
-        _fov_polygon(positions[0, 0], positions[0, 1], yaws[0], grid_np, resolution, origin=origin),
-        closed=True, facecolor="cyan", alpha=0.2, edgecolor="cyan", linewidth=0.5,
+        _fov_polygon(
+            positions[0, 0],
+            positions[0, 1],
+            yaws[0],
+            grid_np,
+            resolution,
+            origin=origin,
+        ),
+        closed=True,
+        facecolor="cyan",
+        alpha=0.2,
+        edgecolor="cyan",
+        linewidth=0.5,
     )
     ax_map.add_patch(fov_patch)
 
@@ -409,15 +476,28 @@ def create_trajectory_gif(
     field_uav_marker = None
     if ax_field is not None and ig_frames is not None:
         ax_field.imshow(
-            grid_np, cmap="Greys", origin="lower", extent=extent,
-            vmin=0, vmax=1, alpha=0.3, aspect="equal",
+            grid_np,
+            cmap="Greys",
+            origin="lower",
+            extent=extent,
+            vmin=0,
+            vmax=1,
+            alpha=0.3,
+            aspect="equal",
         )
         ig_im = ax_field.imshow(
-            ig_frames[0], cmap=_INFO_GAIN_CMAP, origin="lower", extent=extent,
-            vmin=0, vmax=ig_vmax, aspect="equal",
+            ig_frames[0],
+            cmap=_INFO_GAIN_CMAP,
+            origin="lower",
+            extent=extent,
+            vmin=0,
+            vmax=ig_vmax,
+            aspect="equal",
         )
         plt.colorbar(ig_im, ax=ax_field, label="Info Gain", shrink=0.7)
-        (field_uav_marker,) = ax_field.plot([], [], "o", color="red", markersize=8)
+        (field_uav_marker,) = ax_field.plot(
+            [], [], "o", color="red", markersize=8
+        )
         ax_field.set_xlim(-0.5, 14.5)
         ax_field.set_ylim(-0.5, 12.5)
         ax_field.set_xlabel("X (m)")
@@ -432,7 +512,9 @@ def create_trajectory_gif(
     ax_info.set_ylim(-5, 105)
     info_lines = []
     for i in range(info.shape[1]):
-        (line,) = ax_info.plot([], [], color=zone_colors[i], linewidth=2, label=f"Zone {i + 1}")
+        (line,) = ax_info.plot(
+            [], [], color=zone_colors[i], linewidth=2, label=f"Zone {i + 1}"
+        )
         info_lines.append(line)
     ax_info.legend(loc="upper right")
 
@@ -480,8 +562,11 @@ def create_trajectory_gif(
         return artists
 
     anim = FuncAnimation(
-        fig, update, frames=len(frame_indices),
-        interval=1000 // fps, blit=False,
+        fig,
+        update,
+        frames=len(frame_indices),
+        interval=1000 // fps,
+        blit=False,
     )
 
     anim.save(save_path, writer=PillowWriter(fps=fps))
