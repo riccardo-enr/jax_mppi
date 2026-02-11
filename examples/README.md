@@ -5,11 +5,13 @@ This directory contains examples demonstrating various features of the `jax-mppi
 ## Directory Structure
 
 ### [`basic/`](basic/) - Getting Started
+
 Simple introductory examples.
 
 - **`pendulum.py`** - Classic inverted pendulum swing-up with MPPI
 
 ### [`quadrotor/`](quadrotor/) - Quadrotor Control
+
 Quadrotor trajectory tracking with MPPI variants.
 
 - **`hover.py`** - Basic hover stabilization
@@ -20,16 +22,19 @@ Quadrotor trajectory tracking with MPPI variants.
 - **`trajectories.py`** - Shared trajectory generation utilities
 
 ### [`i_mppi/`](i_mppi/) - Informative MPPI
+
 I-MPPI (Informative MPPI) with two-layer architecture (Zhang et al. 2020).
 
 - **Layer 2 (~5 Hz):** Full FSMI with O(n^2) computation for reference trajectory
 - **Layer 3 (~50 Hz):** Uniform-FSMI with O(n) for local reactivity
 
 Files:
+
 - **`simulation.py`** - Main I-MPPI simulation with two-layer architecture
 - **`fsmi_grid_demo.py`** - Standalone FSMI demonstration
 
 ### [`autotuning/`](autotuning/) - Hyperparameter Tuning
+
 Automatic hyperparameter optimization using evolutionary strategies.
 
 - **`basic.py`** - Minimal autotuning example
@@ -37,6 +42,7 @@ Automatic hyperparameter optimization using evolutionary strategies.
 - **`evosax_comparison.py`** - Compare different ES algorithms
 
 ### [`cuda/`](cuda/) - CUDA Acceleration
+
 CUDA-accelerated MPPI kernels.
 
 - **`pendulum_jit.py`** - CUDA JIT-compiled MPPI example
@@ -45,6 +51,7 @@ CUDA-accelerated MPPI kernels.
 - **`test_cuda_mppi.py`** - Test CUDA MPPI controller
 
 ### [`benchmarks/`](benchmarks/) - Performance Comparisons
+
 Benchmarks and performance analysis.
 
 - **`smooth_comparison.py`** - Compare MPPI variants on 2D navigation
@@ -72,6 +79,7 @@ Most examples save visualizations to `docs/_media/` (organized by topic subdirec
 ## Dependencies
 
 All examples use the dependencies specified in `pyproject.toml`. Install with:
+
 ```bash
 uv sync
 ```
