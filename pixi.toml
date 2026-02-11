@@ -9,7 +9,7 @@ license = "MIT"
 authors = ["Riccardo Enrico"]
 
 [system-requirements]
-cuda = "13"
+# cuda = "13"  # Commented out for CI compatibility; CUDA is optional for CPU-only testing
 
 # Only python from conda (pixi requirement), everything else from PyPI
 [dependencies]
@@ -47,10 +47,29 @@ pytz = "*"
 cma = ">=3.3.0"
 evosax = ">=0.1.0"
 
+# CI feature (CPU-only, no CUDA)
+[feature.ci.pypi-dependencies]
+jax-mppi = { path = ".", editable = true }
+jax = ">=0.9.0"
+pytest = "*"
+pytest-benchmark = "*"
+lark = "*"
+gymnasium = { version = "*", extras = ["classic_control"] }
+matplotlib = "*"
+ipywidgets = "*"
+tqdm = "*"
+basedpyright = "*"
+ruff = ">=0.14.14"
+nbstripout = "*"
+seaborn = "*"
+SciencePlots = "*"
+pytz = "*"
+
 [environments]
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
 autotuning = { features = ["autotuning"], solve-group = "default" }
+ci = { features = ["ci"], solve-group = "default", no-default-feature = true }
 
 [tasks]
 # Examples
