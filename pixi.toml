@@ -41,6 +41,8 @@ nbstripout = "*"
 seaborn = "*"
 SciencePlots = "*"
 pytz = "*"
+build = "*"
+twine = "*"
 
 # Autotuning feature
 [feature.autotuning.pypi-dependencies]
@@ -110,6 +112,18 @@ test = "PYTHONPATH= pytest tests/"
 list-tests = "find tests -name 'test_*.py' -o -name '*_test.py' | sort"
 lint = "ruff format . && ruff check . --fix"
 type-check = "basedpyright ."
+
+# Package building and publishing
+clean-build = "bash -c 'rm -rf dist/ build/ *.egg-info src/*.egg-info || true'"
+build = { cmd = "python -m build", depends-on = ["clean-build"] }
+build-sdist = { cmd = "python -m build --sdist", depends-on = ["clean-build"] }
+publish-test = { cmd = "python -m twine upload --repository testpypi dist/*.tar.gz", depends-on = ["build-sdist"] }
+publish = { cmd = "python -m twine upload dist/*.tar.gz", depends-on = ["build-sdist"] }
+check-package = "python -m twine check dist/*"
+
+# Release management
+prepare-release = "python scripts/prepare_release.py"
+dry-release = "python scripts/prepare_release.py --dry-run"
 
 # Documentation
 quarto-doc = "quarto preview docs"
