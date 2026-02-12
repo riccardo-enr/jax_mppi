@@ -1,0 +1,82 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v0.3.1
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  build-and-publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # For creating GitHub releases
+      id-token: write  # For trusted publishing to PyPI
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install CUDA Toolkit
+        uses: Jimver/cuda-toolkit@v0.2.16
+        with:
+          cuda: '13.0.0'
+          method: 'network'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Verify version matches tag
+        run: |
+          PYPROJECT_VERSION=$(grep -m 1 'version = ' pyproject.toml | cut -d'"' -f2)
+          if [ "$PYPROJECT_VERSION" != "${{ steps.get_version.outputs.VERSION }}" ]; then
+            echo "Error: pyproject.toml version ($PYPROJECT_VERSION) doesn't match tag (${{ steps.get_version.outputs.VERSION }})"
+            exit 1
+          fi
+
+      - name: Build source distribution
+        run: python -m build --sdist
+
+      - name: Check package
+        run: twine check dist/*
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*.tar.gz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*.tar.gz
+          generate_release_notes: true
+          body: |
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ steps.get_version.outputs.TAG }}/CHANGELOG.md) for details.
+
+            Install with:
+            ```bash
+            pip install jax-mppi==${{ steps.get_version.outputs.VERSION }}
+            ```
+
+      - name: Announce release
+        run: |
+          echo "::notice::Successfully published jax-mppi v${{ steps.get_version.outputs.VERSION }} to PyPI"
+          echo "::notice::View on PyPI: https://pypi.org/project/jax-mppi/${{ steps.get_version.outputs.VERSION }}/"
