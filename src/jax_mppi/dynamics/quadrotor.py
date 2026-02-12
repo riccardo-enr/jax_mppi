@@ -1,4 +1,7 @@
+from typing import Callable, Tuple
 
+import chex
+import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Float
 
@@ -44,6 +47,24 @@ def quaternion_to_rotation_matrix(
 def normalize_quaternion(q: Float[Array, "4"]) -> Float[Array, "4"]:
     """Normalize quaternion to unit length."""
     return q / (jnp.linalg.norm(q) + 1e-6)
+
+
+def quaternion_multiply(q: Float[Array, "4"], r: Float[Array, "4"]) -> Float[Array, "4"]:
+    """Multiply two quaternions."""
+    w0, x0, y0, z0 = q
+    w1, x1, y1, z1 = r
+    return jnp.array([
+        w0 * w1 - x0 * x1 - y0 * y1 - z0 * z1,
+        w0 * x1 + x0 * w1 + y0 * z1 - z0 * y1,
+        w0 * y1 - x0 * z1 + y0 * w1 + z0 * x1,
+        w0 * z1 + x0 * y1 - y0 * x1 + z0 * w1,
+    ])
+
+
+def quaternion_derivative(q: Float[Array, "4"], omega: Float[Array, "3"]) -> Float[Array, "4"]:
+    """Compute quaternion derivative q_dot = 0.5 * q * omega."""
+    omega_q = jnp.concatenate([jnp.zeros(1), omega])
+    return 0.5 * quaternion_multiply(q, omega_q)
 
 
 def rk4_step(
@@ -167,3 +188,19 @@ def quadrotor_dynamics(
     omega_dot = (omega_cmd - omega) / tau_omega
 
     return jnp.concatenate([pos_dot, vel_dot, quat_dot, omega_dot])
+
+
+def create_quadrotor_dynamics(
+    mass: float = 1.0,
+    g: float = 9.81,
+    tau_omega: float = 0.05,
+    dt: float = 0.01,
+) -> Callable[[Float[Array, "13"], Float[Array, "4"]], Float[Array, "13"]]:
+    """Create a discrete-time dynamics function for a specific quadrotor config.
+
+    This function returns a callable that advances the state by one time step `dt`.
+    """
+    def dynamics(state: Float[Array, "13"], action: Float[Array, "4"]) -> Float[Array, "13"]:
+        return rk4_step(state, action, dt, mass, g, tau_omega)
+
+    return dynamics
