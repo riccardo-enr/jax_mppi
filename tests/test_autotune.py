@@ -8,7 +8,7 @@ from jax_mppi import autotune, mppi
 
 # Check if optional autotuning dependencies are available
 try:
-    import cma
+    import cma  # noqa: F401
 
     HAS_CMA = True
 except ImportError:
