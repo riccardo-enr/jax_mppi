@@ -89,11 +89,16 @@ ignore-overlong-task-comments = true
 "src/jax_mppi/dynamics/linear.py" = ["F722", "F821"]
 "src/jax_mppi/kmppi.py" = ["E402"]
 "src/jax_mppi/smppi.py" = ["E402"]
+"src/jax_mppi/costs/quadrotor.py" = ["F722", "F821"] # Ignore jaxtyping string errors
+"examples/quadrotor/trajectories.py" = ["F722", "F821"] # Ignore jaxtyping string errors
+"src/jax_mppi/dynamics/quadrotor.py" = ["F722", "F821"] # Ignore jaxtyping string errors
+"src/jax_mppi/i_mppi/planner.py" = ["F722", "F821"] # Ignore jaxtyping string errors
 "examples/cuda/pendulum_jit.py" = ["E741"]
 "examples/quadrotor/custom_trajectory.py" = ["F401"]
 "src/jax_mppi/autotune_evosax.py" = ["E722"]
 "src/jax_mppi/autotune_qd.py" = ["F401"]
-"*.ipynb" = ["E402"]                                 # Only for notebooks
+"*.ipynb" = ["E402", "F401"] # Ignore imports in notebooks
+"tests/test_mppi.py" = ["F841"] # Ignore unused variables in tests
 
 [tool.basedpyright]
 pythonVersion = "3.12"

@@ -9,11 +9,8 @@ from jax_mppi.i_mppi.fsmi import (
     FSMITrajectoryGenerator,
     UniformFSMI,
     UniformFSMIConfig,
-    _entropy_proxy,
     _fov_cell_masks,
     _yaws_from_trajectory,
-    cast_ray_fsmi,
-    compute_fsmi_gain,
     fsmi_trajectory_direct,
     fsmi_trajectory_discounted,
     fsmi_trajectory_filtered,
@@ -62,76 +59,23 @@ def test_fsmi_target_selector():
     w, h = 20, 20
 
     grid_map = rasterize_environment(walls, info_zones, origin, w, h, res)
-    config = FSMIConfig(goal_pos=goal_pos, min_gain_threshold=1.0)
+    config = FSMIConfig(goal_pos=goal_pos)
     gen = FSMITrajectoryGenerator(config, info_zones, grid_map)
 
     # Case 1: High Info
     info_levels_high = jnp.array([100.0])
-    gen = gen.update_map(info_levels_high)
     current_pos = jnp.array([5.0, 2.0, -2.0])
-    target, mode = gen.select_target(current_pos)
+    target, mode = gen.select_target(current_pos, info_levels_high)
 
     assert mode == 1
     assert jnp.allclose(target[:2], info_zones[0, :2])
 
     # Case 2: Low Info
     info_levels_low = jnp.array([0.0])
-    gen = gen.update_map(info_levels_low)
-    target, mode = gen.select_target(current_pos)
+    target, mode = gen.select_target(current_pos, info_levels_low)
 
     assert mode == 0
     assert jnp.allclose(target, goal_pos)
-
-
-def test_fsmi_gain():
-    walls = jnp.array([[5.0, 0.0, 5.0, 10.0]])
-    info_zones = jnp.array([[8.0, 5.0, 2.0, 2.0, 100.0]])
-    origin = jnp.array([0.0, 0.0])
-    res = 0.5
-    w, h = 20, 20
-    grid_map = rasterize_environment(walls, info_zones, origin, w, h, res)
-
-    gain_blocked = compute_fsmi_gain(
-        jnp.array([2.0, 5.0]),
-        grid_map.grid,
-        grid_map.origin,
-        grid_map.resolution,
-    )
-    gain_clear = compute_fsmi_gain(
-        jnp.array([6.0, 5.0]),
-        grid_map.grid,
-        grid_map.origin,
-        grid_map.resolution,
-    )
-
-    assert gain_clear > gain_blocked
-
-
-# ---------------------------------------------------------------------------
-# TestEntropyProxy
-# ---------------------------------------------------------------------------
-
-
-class TestEntropyProxy:
-    def test_at_half(self):
-        assert jnp.isclose(_entropy_proxy(jnp.float32(0.5)), 1.0)
-
-    def test_at_zero(self):
-        assert jnp.isclose(_entropy_proxy(jnp.float32(0.0)), 0.0)
-
-    def test_at_one(self):
-        assert jnp.isclose(_entropy_proxy(jnp.float32(1.0)), 0.0)
-
-    def test_symmetry(self):
-        for p in [0.1, 0.2, 0.3, 0.4]:
-            p = jnp.float32(p)
-            assert jnp.isclose(_entropy_proxy(p), _entropy_proxy(1.0 - p))
-
-    def test_range(self):
-        ps = jnp.linspace(0, 1, 50)
-        vals = jax.vmap(_entropy_proxy)(ps)
-        assert jnp.all(vals >= 0.0)
-        assert jnp.all(vals <= 1.0)
 
 
 # ---------------------------------------------------------------------------
@@ -320,69 +264,6 @@ class TestUniformFSMI:
 
 
 # ---------------------------------------------------------------------------
-# TestCastRayFSMI
-# ---------------------------------------------------------------------------
-
-
-class TestCastRayFSMI:
-    def test_free_space(self):
-        grid = jnp.zeros((10, 10))
-        origin = jnp.array([0.0, 0.0])
-        gain = cast_ray_fsmi(jnp.array([2.5, 2.5]), 0.0, grid, origin, 0.5)
-        assert jnp.isclose(gain, 0.0, atol=1e-5)
-
-    def test_into_unknown(self):
-        grid = jnp.zeros((10, 10)).at[4:6, 6:8].set(0.5)
-        origin = jnp.array([0.0, 0.0])
-        # Ray pointing right from (2.5, 2.25) toward unknown cells
-        gain = cast_ray_fsmi(jnp.array([2.5, 2.25]), 0.0, grid, origin, 0.5)
-        assert gain > 0
-
-    def test_wall_blocks(self):
-        origin = jnp.array([0.0, 0.0])
-        # Grid with wall then unknown
-        grid_blocked = jnp.zeros((10, 10)).at[5, 4].set(1.0).at[5, 6:8].set(0.5)
-        grid_clear = jnp.zeros((10, 10)).at[5, 6:8].set(0.5)
-        gain_blocked = cast_ray_fsmi(
-            jnp.array([0.25, 2.75]), 0.0, grid_blocked, origin, 0.5
-        )
-        gain_clear = cast_ray_fsmi(
-            jnp.array([0.25, 2.75]), 0.0, grid_clear, origin, 0.5
-        )
-        assert gain_clear >= gain_blocked
-
-
-# ---------------------------------------------------------------------------
-# TestComputeFSMIGain
-# ---------------------------------------------------------------------------
-
-
-class TestComputeFSMIGain:
-    def test_in_unknown_region(self):
-        gm = _make_simple_grid()
-        gain = compute_fsmi_gain(
-            jnp.array([1.0, 2.5]), gm.grid, gm.origin, gm.resolution
-        )
-        assert gain > 0
-
-    def test_in_free_region(self):
-        grid = jnp.zeros((10, 10))
-        origin = jnp.array([0.0, 0.0])
-        gain = compute_fsmi_gain(jnp.array([2.5, 2.5]), grid, origin, 0.5)
-        assert jnp.isclose(gain, 0.0, atol=1e-4)
-
-    def test_near_vs_far(self):
-        gm = _make_simple_grid()
-        gain_near = compute_fsmi_gain(
-            jnp.array([1.0, 2.5]), gm.grid, gm.origin, gm.resolution
-        )
-        gain_far = compute_fsmi_gain(
-            jnp.array([4.0, 4.0]), gm.grid, gm.origin, gm.resolution
-        )
-        assert gain_near > gain_far
-
-
-# ---------------------------------------------------------------------------
 # TestFSMITrajectoryGenerator
 # ---------------------------------------------------------------------------
 
@@ -399,7 +280,7 @@ class TestFSMITrajectoryGenerator:
         goal_pos = jnp.array([9.0, 5.0, -2.0])
         origin = jnp.array([0.0, 0.0])
         gm = rasterize_environment(walls, info_zones, origin, 20, 20, 0.5)
-        cfg = FSMIConfig(goal_pos=goal_pos, min_gain_threshold=1.0)
+        cfg = FSMIConfig(goal_pos=goal_pos)
         gen = FSMITrajectoryGenerator(cfg, info_zones, gm)
         return gen, info_zones, goal_pos
 
@@ -769,63 +650,3 @@ class TestTrajectoryFSMIFiltered:
         eager = fn(gm.grid, traj)
         jitted = jax.jit(fn)(gm.grid, traj)
         assert jnp.isclose(eager, jitted, atol=1e-4)
-
-
-# ---------------------------------------------------------------------------
-# TestInfoGainGridDispatch
-# ---------------------------------------------------------------------------
-
-
-class TestInfoGainGridDispatch:
-    """Test that _info_gain_grid dispatches to the correct method."""
-
-    def _make_gen_with_method(self, method="direct"):
-        walls = jnp.array([[5.0, 0.0, 5.0, 5.0]])
-        info_zones = jnp.array([[2.0, 2.5, 2.0, 2.0, 100.0]])
-        origin = jnp.array([0.0, 0.0])
-        gm = rasterize_environment(walls, info_zones, origin, 20, 20, 0.25)
-        cfg = FSMIConfig(
-            num_beams=8,
-            max_range=3.0,
-            ray_step=0.1,
-            fov_rad=1.57,
-            trajectory_subsample_rate=5,
-            trajectory_ig_method=method,
-        )
-        return FSMITrajectoryGenerator(cfg, info_zones, gm), gm
-
-    def test_direct_positive(self):
-        gen, gm = self._make_gen_with_method("direct")
-        traj = jnp.column_stack(
-            [
-                jnp.linspace(0.5, 3.5, 20),
-                jnp.full(20, 2.5),
-                jnp.full(20, -2.0),
-            ]
-        )
-        mi = gen._info_gain_grid(traj, jnp.array([1.0, 0.0]), gm.grid, 0.1)
-        assert mi > 0
-
-    def test_discount_positive(self):
-        gen, gm = self._make_gen_with_method("discount")
-        traj = jnp.column_stack(
-            [
-                jnp.linspace(0.5, 3.5, 20),
-                jnp.full(20, 2.5),
-                jnp.full(20, -2.0),
-            ]
-        )
-        mi = gen._info_gain_grid(traj, jnp.array([1.0, 0.0]), gm.grid, 0.1)
-        assert mi > 0
-
-    def test_filtered_positive(self):
-        gen, gm = self._make_gen_with_method("filtered")
-        traj = jnp.column_stack(
-            [
-                jnp.linspace(0.5, 3.5, 20),
-                jnp.full(20, 2.5),
-                jnp.full(20, -2.0),
-            ]
-        )
-        mi = gen._info_gain_grid(traj, jnp.array([1.0, 0.0]), gm.grid, 0.1)
-        assert mi > 0

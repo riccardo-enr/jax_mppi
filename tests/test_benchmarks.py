@@ -20,7 +20,7 @@ from jax_mppi.i_mppi.environment import (
     INFO_ZONES,
     WALLS,
     augmented_dynamics_with_grid,
-    parallel_imppi_running_cost,
+    informative_running_cost,
 )
 from jax_mppi.i_mppi.fsmi import (
     FSMIConfig,
@@ -165,7 +165,8 @@ class TestParallelImppiStepBenchmark:
         )
         cfg = InfoFieldConfig(field_res=0.5, field_extent=2.0, n_yaw=4)
         pos_xy = jnp.array([5.0, 5.0])
-        info_field, field_origin = compute_info_field(mod, gm.grid, pos_xy, cfg)
+        # info_field unused but computed for setup realism
+        _info_field, _field_origin = compute_info_field(mod, gm.grid, pos_xy, cfg)
 
         # MPPI setup — 3 info zones -> NX=16
         noise_sigma = jnp.diag(jnp.array([2.0, 0.5, 0.5, 0.5]) ** 2)
@@ -193,15 +194,14 @@ class TestParallelImppiStepBenchmark:
         quad = quad.at[6].set(1.0)
         state = jnp.concatenate([quad, jnp.array([100.0, 100.0, 100.0])])
 
+        # Updated to use informative_running_cost instead of parallel_imppi_running_cost
         cost_fn = partial(
-            parallel_imppi_running_cost,
+            informative_running_cost,
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,
-            info_field=info_field,
-            field_origin=field_origin,
-            field_res=cfg.field_res,
             uniform_fsmi_fn=uniform.compute,
+            target=jnp.array([9.0, 5.0, -2.0]), # dummy target
         )
         dynamics_fn = partial(
             augmented_dynamics_with_grid,
