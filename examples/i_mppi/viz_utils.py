@@ -1,10 +1,8 @@
-"""Visualization utilities for the I-MPPI simulation using Matplotlib + Seaborn."""
+"""Visualization utilities for the I-MPPI simulation using Matplotlib."""
 
-import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import scienceplots  # noqa: F401
-import seaborn as sns
 from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib.patches import Polygon, Rectangle
 
@@ -17,18 +15,6 @@ from jax_mppi.i_mppi.environment import (
 
 # --- Style setup ---
 _SCIENCE_STYLE = ["science", "no-latex"]
-
-# --- Information gain colormap (transparent -> yellow -> orange -> red) ---
-_INFO_GAIN_CMAP = mcolors.LinearSegmentedColormap.from_list(
-    "info_gain",
-    [
-        (0.0, (1.0, 1.0, 0.4, 0.0)),  # transparent
-        (0.2, (1.0, 1.0, 0.3, 0.4)),  # light yellow
-        (0.5, (1.0, 0.8, 0.0, 0.6)),  # yellow-orange
-        (0.75, (1.0, 0.4, 0.0, 0.75)),  # orange
-        (1.0, (0.8, 0.0, 0.0, 0.85)),  # dark red
-    ],
-)
 
 # --- FOV visualisation helpers ---
 _FOV_NUM_RAYS = 40  # angular resolution of the FOV wedge
@@ -64,55 +50,6 @@ def _fov_polygon(
         pts.append(_cast_ray(x, y, a, grid, resolution, max_range, origin))
     pts.append((x, y))  # close polygon
     return np.array(pts)
-
-
-_SEEN_NUM_RAYS = 80  # denser than FOV polygon for better cell coverage
-
-
-def _compute_seen_mask(
-    x, y, yaw, grid, resolution, max_range, origin=(0.0, 0.0)
-):
-    """Return (H, W) boolean mask of grid cells visible from the given pose.
-
-    Casts ``_SEEN_NUM_RAYS`` rays across the sensor FOV.  Each ray is
-    sampled at ``_FOV_RAY_STEP`` intervals and stopped by obstacles
-    (occupancy >= ``_OCC_THRESHOLD``) or the grid boundary.  All cells
-    visited along visible ray segments are marked True.
-
-    Fully vectorised with numpy -- no Python loops over rays or steps.
-    """
-    H, W = grid.shape
-    half_fov = SENSOR_FOV_RAD / 2.0
-    n_steps = int(max_range / _FOV_RAY_STEP) + 1
-    dists = np.arange(n_steps) * _FOV_RAY_STEP
-    angles = np.linspace(yaw - half_fov, yaw + half_fov, _SEEN_NUM_RAYS)
-
-    # Ray sample world coordinates: (n_rays, n_steps)
-    ray_x = x + dists[None, :] * np.cos(angles[:, None])
-    ray_y = y + dists[None, :] * np.sin(angles[:, None])
-
-    cols = np.floor((ray_x - origin[0]) / resolution).astype(np.intp)
-    rows = np.floor((ray_y - origin[1]) / resolution).astype(np.intp)
-
-    valid = (cols >= 0) & (cols < W) & (rows >= 0) & (rows < H)
-    safe_c = np.clip(cols, 0, W - 1)
-    safe_r = np.clip(rows, 0, H - 1)
-
-    occ = grid[safe_r, safe_c]
-
-    # A step is blocking if out of bounds or hits an obstacle
-    blocking = (~valid) | (occ >= _OCC_THRESHOLD)
-    # Propagate along each ray: once blocked, all subsequent steps are blocked
-    cum_block = np.maximum.accumulate(blocking.astype(np.uint8), axis=1)
-    # A cell is visible if valid and no *prior* step was blocking
-    # (the first blocked cell itself IS visible -- you see the wall)
-    prev_block = np.zeros_like(cum_block)
-    prev_block[:, 1:] = cum_block[:, :-1]
-    visible = valid & (prev_block == 0)
-
-    mask = np.zeros((H, W), dtype=bool)
-    mask[safe_r[visible], safe_c[visible]] = True
-    return mask
 
 
 def _draw_environment(ax, grid, resolution, show_labels=True):
@@ -295,7 +232,7 @@ def plot_position_3d(history_x):
                 pos[i : i + 2, 0],
                 pos[i : i + 2, 1],
                 pos[i : i + 2, 2],
-                color=plt.cm.viridis(colors[i]),
+                color=plt.cm.viridis(colors[i]),  # pyright: ignore[reportAttributeAccessIssue]
                 linewidth=2,
             )
 
@@ -308,7 +245,7 @@ def plot_position_3d(history_x):
         ax.scatter(
             float(GOAL_POS[0]),
             float(GOAL_POS[1]),
-            -float(GOAL_POS[2]),
+            -float(GOAL_POS[2]),  # pyright: ignore[reportArgumentType]
             color="red",
             s=80,
             marker="D",
@@ -327,7 +264,6 @@ def plot_position_3d(history_x):
 
 def create_trajectory_gif(
     history_x,
-    history_info,
     grid,
     resolution,
     dt,
@@ -335,13 +271,11 @@ def create_trajectory_gif(
     fps=20,
     step_skip=5,
     origin=(0.0, 0.0),
-    info_gain_field=None,
 ):
-    """Create an animated GIF visualization of the UAV trajectory.
+    """Create an animated GIF showing the UAV trajectory and FOV on the map.
 
     Args:
-        history_x: (N, 16) state history.
-        history_info: (N, 3) info level history.
+        history_x: (N, 13+) state history.
         grid: (H, W) occupancy grid.
         resolution: Grid resolution in m/cell.
         dt: Simulation timestep.
@@ -349,7 +283,6 @@ def create_trajectory_gif(
         fps: Frames per second.
         step_skip: Show every N-th simulation step as a frame.
         origin: (x, y) world coordinates of the grid origin.
-        info_gain_field: Optional (N, H, W) or (H, W) information gain field.
     """
     positions = np.array(history_x[:, :2])
     quats = np.array(history_x[:, 6:10])
@@ -357,7 +290,6 @@ def create_trajectory_gif(
         2 * (quats[:, 0] * quats[:, 3] + quats[:, 1] * quats[:, 2]),
         1 - 2 * (quats[:, 2] ** 2 + quats[:, 3] ** 2),
     )
-    info = np.array(history_info)
     n_steps = len(positions)
     frame_indices = list(range(0, n_steps, step_skip))
     if frame_indices[-1] != n_steps - 1:
@@ -365,49 +297,12 @@ def create_trajectory_gif(
 
     grid_np = np.array(grid)
     H, W = grid_np.shape
-    extent = [0, W * resolution, 0, H * resolution]
+    extent = (0, W * resolution, 0, H * resolution)
 
-    # Precompute info gain frames if provided
-    ig_frames = None
-    ig_vmax = 1.0
-    has_ig = info_gain_field is not None
-    if has_ig:
-        info_gain_arr = np.array(info_gain_field)
-        is_time_varying = info_gain_arr.ndim == 3
-        ig_frames = []
-        for frame_idx in range(len(frame_indices)):
-            k = frame_indices[frame_idx]
-            if is_time_varying:
-                ig_frame = info_gain_arr[min(k, len(info_gain_arr) - 1)]
-            else:
-                ig_frame = info_gain_arr
-            ig_frames.append(ig_frame)
-        ig_vmax = max(
-            np.nanmax(f[f > 0]) if np.any(f > 0) else 1.0 for f in ig_frames
-        )
+    fig, ax = plt.subplots(figsize=(9, 7))
 
-    # Create figure — 3 panels when info field provided, 2 otherwise
-    if has_ig:
-        fig, (ax_map, ax_field, ax_info) = plt.subplots(
-            1,
-            3,
-            figsize=(18, 7),
-            gridspec_kw={"width_ratios": [0.4, 0.35, 0.25]},
-        )
-    else:
-        fig, (ax_map, ax_info) = plt.subplots(
-            1,
-            2,
-            figsize=(14, 7),
-            gridspec_kw={"width_ratios": [0.6, 0.4]},
-        )
-        ax_field = None
-
-    t_all = np.arange(n_steps) * dt
-    zone_colors = sns.color_palette("tab10", info.shape[1])
-
-    # --- Map panel ---
-    ax_map.imshow(
+    # Occupancy grid
+    ax.imshow(
         grid_np,
         cmap="Greys",
         origin="lower",
@@ -419,7 +314,6 @@ def create_trajectory_gif(
     )
 
     # Info zones
-    zone_patches = []
     for i in range(len(INFO_ZONES)):
         cx, cy = float(INFO_ZONES[i, 0]), float(INFO_ZONES[i, 1])
         w, h = float(INFO_ZONES[i, 2]), float(INFO_ZONES[i, 3])
@@ -429,30 +323,30 @@ def create_trajectory_gif(
             h,
             linewidth=2,
             edgecolor="orange",
-            facecolor="none" if has_ig else "yellow",
-            alpha=1.0 if has_ig else 0.3,
+            facecolor="yellow",
+            alpha=0.3,
         )
-        ax_map.add_patch(rect)
-        zone_patches.append(rect)
+        ax.add_patch(rect)
 
-    ax_map.plot(1.0, 5.0, "o", color="green", markersize=8)
-    ax_map.plot(
+    ax.plot(1.0, 5.0, "o", color="green", markersize=8)
+    ax.plot(
         float(GOAL_POS[0]), float(GOAL_POS[1]), "*", color="red", markersize=12
     )
-    ax_map.set_xlim(-0.5, 14.5)
-    ax_map.set_ylim(-0.5, 12.5)
-    ax_map.set_xlabel("X (m)")
-    ax_map.set_ylabel("Y (m)")
-    ax_map.set_title("Trajectory")
-    ax_map.set_aspect("equal")
+    ax.set_xlim(-0.5, 14.5)
+    ax.set_ylim(-0.5, 12.5)
+    ax.set_xlabel("X (m)")
+    ax.set_ylabel("Y (m)")
+    ax.set_aspect("equal")
 
     # Trail
-    (trail_line,) = ax_map.plot([], [], color="cyan", linewidth=2)
+    (trail_line,) = ax.plot(
+        [], [], color="cyan", linewidth=2, label="Trajectory"
+    )
     # UAV marker
-    (uav_marker,) = ax_map.plot([], [], "o", color="red", markersize=8)
+    (uav_marker,) = ax.plot([], [], "o", color="cyan", markersize=8)
     # Heading arrow
     arrow_len = 0.5
-    (heading_line,) = ax_map.plot([], [], color="red", linewidth=2.5)
+    (heading_line,) = ax.plot([], [], color="cyan", linewidth=2.5)
     # FOV wedge
     fov_patch = Polygon(
         _fov_polygon(
@@ -469,54 +363,8 @@ def create_trajectory_gif(
         edgecolor="cyan",
         linewidth=0.5,
     )
-    ax_map.add_patch(fov_patch)
-
-    # --- Info field panel (separate from map) ---
-    ig_im = None
-    field_uav_marker = None
-    if ax_field is not None and ig_frames is not None:
-        ax_field.imshow(
-            grid_np,
-            cmap="Greys",
-            origin="lower",
-            extent=extent,
-            vmin=0,
-            vmax=1,
-            alpha=0.3,
-            aspect="equal",
-        )
-        ig_im = ax_field.imshow(
-            ig_frames[0],
-            cmap=_INFO_GAIN_CMAP,
-            origin="lower",
-            extent=extent,
-            vmin=0,
-            vmax=ig_vmax,
-            aspect="equal",
-        )
-        plt.colorbar(ig_im, ax=ax_field, label="Info Gain", shrink=0.7)
-        (field_uav_marker,) = ax_field.plot(
-            [], [], "o", color="red", markersize=8
-        )
-        ax_field.set_xlim(-0.5, 14.5)
-        ax_field.set_ylim(-0.5, 12.5)
-        ax_field.set_xlabel("X (m)")
-        ax_field.set_title("Information Field")
-        ax_field.set_aspect("equal")
-
-    # --- Info level plot ---
-    ax_info.set_xlabel("Time (s)")
-    ax_info.set_ylabel("Information Level")
-    ax_info.set_title("Info Zone Depletion")
-    ax_info.set_xlim(0, t_all[-1])
-    ax_info.set_ylim(-5, 105)
-    info_lines = []
-    for i in range(info.shape[1]):
-        (line,) = ax_info.plot(
-            [], [], color=zone_colors[i], linewidth=2, label=f"Zone {i + 1}"
-        )
-        info_lines.append(line)
-    ax_info.legend(loc="upper right")
+    ax.add_patch(fov_patch)
+    ax.legend(loc="upper right")
 
     title_text = fig.suptitle("I-MPPI Trajectory  t = 0.0s")
 
@@ -525,41 +373,19 @@ def create_trajectory_gif(
         x, y = positions[k, 0], positions[k, 1]
         yaw = yaws[k]
 
-        # Trail
         trail_line.set_data(positions[: k + 1, 0], positions[: k + 1, 1])
-        # UAV
         uav_marker.set_data([x], [y])
-        # Heading
+
         dx = arrow_len * np.cos(yaw)
         dy = arrow_len * np.sin(yaw)
         heading_line.set_data([x, x + dx], [y, y + dy])
-        # FOV
+
         fov_verts = _fov_polygon(x, y, yaw, grid_np, resolution, origin=origin)
         fov_patch.set_xy(fov_verts)
-        # Info field panel
-        if ig_im is not None and ig_frames is not None:
-            ig_im.set_data(ig_frames[frame_idx])
-        if field_uav_marker is not None:
-            field_uav_marker.set_data([x], [y])
-        # Zone alpha (only when zones have fill)
-        if not has_ig:
-            for i, rect in enumerate(zone_patches):
-                alpha = max(0.05, info[min(k, len(info) - 1), i] / 100.0 * 0.4)
-                rect.set_alpha(alpha)
-        # Info lines
-        for i, line in enumerate(info_lines):
-            line.set_data(t_all[: k + 1], info[: k + 1, i])
-        # Title
+
         title_text.set_text(f"I-MPPI Trajectory  t = {k * dt:.1f}s")
 
-        artists = [trail_line, uav_marker, heading_line, fov_patch, title_text]
-        if ig_im is not None:
-            artists.append(ig_im)
-        if field_uav_marker is not None:
-            artists.append(field_uav_marker)
-        artists.extend(zone_patches)
-        artists.extend(info_lines)
-        return artists
+        return [trail_line, uav_marker, heading_line, fov_patch, title_text]
 
     anim = FuncAnimation(
         fig,
