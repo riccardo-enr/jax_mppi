@@ -8,63 +8,120 @@
 
 ## 1. Executive Summary
 
-This document outlines the design and implementation plan for adapting the existing I-MPPI (Informative Model Predictive Path Integral) architecture to work with Unmanned Ground Vehicles (UGVs). The implementation will leverage the existing JAX-based codebase and extend the two-layer hierarchical architecture currently used for quadrotors.
+This document outlines the design and implementation plan for a **parallel I-MPPI architecture** for Unmanned Ground Vehicles (UGVs). Unlike hierarchical approaches, this design runs **multiple MPPI controllers in parallel**, each optimizing different objectives (information gain, goal reaching, safety), and combines their outputs for robust, information-aware navigation.
 
 ### Key Objectives
-1. **UGV Dynamics Model**: Implement ground vehicle kinematics/dynamics models
-2. **Terrain-Aware Planning**: Extend grid maps to include elevation and traversability
-3. **Ground-Based Sensing**: Adapt FSMI for horizontal sensor models (LiDAR, cameras)
-4. **Parallel Architecture**: Maintain two-layer hierarchy (Layer 2: FSMI planner, Layer 3: MPPI controller)
-5. **Leverage Existing Code**: Reuse core MPPI, FSMI, and map infrastructure
+1. **Parallel MPPI Controllers**: Multiple MPPI instances running simultaneously with different cost weightings
+2. **UGV Dynamics Model**: Implement ground vehicle kinematics/dynamics models
+3. **Terrain-Aware Planning**: Extend grid maps to include elevation and traversability
+4. **Ground-Based Sensing**: Adapt FSMI for horizontal sensor models (LiDAR, cameras)
+5. **Action Fusion**: Combine parallel controllers' outputs via voting, averaging, or switching
+6. **JAX Parallelism**: Leverage vmap to run N controllers simultaneously on GPU
 
 ---
 
 ## 2. Architecture Overview
 
-### 2.1 Two-Layer Hierarchical Control
+### 2.1 Parallel MPPI Portfolio
+
+Instead of hierarchical layers, we run **N parallel MPPI controllers** simultaneously, each optimizing different objectives:
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  Layer 2: Information-Theoretic Planner (~5-10 Hz)     │
-│                                                         │
-│  ┌─────────────┐      ┌──────────────────┐            │
-│  │ FSMI        │──────>│ Trajectory       │            │
-│  │ Analyzer    │      │ Generator        │            │
-│  └─────────────┘      └──────────────────┘            │
-│         │                      │                        │
-│         v                      v                        │
-│  Information Field      Reference Trajectory           │
-│  (High MI regions)      (x_ref, u_ref)                │
-└─────────────────────────────────────────────────────────┘
+                    Current State (x, θ, v)
                             │
-                            │ x_ref(t), u_ref(t)
-                            v
-┌─────────────────────────────────────────────────────────┐
-│  Layer 3: Biased MPPI Controller (~50-100 Hz)          │
-│                                                         │
-│  ┌─────────────┐      ┌──────────────────┐            │
-│  │ Sampling    │──────>│ Trajectory       │            │
-│  │ (Biased)    │      │ Rollouts         │            │
-│  └─────────────┘      └──────────────────┘            │
-│         │                      │                        │
-│         v                      v                        │
-│  K samples             Cost Evaluation                 │
-│  (50% ref, 50% noise)  (tracking + info + obstacles)  │
-└─────────────────────────────────────────────────────────┘
-                            │
-                            v
-                        u(t) → UGV
+                ┌───────────┴───────────┐
+                │                       │
+        ┌───────▼───────┐      ┌───────▼───────┐      ┌───────▼───────┐
+        │  MPPI #1      │      │  MPPI #2      │      │  MPPI #N      │
+        │ (Explorer)    │      │ (Exploiter)   │ ...  │ (Cautious)    │
+        ├───────────────┤      ├───────────────┤      ├───────────────┤
+        │ Cost Weights: │      │ Cost Weights: │      │ Cost Weights: │
+        │ - Info: 0.8   │      │ - Info: 0.1   │      │ - Info: 0.3   │
+        │ - Goal: 0.1   │      │ - Goal: 0.8   │      │ - Goal: 0.3   │
+        │ - Safety: 0.1 │      │ - Safety: 0.1 │      │ - Safety: 0.4 │
+        └───────┬───────┘      └───────┬───────┘      └───────┬───────┘
+                │                      │                      │
+                │ u₁(t)               │ u₂(t)               │ uₙ(t)
+                │                      │                      │
+                └──────────────────────┴──────────────────────┘
+                                       │
+                              ┌────────▼─────────┐
+                              │  Action Fusion   │
+                              │  (Vote/Avg/Mix)  │
+                              └────────┬─────────┘
+                                       │
+                                   u*(t) → UGV
 ```
 
-### 2.2 Key Components
+**Key Insight**: By running multiple MPPI controllers with different cost weights in parallel, we get:
+- **Robustness**: Ensemble reduces variance
+- **Multi-objective**: Simultaneously optimize exploration, exploitation, and safety
+- **Adaptivity**: Switch between controllers based on context
+- **GPU Efficiency**: All N controllers run via single `vmap` operation
 
-| Component | Frequency | Purpose | JAX Pattern |
-|-----------|-----------|---------|-------------|
-| FSMI Planner | 5-10 Hz | Generate information-maximizing reference trajectories | `jax.vmap` over trajectory samples |
-| Biased MPPI | 50-100 Hz | Track reference + local obstacle avoidance | `jax.vmap` over K samples, `jax.lax.scan` over T horizon |
-| UGV Dynamics | Per-step | Forward integration of vehicle model | `jax.jit` compiled RK4/Euler |
-| Grid Map | Static/Update | Occupancy + traversability + information | Pytree-registered |
-| Sensor Model | Per-pose | LiDAR/Camera FOV and range | `jax.vmap` over beams |
+### 2.2 Portfolio Design Strategies
+
+#### Strategy 1: Exploration-Exploitation Portfolio
+| Controller | Info Weight | Goal Weight | Safety Weight | Role |
+|------------|-------------|-------------|---------------|------|
+| Explorer   | 0.7         | 0.1         | 0.2           | Maximize information gain |
+| Balanced   | 0.4         | 0.4         | 0.2           | Balance info + goal |
+| Exploiter  | 0.1         | 0.7         | 0.2           | Reach goal quickly |
+| Cautious   | 0.2         | 0.2         | 0.6           | Prioritize safety |
+
+#### Strategy 2: Regional Decomposition
+- Each controller optimizes for different spatial regions
+- Controller 1: Left side exploration
+- Controller 2: Right side exploration
+- Controller 3: Forward progress
+- Fusion: Select based on information density
+
+#### Strategy 3: Temporal Decomposition
+- Short-horizon controllers (fast reactions)
+- Long-horizon controllers (strategic planning)
+- Different time scales operating in parallel
+
+### 2.3 Action Fusion Methods
+
+**Method 1: Weighted Voting**
+```python
+def weighted_vote_fusion(actions, costs):
+    """Select action from controller with lowest cost"""
+    weights = jax.nn.softmax(-costs / temperature)
+    return (actions * weights[:, None]).sum(axis=0)
+```
+
+**Method 2: Contextual Switching**
+```python
+def context_switching_fusion(actions, costs, context):
+    """Switch controller based on context (distance to goal, info density)"""
+    if context['near_goal']:
+        return actions[exploiter_idx]  # Use exploiter near goal
+    elif context['high_info_nearby']:
+        return actions[explorer_idx]   # Use explorer in info-rich regions
+    else:
+        return actions[balanced_idx]   # Default to balanced
+```
+
+**Method 3: Trust-Weighted Average**
+```python
+def trust_weighted_fusion(actions, uncertainties):
+    """Weight by inverse uncertainty (lower uncertainty = higher trust)"""
+    trust = 1.0 / (uncertainties + 1e-6)
+    weights = trust / trust.sum()
+    return (actions * weights[:, None]).sum(axis=0)
+```
+
+### 2.4 Key Components
+
+| Component | Description | JAX Pattern |
+|-----------|-------------|-------------|
+| Parallel MPPI | N controllers with different costs | `jax.vmap` over N configs |
+| Per-Controller Sampling | K samples per controller | Nested `vmap`: outer=N, inner=K |
+| UGV Dynamics | Shared dynamics model | `jax.jit` compiled, reused by all |
+| Grid Map | Shared occupancy + info map | Pytree-registered, read-only during control |
+| Action Fusion | Combine N actions → 1 output | Custom fusion function |
+| Sensor Model | LiDAR/Camera FOV | `jax.vmap` over beams |
 
 ---
 
@@ -574,195 +631,374 @@ def create_ugv_map_from_heightmap(
 
 ---
 
-## 7. Biased MPPI for UGV
+## 7. Parallel MPPI Controllers
 
-### 7.1 Reference Trajectory Tracking
+### 7.1 Portfolio Configuration
 
 ```python
-# In src/jax_mppi/i_mppi/ugv_planner.py
+# In src/jax_mppi/i_mppi/parallel_mppi.py
 
-def biased_ugv_mppi_command(
-    config: MPPIConfig,
-    mppi_state: MPPIState,
-    current_state: jax.Array,      # (nx,) UGV state
-    reference_trajectory: jax.Array,  # (T, nx) from Layer 2
-    reference_actions: jax.Array,   # (T, nu) from Layer 2
-    dynamics,
-    running_cost,
-    terminal_cost,
-    bias_ratio: float = 0.5,        # 50% biased toward reference
-    key: jax.Array = None
-):
+@dataclass(frozen=True)
+class MPPIPortfolioConfig:
+    """Configuration for N parallel MPPI controllers"""
+    num_controllers: int           # N - number of parallel MPPIs
+    base_config: MPPIConfig        # Shared MPPI configuration
+    cost_weights: jax.Array        # (N, num_objectives) weight matrix
+    fusion_method: str = "weighted_vote"  # or "switching", "average"
+    fusion_temperature: float = 1.0
+
+
+@dataclass(frozen=True)
+class CostWeights:
+    """Multi-objective cost weights for a single controller"""
+    information_gain: float = 0.0  # Weight for FSMI-based information
+    goal_reaching: float = 1.0     # Weight for distance to goal
+    obstacle_avoidance: float = 1.0  # Weight for safety
+    terrain_cost: float = 0.5      # Weight for traversability
+    control_effort: float = 0.1    # Weight for smooth controls
+
+
+def create_exploration_portfolio() -> list[CostWeights]:
     """
-    Biased sampling MPPI for Layer 3 control
-
-    Sampling strategy:
-    - 50% of samples centered on reference trajectory
-    - 50% of samples from exploration noise
-
-    Cost includes:
-    - Reference tracking cost
-    - Information gain reward
-    - Obstacle avoidance cost
+    Create a standard exploration-exploitation portfolio
+    Returns 4 controllers with different behavioral biases
     """
-    T = config.horizon
-    K = config.num_samples
-    nu = config.nu
-
-    K_biased = int(K * bias_ratio)
-    K_explore = K - K_biased
-
-    # Get reference for current horizon window
-    ref_actions = reference_actions[:T]  # (T, nu)
-
-    # Sample noise
-    key, subkey1, subkey2 = jax.random.split(key, 3)
-
-    # Biased samples: reference + small noise
-    noise_biased = jax.random.multivariate_normal(
-        subkey1,
-        mean=jnp.zeros(nu),
-        cov=mppi_state.noise_sigma * 0.1,  # 10% of exploration noise
-        shape=(K_biased, T)
-    )
-    actions_biased = ref_actions[None, :, :] + noise_biased  # (K_biased, T, nu)
-
-    # Exploration samples: current trajectory + full noise
-    noise_explore = jax.random.multivariate_normal(
-        subkey2,
-        mean=jnp.zeros(nu),
-        cov=mppi_state.noise_sigma,
-        shape=(K_explore, T)
-    )
-    actions_explore = mppi_state.U[None, :, :] + noise_explore  # (K_explore, T, nu)
-
-    # Concatenate
-    actions = jnp.concatenate([actions_biased, actions_explore], axis=0)  # (K, T, nu)
-
-    # Standard MPPI rollout and weighting
-    costs = jax.vmap(
-        lambda a: _rollout_cost(
-            config, current_state, a, dynamics, running_cost, terminal_cost
-        )
-    )(actions)
-
-    # Importance sampling weights
-    weights = jax.nn.softmax(-costs / config.lambda_)
-
-    # Update trajectory
-    all_noise = jnp.concatenate([noise_biased, noise_explore], axis=0)
-    delta_U = jnp.tensordot(weights, all_noise, axes=1)
-
-    U_new = mppi_state.U + delta_U
-
-    # Update state
-    new_mppi_state = mppi_state.replace(U=U_new, key=key)
-
-    # Return first action
-    action = U_new[0]
-
-    return action, new_mppi_state
+    return [
+        # Explorer: Maximize information gain
+        CostWeights(
+            information_gain=0.7,
+            goal_reaching=0.1,
+            obstacle_avoidance=0.2,
+            terrain_cost=0.0,
+            control_effort=0.0
+        ),
+        # Balanced: Equal info + goal
+        CostWeights(
+            information_gain=0.4,
+            goal_reaching=0.4,
+            obstacle_avoidance=0.2,
+            terrain_cost=0.0,
+            control_effort=0.0
+        ),
+        # Exploiter: Reach goal quickly
+        CostWeights(
+            information_gain=0.1,
+            goal_reaching=0.7,
+            obstacle_avoidance=0.2,
+            terrain_cost=0.0,
+            control_effort=0.0
+        ),
+        # Cautious: Prioritize safety
+        CostWeights(
+            information_gain=0.2,
+            goal_reaching=0.2,
+            obstacle_avoidance=0.4,
+            terrain_cost=0.2,
+            control_effort=0.0
+        ),
+    ]
 ```
 
-### 7.2 Composite Cost Function
+### 7.2 Parallel Execution via vmap
 
 ```python
-def create_ugv_i_mppi_cost(
-    Q_ref: float,              # Reference tracking weight
-    Q_info: float,             # Information gain weight
-    Q_obs: jax.Array,          # Obstacle avoidance
-    reference_traj: jax.Array, # (T, nx)
+def parallel_mppi_command(
+    portfolio_config: MPPIPortfolioConfig,
+    mppi_states: list[MPPIState],    # (N,) states for each controller
+    current_state: jax.Array,        # (nx,) UGV state
+    goal_state: jax.Array,           # (nx,) goal
     grid_map: UGVGridMap,
-    sensor_config: LiDARConfig
+    dynamics,
+    key: jax.Array
 ):
     """
-    Multi-objective cost for UGV I-MPPI
+    Run N MPPI controllers in parallel and fuse their actions
+
+    Returns:
+        - fused_action: (nu,) the combined action
+        - mppi_states: (N,) updated states for each controller
+        - controller_actions: (N, nu) individual actions (for analysis)
+        - costs: (N,) total cost for each controller
     """
-    def running_cost(state, action, t):
-        # 1. Reference tracking
-        ref_state = reference_traj[t]
-        tracking_error = state - ref_state
-        tracking_cost = Q_ref * (tracking_error @ tracking_error)
+    N = portfolio_config.num_controllers
 
-        # 2. Information gain (negative cost = reward)
-        pos = state[:2]
-        theta = state[2]
-        info_gain = grid_map.query_entropy_at(pos)
-        info_cost = -Q_info * info_gain
+    # Create cost functions for each controller
+    def create_cost_fn(weights: CostWeights):
+        def running_cost(state, action, t):
+            # Multi-objective cost combination
+            info_cost = -weights.information_gain * compute_info_gain(
+                state, grid_map
+            )
+            goal_cost = weights.goal_reaching * jnp.linalg.norm(
+                state[:2] - goal_state[:2]
+            )**2
+            obs_cost = weights.obstacle_avoidance * compute_obstacle_cost(
+                state, grid_map
+            )
+            terrain_cost = weights.terrain_cost * compute_terrain_cost(
+                state, grid_map
+            )
+            control_cost = weights.control_effort * (action @ action)
 
-        # 3. Obstacle avoidance
-        _, trav, occ = grid_map.query_terrain(pos[0], pos[1])
-        obstacle_cost = jnp.where(occ > 0.5, 1e6, 0.0)  # Hard constraint
+            return info_cost + goal_cost + obs_cost + terrain_cost + control_cost
 
-        # Traversability penalty
-        trav_cost = 10.0 * (1.0 - trav)
+        return running_cost
 
-        return tracking_cost + info_cost + obstacle_cost + trav_cost
+    # Vectorize over N controllers
+    def single_controller_step(mppi_state, cost_weights):
+        """Run one MPPI controller"""
+        cost_fn = create_cost_fn(cost_weights)
 
-    return running_cost
+        action, new_state = mppi.command(
+            portfolio_config.base_config,
+            mppi_state,
+            current_state,
+            dynamics=dynamics,
+            running_cost=cost_fn,
+            terminal_cost=cost_fn
+        )
+
+        # Compute total cost for fusion
+        total_cost = evaluate_trajectory_cost(
+            current_state, action, cost_fn, dynamics
+        )
+
+        return action, new_state, total_cost
+
+    # Run all N controllers in parallel (single vmap!)
+    cost_weights_array = portfolio_config.cost_weights  # (N, num_objectives)
+
+    actions, new_states, costs = jax.vmap(single_controller_step)(
+        jnp.array(mppi_states),
+        cost_weights_array
+    )
+    # actions: (N, nu)
+    # new_states: (N, MPPIState)
+    # costs: (N,)
+
+    # Fuse actions based on selected method
+    fused_action = fuse_actions(
+        actions,
+        costs,
+        method=portfolio_config.fusion_method,
+        temperature=portfolio_config.fusion_temperature
+    )
+
+    return fused_action, new_states, actions, costs
+```
+
+### 7.3 Action Fusion Methods
+
+```python
+def fuse_actions(
+    actions: jax.Array,      # (N, nu) actions from N controllers
+    costs: jax.Array,        # (N,) costs for each controller
+    method: str = "weighted_vote",
+    temperature: float = 1.0
+) -> jax.Array:
+    """
+    Combine actions from multiple controllers into single action
+
+    Args:
+        actions: (N, nu) array of actions
+        costs: (N,) array of costs (lower is better)
+        method: Fusion strategy
+        temperature: Softmax temperature for weighted methods
+
+    Returns:
+        fused_action: (nu,) single action
+    """
+    if method == "weighted_vote":
+        # Softmax weighting based on cost
+        weights = jax.nn.softmax(-costs / temperature)
+        return (actions * weights[:, None]).sum(axis=0)
+
+    elif method == "best_only":
+        # Select action from best controller
+        best_idx = jnp.argmin(costs)
+        return actions[best_idx]
+
+    elif method == "average":
+        # Simple average (equal weight)
+        return actions.mean(axis=0)
+
+    elif method == "median":
+        # Median (robust to outliers)
+        return jnp.median(actions, axis=0)
+
+    else:
+        raise ValueError(f"Unknown fusion method: {method}")
+
+
+def contextual_fusion(
+    actions: jax.Array,
+    costs: jax.Array,
+    current_state: jax.Array,
+    goal_state: jax.Array,
+    grid_map: UGVGridMap,
+    controller_types: list[str]  # ["explorer", "balanced", "exploiter", "cautious"]
+) -> jax.Array:
+    """
+    Context-aware controller selection
+
+    Selects controller based on current situation:
+    - Near goal → use exploiter
+    - High information density → use explorer
+    - Near obstacles → use cautious
+    - Default → use balanced
+    """
+    # Compute context features
+    distance_to_goal = jnp.linalg.norm(current_state[:2] - goal_state[:2])
+    local_info = grid_map.query_entropy_at(current_state[:2])
+    local_occupancy = grid_map.query_occupancy_at(current_state[:2])
+
+    # Decision logic
+    near_goal_threshold = 2.0
+    high_info_threshold = 0.7
+    near_obstacle_threshold = 0.3
+
+    # Priority-based selection
+    if distance_to_goal < near_goal_threshold:
+        # Near goal: use exploiter
+        idx = controller_types.index("exploiter")
+    elif local_occupancy > near_obstacle_threshold:
+        # Near obstacles: use cautious
+        idx = controller_types.index("cautious")
+    elif local_info > high_info_threshold:
+        # High information: use explorer
+        idx = controller_types.index("explorer")
+    else:
+        # Default: use balanced
+        idx = controller_types.index("balanced")
+
+    return actions[idx]
 ```
 
 ---
 
-## 8. Layer 2: FSMI Planner for UGV
+## 8. Information Gain Computation (FSMI Integration)
 
-### 8.1 Adapt Existing FSMI
+### 8.1 Fast Shannon Mutual Information for UGV
 
-The existing FSMI infrastructure in `src/jax_mppi/i_mppi/fsmi.py` can be largely reused, with modifications:
+The existing FSMI infrastructure in `src/jax_mppi/i_mppi/fsmi.py` can be reused and adapted for UGV horizontal sensing. Instead of a separate layer, FSMI is computed **per-pose within each controller's cost function**:
 
 ```python
 # In src/jax_mppi/i_mppi/ugv_fsmi.py
 
-def create_ugv_fsmi_trajectory_generator(
-    dynamics,                  # UGV dynamics
+def compute_info_gain(
+    state: jax.Array,        # (nx,) UGV pose [x, y, θ, ...]
+    grid_map: UGVGridMap,
+    sensor_config: LiDARConfig
+) -> float:
+    """
+    Compute expected information gain at a given pose
+
+    This is called within MPPI cost functions (per-timestep evaluation)
+
+    Returns:
+        info_gain: Scalar information metric (higher = more informative)
+    """
+    x, y, theta = state[0], state[1], state[2]
+
+    # Compute sensor FOV in world frame
+    angles = jnp.linspace(
+        theta - sensor_config.fov_angle / 2,
+        theta + sensor_config.fov_angle / 2,
+        sensor_config.num_beams
+    )
+
+    # Sample points within sensor range
+    ranges = jnp.linspace(0, sensor_config.max_range, 20)  # Discretize range
+
+    # Create grid of beam endpoints
+    beam_x = x + jnp.outer(ranges, jnp.cos(angles)).flatten()
+    beam_y = y + jnp.outer(ranges, jnp.sin(angles)).flatten()
+
+    # Query entropy at each point
+    entropies = jax.vmap(
+        lambda bx, by: grid_map.query_entropy_at(jnp.array([bx, by]))
+    )(beam_x, beam_y)
+
+    # Weight by distance (closer points have higher weight)
+    distances = jnp.linalg.norm(
+        jnp.stack([beam_x - x, beam_y - y], axis=1),
+        axis=1
+    )
+    distance_weights = jnp.exp(-distances / sensor_config.max_range)
+
+    # Aggregate information (weighted sum)
+    total_info = (entropies * distance_weights).sum()
+
+    return total_info
+
+
+def compute_full_trajectory_fsmi(
+    trajectory: jax.Array,   # (T, nx) sequence of states
     grid_map: UGVGridMap,
     sensor_config: LiDARConfig,
-    num_trajectory_samples: int = 100,
-    trajectory_horizon: int = 50,
-    planning_dt: float = 0.2   # Longer timestep for Layer 2
-):
+    discount_factor: float = 0.95
+) -> float:
     """
-    Generate information-maximizing trajectories for UGV
+    Compute total information gain for a full trajectory
 
-    Key differences from quadrotor version:
-    1. UGV dynamics constraints (turning radius, etc.)
-    2. Horizontal sensor FOV instead of downward
-    3. Terrain-aware sampling
+    Used for offline trajectory evaluation or analysis
+    (not in the hot control loop)
+
+    Args:
+        trajectory: (T, nx) state sequence
+        discount_factor: Temporal discount (reduce double-counting)
+
+    Returns:
+        total_fsmi: Cumulative information along trajectory
     """
-    def sample_trajectories(
-        current_state: jax.Array,  # (nx,)
-        goal_position: jax.Array,  # (2,) or (3,)
-        key: jax.Array
-    ) -> jax.Array:
-        """
-        Sample K candidate trajectories with exploration bias
-        Returns: (K, T, nx)
-        """
-        # Strategy: Sample control sequences, rollout dynamics
-        keys = jax.random.split(key, num_trajectory_samples)
+    # Compute per-pose information
+    per_pose_info = jax.vmap(
+        lambda state: compute_info_gain(state, grid_map, sensor_config)
+    )(trajectory)  # (T,)
 
-        def sample_single_trajectory(k):
-            # Sample control sequence (exploration + goal-directed)
-            actions = _sample_ugv_actions(k, current_state, goal_position)
+    # Apply temporal discount
+    discounts = discount_factor ** jnp.arange(len(trajectory))
+    total_fsmi = (per_pose_info * discounts).sum()
 
-            # Rollout
-            def step(state, action):
-                next_state = dynamics(state, action)
-                return next_state, next_state
+    return total_fsmi
 
-            _, traj = jax.lax.scan(step, current_state, actions)
-            return traj  # (T, nx)
 
-        trajectories = jax.vmap(sample_single_trajectory)(keys)  # (K, T, nx)
-        return trajectories
+def create_information_field_cache(
+    grid_map: UGVGridMap,
+    sensor_config: LiDARConfig,
+    heading_samples: int = 16
+) -> jax.Array:
+    """
+    Pre-compute information field for all (x, y, θ) combinations
 
-    def evaluate_fsmi(trajectories: jax.Array) -> jax.Array:
-        """
-        Evaluate FSMI for each trajectory
-        Returns: (K,) information scores
-        """
-        def trajectory_info(traj):
-            # Per-pose information (reuse existing FSMI logic)
+    This creates a lookup table (H, W, heading_samples) that can be
+    queried during MPPI for fast information estimates
+
+    Returns:
+        info_field: (H, W, heading_samples) array of information values
+    """
+    H, W = grid_map.height, grid_map.width
+    headings = jnp.linspace(0, 2 * jnp.pi, heading_samples, endpoint=False)
+
+    def compute_cell_info(i, j, theta_idx):
+        # Convert grid cell to world coordinates
+        x, y = grid_map.grid_to_world(i, j)
+        theta = headings[theta_idx]
+
+        state = jnp.array([x, y, theta, 0.0, 0.0])  # Dummy velocities
+        return compute_info_gain(state, grid_map, sensor_config)
+
+    # Vectorize over all grid cells and headings
+    info_field = jax.vmap(jax.vmap(jax.vmap(
+        compute_cell_info,
+        in_axes=(None, None, 0)  # vmap over headings
+    ), in_axes=(None, 0, None)),  # vmap over width
+        in_axes=(0, None, None)    # vmap over height
+    )(
+        jnp.arange(H), jnp.arange(W), jnp.arange(heading_samples)
+    )
+
+    return info_field  # (H, W, heading_samples)
             def pose_info(state):
                 pos = state[:2]
                 theta = state[2]
@@ -858,47 +1094,59 @@ def create_ugv_fsmi_trajectory_generator(
 
 ---
 
-### Phase 3: Layer 3 Controller (Week 4)
+### Phase 3: FSMI Integration (Week 3-4)
 
 **Files to Create:**
-1. `src/jax_mppi/i_mppi/ugv_planner.py`
-   - `biased_ugv_mppi_command()` function
-   - Composite cost function for I-MPPI
-   - Reference trajectory tracking
+1. `src/jax_mppi/i_mppi/ugv_fsmi.py`
+   - `compute_info_gain()` function for per-pose information
+   - `compute_full_trajectory_fsmi()` for trajectory evaluation
+   - `create_information_field_cache()` for lookup table acceleration
+   - Horizontal FOV information computation
 
-2. `examples/ugv/basic_navigation.py`
+2. `src/jax_mppi/costs/ugv.py` (extend)
+   - Information-aware cost functions
+   - Multi-objective cost with info gain term
+
+3. `examples/ugv/basic_navigation.py`
    - Simple waypoint navigation demo
    - Uses differential drive dynamics
-   - No information gathering yet
+   - Single MPPI controller
 
-3. `tests/test_ugv_mppi.py`
+4. `tests/test_ugv_fsmi.py`
+5. `tests/test_ugv_mppi.py`
 
 **Deliverables:**
-- Working biased MPPI for UGV
-- Basic navigation example
+- FSMI computation for UGV horizontal sensing
+- Information-aware cost functions
+- Basic navigation example working
 - Obstacle avoidance working
 
 ---
 
-### Phase 4: Layer 2 Planner (Week 5)
+### Phase 4: Parallel MPPI Portfolio (Week 4-5)
 
-**Files to Modify/Create:**
-1. `src/jax_mppi/i_mppi/ugv_fsmi.py`
-   - FSMI trajectory generator for UGV
-   - Horizontal FOV information computation
-   - Trajectory sampling with UGV constraints
+**Files to Create:**
+1. `src/jax_mppi/i_mppi/parallel_mppi.py`
+   - `MPPIPortfolioConfig` dataclass
+   - `CostWeights` dataclass
+   - `parallel_mppi_command()` function (main controller)
+   - `fuse_actions()` with multiple fusion strategies
+   - `contextual_fusion()` for context-aware selection
+   - `create_exploration_portfolio()` factory
 
-2. `examples/ugv/i_mppi_exploration.py`
-   - Full two-layer I-MPPI demo
+2. `examples/ugv/parallel_i_mppi.py`
+   - Full parallel I-MPPI demo
+   - 4 controllers (explorer, balanced, exploiter, cautious)
    - Unknown environment exploration
-   - Information gathering visualization
+   - Visualization of controller outputs
 
-3. `tests/test_ugv_i_mppi.py`
+3. `tests/test_parallel_mppi.py`
 
 **Deliverables:**
-- Complete two-layer architecture
-- Information-guided exploration
-- End-to-end UGV demo
+- Complete parallel MPPI architecture
+- N controllers running simultaneously via vmap
+- Action fusion working (weighted vote, switching, etc.)
+- Information-guided exploration demo
 
 ---
 
@@ -924,23 +1172,34 @@ def create_ugv_fsmi_trajectory_generator(
 
 ## 10. Parallelization Strategy
 
-### 10.1 JAX Parallelization Patterns
+### 10.1 Multi-Level Parallelization
 
-Following existing codebase patterns:
+The parallel architecture exploits JAX's nested parallelization:
 
 ```python
-# Sample-level parallelism (K samples)
-costs = jax.vmap(rollout_cost)(actions)  # (K, T, nu) -> (K,)
+# Level 1: Controller parallelism (N controllers)
+actions, states, costs = jax.vmap(run_single_mppi)(
+    mppi_states,      # (N, MPPIState)
+    cost_weights      # (N, num_objectives)
+)  # -> (N, nu), (N, MPPIState), (N,)
 
-# Horizon-level parallelism (T steps)
+# Level 2: Sample-level parallelism (K samples per controller)
+# Inside each controller:
+rollout_costs = jax.vmap(rollout_single_trajectory)(
+    perturbed_actions  # (K, T, nu)
+)  # -> (K,)
+
+# Level 3: Horizon-level sequential execution (T steps per sample)
+# Inside each rollout:
 _, states = jax.lax.scan(dynamics_step, init_state, actions)  # (T, nu) -> (T, nx)
 
-# Batch trajectory parallelism (Layer 2)
-info_scores = jax.vmap(evaluate_fsmi)(trajectories)  # (100, T, nx) -> (100,)
-
-# Sensor beam parallelism
-ray_costs = jax.vmap(ray_trace)(beam_endpoints)  # (360,) -> (360,)
+# Level 4: Sensor beam parallelism (within cost computation)
+entropies = jax.vmap(query_entropy)(beam_endpoints)  # (num_beams,) -> (num_beams,)
 ```
+
+**Total Parallelism**: `N × K × num_beams` operations in parallel!
+
+Example with N=4, K=1000, beams=360: **1.44 million parallel evaluations** per control step!
 
 ### 10.2 GPU Optimization
 
@@ -967,25 +1226,41 @@ for i in range(K):
 costs = jax.vmap(jitted_rollout)(actions)  # Fast!
 ```
 
-### 10.3 Multi-Layer Asynchronous Execution
+### 10.3 Synchronous Parallel Execution
 
 ```python
-# Layer 2 runs at 10 Hz (every 10 Layer 3 steps)
-layer2_update_interval = 10
-
+# All N controllers run in parallel at same frequency (50-100 Hz)
 for step in range(num_steps):
-    # Layer 3: High-frequency control
-    action, mppi_state = biased_mppi_command(...)
-    state = dynamics(state, action)
+    # Run all controllers in parallel (single vmap operation)
+    fused_action, mppi_states, individual_actions, costs = parallel_mppi_command(
+        portfolio_config,
+        mppi_states,
+        current_state,
+        goal,
+        grid_map,
+        dynamics,
+        key
+    )
 
-    # Layer 2: Low-frequency replanning
-    if step % layer2_update_interval == 0:
-        reference_traj = fsmi_planner.generate_reference(state, goal)
+    # Execute fused action
+    current_state = dynamics(current_state, fused_action)
 
-    # Update map from sensor data
-    if new_sensor_data_available:
-        grid_map = grid_map.update_from_lidar(state, lidar_scan, sensor_model)
+    # Update map periodically (every 5-10 steps)
+    if step % map_update_interval == 0 and new_sensor_data_available:
+        grid_map = grid_map.update_from_lidar(
+            current_state, lidar_scan, sensor_model
+        )
+
+    # Optional: Log individual controller behavior for analysis
+    if step % 100 == 0:
+        log_controller_diversity(individual_actions, costs)
 ```
+
+**Key Advantages**:
+- All controllers synchronized (no race conditions)
+- Single GPU kernel launch per step (efficient)
+- Simple timing model (no async complexity)
+- Easy to debug and reason about
 
 ---
 
@@ -1017,24 +1292,55 @@ def test_pytree_compatibility():
 ### 11.2 Integration Tests
 
 ```python
-# tests/test_ugv_i_mppi.py
-def test_full_pipeline():
-    """End-to-end test of two-layer I-MPPI"""
+# tests/test_parallel_mppi.py
+def test_parallel_mppi_pipeline():
+    """End-to-end test of parallel I-MPPI"""
     # Setup
     dynamics, _ = create_diffdrive_dynamics()
     grid_map = create_simple_test_map()
 
-    # Layer 2
-    trajectories = sample_trajectories(init_state, goal, key)
-    info_scores = evaluate_fsmi(trajectories, grid_map)
-    best_traj, _ = select_best_trajectory(trajectories, info_scores, goal)
+    # Create portfolio config
+    portfolio_config = MPPIPortfolioConfig(
+        num_controllers=4,
+        base_config=base_mppi_config,
+        cost_weights=create_exploration_portfolio(),
+        fusion_method="weighted_vote"
+    )
 
-    # Layer 3
-    action, _ = biased_mppi_command(mppi_state, init_state, best_traj, ...)
+    # Initialize N controller states
+    mppi_states = [MPPIState.create(base_mppi_config) for _ in range(4)]
 
-    # Verify
-    assert action.shape == (2,)  # Valid UGV action
-    assert jnp.isfinite(action).all()
+    # Run parallel controllers
+    fused_action, new_states, actions, costs = parallel_mppi_command(
+        portfolio_config,
+        mppi_states,
+        init_state,
+        goal,
+        grid_map,
+        dynamics,
+        key
+    )
+
+    # Verify outputs
+    assert fused_action.shape == (2,)  # Valid UGV action
+    assert jnp.isfinite(fused_action).all()
+    assert len(actions) == 4  # All 4 controllers produced actions
+    assert len(costs) == 4  # All 4 controllers evaluated
+
+def test_controller_diversity():
+    """Verify controllers produce different behaviors"""
+    # ... setup same as above ...
+
+    # Controllers should produce different actions
+    assert not jnp.allclose(actions[0], actions[1])  # Explorer != Balanced
+    assert not jnp.allclose(actions[1], actions[2])  # Balanced != Exploiter
+
+def test_fusion_methods():
+    """Test all fusion methods work"""
+    for method in ["weighted_vote", "best_only", "average", "median"]:
+        action = fuse_actions(test_actions, test_costs, method=method)
+        assert action.shape == (2,)
+        assert jnp.isfinite(action).all()
 ```
 
 ### 11.3 Benchmark Tests
@@ -1278,12 +1584,18 @@ for _ in range(100):
     print(f"State: {current_state}, Action: {action}")
 ```
 
-### B.2 I-MPPI Usage Pattern
+### B.2 Parallel I-MPPI Usage Pattern
 
 ```python
-from jax_mppi.i_mppi.ugv_planner import biased_ugv_mppi_command
-from jax_mppi.i_mppi.ugv_fsmi import create_ugv_fsmi_trajectory_generator
+from jax_mppi.i_mppi.parallel_mppi import (
+    parallel_mppi_command,
+    MPPIPortfolioConfig,
+    create_exploration_portfolio,
+    fuse_actions
+)
 from jax_mppi.i_mppi.ugv_map import create_ugv_map_from_heightmap
+from jax_mppi.i_mppi.sensors import create_lidar_sensor_model
+from jax_mppi.dynamics.ugv import create_diffdrive_dynamics
 
 # Load map
 grid_map = create_ugv_map_from_heightmap(
@@ -1292,73 +1604,166 @@ grid_map = create_ugv_map_from_heightmap(
     resolution=0.1
 )
 
-# Setup Layer 2 (FSMI planner)
-fsmi_gen = create_ugv_fsmi_trajectory_generator(
-    dynamics=dynamics,
-    grid_map=grid_map,
-    sensor_config=lidar_config
+# Setup dynamics
+dynamics, dyn_config = create_diffdrive_dynamics(dt=0.05, max_v=2.0)
+
+# Create base MPPI config
+base_config = MPPIConfig(
+    num_samples=1000,
+    horizon=30,
+    nx=5,
+    nu=2,
+    lambda_=1.0,
+    **dyn_config
 )
 
-# Setup Layer 3 (Biased MPPI)
-mppi_state = MPPIState.create(config)
+# Create portfolio of 4 controllers with different objectives
+portfolio_config = MPPIPortfolioConfig(
+    num_controllers=4,
+    base_config=base_config,
+    cost_weights=create_exploration_portfolio(),  # [explorer, balanced, exploiter, cautious]
+    fusion_method="weighted_vote",
+    fusion_temperature=1.0
+)
 
-# Two-layer control loop
-current_state = initial_state
-reference_traj = None
+# Initialize states for all N controllers
+mppi_states = [MPPIState.create(base_config) for _ in range(4)]
+
+# Parallel control loop
+current_state = jnp.array([0.0, 0.0, 0.0, 0.0, 0.0])  # [x, y, θ, v, ω]
+goal = jnp.array([10.0, 10.0, 0.0, 0.0, 0.0])
 key = jax.random.PRNGKey(0)
 
 for step in range(1000):
-    # Layer 2: Replan every 10 steps
-    if step % 10 == 0:
-        key, subkey = jax.random.split(key)
-        trajectories = fsmi_gen.sample_trajectories(current_state, goal, subkey)
-        info_scores = fsmi_gen.evaluate_fsmi(trajectories)
-        reference_traj, _ = fsmi_gen.select_best_trajectory(
-            trajectories, info_scores, goal
-        )
+    key, subkey = jax.random.split(key)
 
-    # Layer 3: Track reference
-    action, mppi_state = biased_ugv_mppi_command(
-        config, mppi_state, current_state,
-        reference_trajectory=reference_traj,
-        dynamics=dynamics,
-        running_cost=cost,
-        bias_ratio=0.5
+    # Run all 4 controllers in parallel (single vmap!)
+    fused_action, mppi_states, individual_actions, costs = parallel_mppi_command(
+        portfolio_config,
+        mppi_states,
+        current_state,
+        goal,
+        grid_map,
+        dynamics,
+        subkey
     )
 
-    # Execute
-    current_state = dynamics(current_state, action)
+    # Execute fused action
+    current_state = dynamics(current_state, fused_action)
 
-    # Update map (if sensor data available)
+    # Update map from sensor data
     if step % 5 == 0:
         scan = simulate_lidar(current_state, true_map)
         grid_map = grid_map.update_from_lidar(
             current_state, scan, sensor_model
         )
+
+    # Optional: Visualize controller diversity
+    if step % 100 == 0:
+        print(f"Step {step}:")
+        print(f"  Explorer action: {individual_actions[0]}")
+        print(f"  Balanced action: {individual_actions[1]}")
+        print(f"  Exploiter action: {individual_actions[2]}")
+        print(f"  Cautious action: {individual_actions[3]}")
+        print(f"  Fused action: {fused_action}")
+        print(f"  Costs: {costs}")
+```
+
+### B.3 Custom Portfolio Configuration
+
+```python
+# Define custom cost weights for specific application
+custom_weights = [
+    # Warehouse robot: prioritize safety and efficiency
+    CostWeights(
+        information_gain=0.2,
+        goal_reaching=0.6,
+        obstacle_avoidance=0.5,
+        terrain_cost=0.0,
+        control_effort=0.1
+    ),
+    # Search robot: maximize exploration
+    CostWeights(
+        information_gain=0.8,
+        goal_reaching=0.1,
+        obstacle_avoidance=0.3,
+        terrain_cost=0.0,
+        control_effort=0.0
+    ),
+    # Patrol robot: balance coverage and safety
+    CostWeights(
+        information_gain=0.5,
+        goal_reaching=0.3,
+        obstacle_avoidance=0.4,
+        terrain_cost=0.1,
+        control_effort=0.1
+    ),
+]
+
+# Create custom portfolio
+custom_portfolio = MPPIPortfolioConfig(
+    num_controllers=3,
+    base_config=base_config,
+    cost_weights=jnp.array([w.to_array() for w in custom_weights]),
+    fusion_method="contextual",  # Use context-aware switching
+)
+
+# Use contextual fusion for intelligent controller selection
+action = contextual_fusion(
+    individual_actions,
+    costs,
+    current_state,
+    goal,
+    grid_map,
+    controller_types=["warehouse", "search", "patrol"]
+)
 ```
 
 ---
 
 ## Summary
 
-This plan provides a comprehensive roadmap for implementing parallel I-MPPI for UGVs in JAX. The key design principles are:
+This plan provides a comprehensive roadmap for implementing **parallel I-MPPI** for UGVs in JAX. The key design principles are:
 
-1. **Leverage existing code**: Reuse core MPPI, FSMI, and map infrastructure
-2. **Modular design**: Separate dynamics, costs, sensors, and planners
-3. **JAX-native**: Pure functional, JIT-compilable, vectorized
-4. **Incremental development**: 6-week phased approach
-5. **Practical focus**: Target real UGV applications (warehouse, outdoor, security)
+1. **True Parallelism**: Multiple MPPI controllers running simultaneously (not hierarchical layers)
+2. **Portfolio Approach**: Diverse controllers with different objectives (exploration, exploitation, safety)
+3. **Action Fusion**: Smart combination strategies (weighted voting, contextual switching, averaging)
+4. **JAX-Native**: Pure functional, JIT-compilable, nested vmap for massive parallelism
+5. **Modular Design**: Separate dynamics, costs, sensors, and fusion logic
+6. **Incremental Development**: 5-week phased approach
+7. **Practical Focus**: Target real UGV applications (warehouse, search & rescue, patrol)
 
-The implementation will extend the proven quadrotor I-MPPI architecture to ground vehicles while adding UGV-specific features like terrain awareness, horizontal sensing, and constrained dynamics.
+### Key Innovations
+
+**vs. Hierarchical I-MPPI:**
+- ✅ All controllers run at same frequency (simpler timing)
+- ✅ Single vmap operation (more GPU-efficient)
+- ✅ No reference trajectory tracking overhead
+- ✅ Ensemble robustness through diversity
+- ✅ Adaptive behavior via contextual fusion
+
+**Architecture Highlights:**
+- **N = 4 controllers**: Explorer, Balanced, Exploiter, Cautious
+- **K = 1000 samples** per controller
+- **Total parallelism**: 4 × 1000 × 360 beams = **1.44M operations** per step
+- **Target frequency**: 50-100 Hz on GPU
+
+**UGV-Specific Features:**
+- Differential drive, unicycle, and Ackermann dynamics
+- Multi-layer grid maps (occupancy, elevation, traversability)
+- Horizontal LiDAR and camera sensor models
+- Terrain-aware cost functions
 
 **Next Steps:**
 1. Review and approve this plan
 2. Begin Phase 1: UGV dynamics implementation
-3. Set up testing infrastructure
-4. Iterate based on experimental results
+3. Phase 2: Sensing and mapping
+4. Phase 3: FSMI integration
+5. Phase 4: Parallel MPPI portfolio (main innovation!)
+6. Phase 5: Optimization and benchmarking
 
 ---
 
-**Document Version**: 1.0
+**Document Version**: 2.0 (Revised for Parallel Architecture)
 **Last Updated**: 2026-02-12
 **Author**: Claude (Anthropic)
