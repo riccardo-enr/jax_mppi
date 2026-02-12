@@ -118,3 +118,4 @@ publish-doc = { cmd = "quarto publish gh-pages --no-browser --no-prompt", cwd = 
 # Examples
 i-mppi-jax = { cmd = "python examples/i_mppi/i_mppi_parallel_simulation.py", env = { PYTHONPATH = "src" } }
 i-mppi-cuda = { cmd = "python examples/i_mppi/i_mppi_cuda_simulation.py", env = { PYTHONPATH = "src" } }
+i-mppi-ugv-jax = { cmd = "python examples/i_mppi_ugv/i_mppi_ugv_simulation.py", env = { PYTHONPATH = "src" } }
