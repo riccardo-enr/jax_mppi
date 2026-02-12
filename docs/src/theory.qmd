@@ -2,7 +2,9 @@
 title: "Theoretical Background"
 format:
   html:
-    math: true
+    code-fold: false
+    toc: true
+    toc-depth: 3
 ---
 
 This section provides the mathematical foundations for the Model Predictive Path Integral (MPPI) control algorithm and its variants implemented in `jax_mppi`.

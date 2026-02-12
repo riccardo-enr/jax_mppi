@@ -1,36 +1,29 @@
-"""Quadrotor 6-DOF dynamics with quaternion representation.
+from typing import Callable, Tuple
 
-This module implements quadrotor dynamics following the NED-FRD convention:
-- NED (North-East-Down): World/global frame where Z-axis points down
-- FRD (Forward-Right-Down): Body frame where X-axis points forward, Y right, Z down
-
-State (13D): [px, py, pz, vx, vy, vz, qw, qx, qy, qz, wx, wy, wz]
-    - Position/velocity in NED world frame
-    - Quaternion: body FRD to world NED (unit norm)
-    - Angular velocity in FRD body frame
-
-Control (4D): [T, wx_cmd, wy_cmd, wz_cmd]
-    - T: thrust magnitude (positive, acts in -Z body direction/upward)
-    - w_cmd: angular rate commands in FRD body frame
-"""
-
+import chex
+import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Float
 
+# -----------------------------------------------------------------------
+# Helper Functions
+# -----------------------------------------------------------------------
 
-def quaternion_to_rotation_matrix(q: Float[Array, "4"]) -> Float[Array, "3 3"]:
+
+def quaternion_to_rotation_matrix(
+    q: Float[Array, "4"],
+) -> Float[Array, "3 3"]:
     """Convert unit quaternion to rotation matrix (body FRD to world NED).
 
     Args:
-        q: Unit quaternion [qw, qx, qy, qz]
+        q: Unit quaternion [qw, qx, qy, qz].
 
     Returns:
-        R: 3x3 rotation matrix from FRD body to NED world frame
+        Rotation matrix R_wb (3x3).
     """
     qw, qx, qy, qz = q[0], q[1], q[2], q[3]
 
-    # Rotation matrix from quaternion (body to world)
-    R = jnp.array(
+    return jnp.array(
         [
             [
                 1 - 2 * (qy**2 + qz**2),
@@ -50,241 +43,164 @@ def quaternion_to_rotation_matrix(q: Float[Array, "4"]) -> Float[Array, "3 3"]:
         ]
     )
 
-    return R
-
 
 def normalize_quaternion(q: Float[Array, "4"]) -> Float[Array, "4"]:
-    """Normalize quaternion to unit norm.
-
-    Args:
-        q: Quaternion [qw, qx, qy, qz]
-
-    Returns:
-        Normalized unit quaternion
-    """
-    norm = jnp.linalg.norm(q)
-    # Add small epsilon to avoid division by zero
-    return q / (norm + 1e-8)
+    """Normalize quaternion to unit length."""
+    return q / (jnp.linalg.norm(q) + 1e-6)
 
 
-def quaternion_multiply(
-    q1: Float[Array, "4"], q2: Float[Array, "4"]
-) -> Float[Array, "4"]:
-    """Multiply two quaternions: q1 * q2.
-
-    Args:
-        q1: First quaternion [qw, qx, qy, qz]
-        q2: Second quaternion [qw, qx, qy, qz]
-
-    Returns:
-        Product quaternion q1 * q2
-    """
-    w1, x1, y1, z1 = q1[0], q1[1], q1[2], q1[3]
-    w2, x2, y2, z2 = q2[0], q2[1], q2[2], q2[3]
-
-    return jnp.array(
-        [
-            w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2,
-            w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
-            w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
-            w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2,
-        ]
-    )
+def quaternion_multiply(q: Float[Array, "4"], r: Float[Array, "4"]) -> Float[Array, "4"]:
+    """Multiply two quaternions."""
+    w0, x0, y0, z0 = q
+    w1, x1, y1, z1 = r
+    return jnp.array([
+        w0 * w1 - x0 * x1 - y0 * y1 - z0 * z1,
+        w0 * x1 + x0 * w1 + y0 * z1 - z0 * y1,
+        w0 * y1 - x0 * z1 + y0 * w1 + z0 * x1,
+        w0 * z1 + x0 * y1 - y0 * x1 + z0 * w1,
+    ])
 
 
-def quaternion_derivative(
-    q: Float[Array, "4"], omega: Float[Array, "3"]
-) -> Float[Array, "4"]:
-    """Compute quaternion time derivative from angular velocity.
-
-    Uses: q_dot = 0.5 * q ⊗ [0, omega]
-
-    Args:
-        q: Current quaternion [qw, qx, qy, qz]
-        omega: Angular velocity in body frame [wx, wy, wz]
-
-    Returns:
-        Time derivative of quaternion
-    """
-    qw, qx, qy, qz = q[0], q[1], q[2], q[3]
-    wx, wy, wz = omega[0], omega[1], omega[2]
-
-    # q_dot = 0.5 * Omega(omega) @ q
-    q_dot = 0.5 * jnp.array(
-        [
-            -wx * qx - wy * qy - wz * qz,  # qw_dot
-            wx * qw + wz * qy - wy * qz,  # qx_dot
-            wy * qw - wz * qx + wx * qz,  # qy_dot
-            wz * qw + wy * qx - wx * qy,  # qz_dot
-        ]
-    )
-
-    return q_dot
-
-
-def quadrotor_dynamics_dt(
-    state: Float[Array, "13"],
-    action: Float[Array, "4"],
-    dt: float,
-    mass: float = 1.0,
-    gravity: float = 9.81,
-    tau_omega: float = 0.05,
-) -> Float[Array, "13"]:
-    """Compute state derivative for quadrotor dynamics.
-
-    This computes dx/dt for the 13D quadrotor state.
-
-    Args:
-        state: [px, py, pz, vx, vy, vz, qw, qx, qy, qz, wx, wy, wz]
-        action: [T, wx_cmd, wy_cmd, wz_cmd]
-        dt: Time step (not used in derivative, but kept for API consistency)
-        mass: Quadrotor mass (kg)
-        gravity: Gravity constant (m/s², positive down in NED)
-        tau_omega: Time constant for angular velocity tracking (s)
-
-    Returns:
-        State derivative dx/dt
-    """
-    # Extract state components
-    pos = state[0:3]
-    vel = state[3:6]
-    quat = state[6:10]  # [qw, qx, qy, qz]
-    omega = state[10:13]  # angular velocity in FRD body frame
-
-    # Extract control
-    thrust = action[0]  # positive magnitude
-    omega_cmd = action[1:4]
-
-    # Rotation matrix from FRD body to NED world frame
-    R = quaternion_to_rotation_matrix(quat)
-
-    # Translational dynamics (NED world frame)
-    # Gravity: positive Z in NED (downward)
-    f_gravity = jnp.array([0.0, 0.0, mass * gravity])
-    # Thrust in body frame: [0, 0, -T] (upward in FRD)
-    # Transform to world frame
-    f_thrust = R @ jnp.array([0.0, 0.0, -thrust])
-    accel = (f_gravity + f_thrust) / mass
-
-    # Rotational dynamics (FRD body frame, first-order model)
-    omega_dot = (omega_cmd - omega) / tau_omega
-
-    # Quaternion kinematics
-    q_dot = quaternion_derivative(quat, omega)
-
-    # State derivative
-    state_dot = jnp.concatenate([vel, accel, q_dot, omega_dot])
-
-    return state_dot
+def quaternion_derivative(q: Float[Array, "4"], omega: Float[Array, "3"]) -> Float[Array, "4"]:
+    """Compute quaternion derivative q_dot = 0.5 * q * omega."""
+    omega_q = jnp.concatenate([jnp.zeros(1), omega])
+    return 0.5 * quaternion_multiply(q, omega_q)
 
 
 def rk4_step(
     state: Float[Array, "13"],
     action: Float[Array, "4"],
     dt: float,
-    mass: float,
-    gravity: float,
-    tau_omega: float,
+    mass: float = 1.0,
+    g: float = 9.81,
+    tau_omega: float = 0.05,
 ) -> Float[Array, "13"]:
-    """Single RK4 integration step for quadrotor dynamics.
+    """Perform a single RK4 integration step.
 
     Args:
-        state: Current state
-        action: Control input
-        dt: Time step
-        mass: Quadrotor mass
-        gravity: Gravity constant
-        tau_omega: Angular velocity time constant
+        state: Current state [pos(3), vel(3), quat(4), omega(3)].
+        action: Control input [thrust, omega_cmd(3)].
+        dt: Time step.
+        mass: Quadrotor mass.
+        g: Gravity acceleration.
+        tau_omega: Time constant for angular rate tracking.
 
     Returns:
-        Next state after dt using RK4 integration
+        Next state.
     """
-    # RK4 integration
-    k1 = quadrotor_dynamics_dt(state, action, dt, mass, gravity, tau_omega)
-    k2 = quadrotor_dynamics_dt(
-        state + 0.5 * dt * k1, action, dt, mass, gravity, tau_omega
-    )
-    k3 = quadrotor_dynamics_dt(
-        state + 0.5 * dt * k2, action, dt, mass, gravity, tau_omega
-    )
-    k4 = quadrotor_dynamics_dt(
-        state + dt * k3, action, dt, mass, gravity, tau_omega
-    )
+
+    def dynamics_fn(s, u):
+        return quadrotor_dynamics(s, u, mass, g, tau_omega)
+
+    k1 = dynamics_fn(state, action)
+    k2 = dynamics_fn(state + 0.5 * dt * k1, action)
+    k3 = dynamics_fn(state + 0.5 * dt * k2, action)
+    k4 = dynamics_fn(state + dt * k3, action)
 
     next_state = state + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
+
+    # Re-normalize quaternion
+    next_quat = normalize_quaternion(next_state[6:10])
+    next_state = next_state.at[6:10].set(next_quat)
 
     return next_state
 
 
-def create_quadrotor_dynamics(
-    dt: float = 0.01,
+# -----------------------------------------------------------------------
+# Dynamics Model
+# -----------------------------------------------------------------------
+
+
+def quadrotor_dynamics(
+    state: Float[Array, "13"],
+    action: Float[Array, "4"],
     mass: float = 1.0,
-    gravity: float = 9.81,
+    g: float = 9.81,
     tau_omega: float = 0.05,
-    u_min: Float[Array, "4"] | None = None,
-    u_max: Float[Array, "4"] | None = None,
-):
-    """Create quadrotor dynamics function with specified parameters.
+) -> Float[Array, "13"]:
+    """Compute time derivative of the quadrotor state.
 
-    This factory function creates a dynamics function following the library's pattern,
-    with RK4 integration for better accuracy.
+    State: [x, y, z, vx, vy, vz, qw, qx, qy, qz, wx, wy, wz]
+    Action: [thrust, cmd_wx, cmd_wy, cmd_wz]
 
-    Frame conventions: NED (world), FRD (body)
+    Coordinate system: NED (North-East-Down)
+    - x: North
+    - y: East
+    - z: Down (Gravity points in +z)
 
     Args:
-        dt: Integration time step (s)
-        mass: Quadrotor mass (kg)
-        gravity: Gravity constant (m/s², positive down in NED)
-        tau_omega: Time constant for angular velocity tracking (s)
-        u_min: Minimum control bounds [T_min, wx_min, wy_min, wz_min]
-        u_max: Maximum control bounds [T_max, wx_max, wy_max, wz_max]
+        state: Current state vector.
+        action: Control input.
+        mass: Mass (kg).
+        g: Gravity (m/s^2).
+        tau_omega: Angular rate time constant (1/gain).
 
     Returns:
-        Dynamics function that takes (state, action) and returns next_state
-
-    Example:
-        >>> dynamics = create_quadrotor_dynamics(dt=0.01, mass=1.0)
-        >>> state = jnp.zeros(13)
-        >>> state = state.at[6].set(1.0)  # qw = 1 (identity quaternion)
-        >>> action = jnp.array([mass * 9.81, 0.0, 0.0, 0.0])  # hover thrust
-        >>> next_state = dynamics(state, action)
+        State derivative (x_dot).
     """
-    # Default control bounds if not provided
-    if u_min is None:
-        u_min = jnp.array([0.0, -10.0, -10.0, -10.0])
-    if u_max is None:
-        u_max = jnp.array([4.0 * mass * gravity, 10.0, 10.0, 10.0])
+    # Extract state components
+    # pos = state[0:3] # Unused in dynamics (pos dot = vel)
+    vel = state[3:6]
+    quat = state[6:10]  # [qw, qx, qy, qz]
+    omega = state[10:13]
 
-    def dynamics(
-        state: Float[Array, "13"], action: Float[Array, "4"]
-    ) -> Float[Array, "13"]:
-        """Quadrotor dynamics with RK4 integration.
+    # Extract inputs
+    thrust_cmd = action[0]
+    omega_cmd = action[1:4]
 
-        State: [px, py, pz, vx, vy, vz, qw, qx, qy, qz, wx, wy, wz] (13D)
-            - Position/velocity in NED world frame
-            - Quaternion: body FRD to world NED
-            - Angular velocity in FRD body frame
+    # 1. Position derivative: velocity
+    pos_dot = vel
 
-        Action: [T, wx_cmd, wy_cmd, wz_cmd] (4D)
-            - T: thrust magnitude (positive, acts in -Z body direction)
-            - w_cmd: angular rate commands in FRD body frame
+    # 2. Velocity derivative: F = ma
+    # Forces: Gravity (down/positive z) + Thrust (up/negative z in body frame)
+    # R_wb rotates vector from Body to World
+    R_wb = quaternion_to_rotation_matrix(quat)
 
-        Returns:
-            next_state after dt using RK4 integration
-        """
-        # Clip control to bounds
-        action_clipped = jnp.clip(action, u_min, u_max)
+    # Thrust vector in body frame: [0, 0, -thrust] (points up in FRD)
+    # Note: If thrust_cmd > 0, it pushes up (-z body).
+    thrust_body = jnp.array([0.0, 0.0, -thrust_cmd])
+    thrust_world = R_wb @ thrust_body
 
-        # RK4 integration
-        next_state = rk4_step(
-            state, action_clipped, dt, mass, gravity, tau_omega
-        )
+    gravity_world = jnp.array([0.0, 0.0, g])
 
-        # Normalize quaternion to maintain unit norm
-        next_quat = next_state[6:10]
-        next_quat = normalize_quaternion(next_quat)
-        next_state = next_state.at[6:10].set(next_quat)
+    accel = gravity_world + thrust_world / mass
+    vel_dot = accel
 
-        return next_state
+    # 3. Quaternion derivative: q_dot = 0.5 * q * omega
+    # Quaternion multiplication of q and pure quaternion [0, omega]
+    # q = [qw, qv], omega_q = [0, omega]
+    # q_dot = 0.5 * (qw*omega - qv.dot(omega), qw*omega + qv x omega)
+    qw, qx, qy, qz = quat[0], quat[1], quat[2], quat[3]
+    p, q, r = omega[0], omega[1], omega[2]
+
+    quat_dot = 0.5 * jnp.array(
+        [
+            -qx * p - qy * q - qz * r,
+            qw * p + qy * r - qz * q,
+            qw * q - qx * r + qz * p,
+            qw * r + qx * q - qy * p,
+        ]
+    )
+
+    # 4. Angular velocity derivative: First order lag
+    # w_dot = (w_cmd - w) / tau
+    # Simplified model assuming low-level controller handles body rates
+    omega_dot = (omega_cmd - omega) / tau_omega
+
+    return jnp.concatenate([pos_dot, vel_dot, quat_dot, omega_dot])
+
+
+def create_quadrotor_dynamics(
+    mass: float = 1.0,
+    g: float = 9.81,
+    tau_omega: float = 0.05,
+    dt: float = 0.01,
+) -> Callable[[Float[Array, "13"], Float[Array, "4"]], Float[Array, "13"]]:
+    """Create a discrete-time dynamics function for a specific quadrotor config.
+
+    This function returns a callable that advances the state by one time step `dt`.
+    """
+    def dynamics(state: Float[Array, "13"], action: Float[Array, "4"]) -> Float[Array, "13"]:
+        return rk4_step(state, action, dt, mass, g, tau_omega)
 
     return dynamics

@@ -3,7 +3,9 @@ title: "I-MPPI: Informative Model Predictive Path Integral"
 bibliography: ["references.bib"]
 format:
   html:
-    math: true
+    code-fold: false
+    toc: true
+    toc-depth: 3
 ---
 
 ::: {.callout-tip}

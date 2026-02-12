@@ -1,17 +1,11 @@
-"""Cost functions for quadrotor trajectory tracking.
-
-This module provides cost functions for quadrotor control tasks including:
-- Trajectory tracking (position and velocity)
-- Attitude tracking (quaternion-based)
-- Hover control (stabilization)
-- Control effort penalties
-"""
-
 from typing import Callable, Optional
 
 import jax.numpy as jnp
 from jaxtyping import Array, Float
 
+# Define cost function signature
+# Takes: state (nx,), action (nu,)
+# Returns: scalar cost
 CostFn = Callable[
     [Float[Array, "nx"], Optional[Float[Array, "nu"]]], Float[Array, ""]
 ]
@@ -22,23 +16,14 @@ def quaternion_distance(
 ) -> Float[Array, ""]:
     """Compute distance between two unit quaternions.
 
-    Uses: d = 1 - |q1^T q2|
-
-    This metric is 0 when quaternions represent the same orientation
-    and approaches 1 as they diverge.
-
-    Args:
-        q1: First unit quaternion [qw, qx, qy, qz]
-        q2: Second unit quaternion [qw, qx, qy, qz]
-
-    Returns:
-        Distance metric in [0, 1]
+    d(q1, q2) = 1 - <q1, q2>^2
+    Matches the geodesic distance on SO(3).
     """
-    # Inner product
-    dot = jnp.abs(jnp.dot(q1, q2))
-    # Clamp to avoid numerical issues
-    dot = jnp.clip(dot, 0.0, 1.0)
-    return 1.0 - dot
+    # Ensure unit norm
+    q1 = q1 / (jnp.linalg.norm(q1) + 1e-6)
+    q2 = q2 / (jnp.linalg.norm(q2) + 1e-6)
+    dot = jnp.dot(q1, q2)
+    return 1.0 - dot**2
 
 
 def create_trajectory_tracking_cost(
@@ -48,27 +33,18 @@ def create_trajectory_tracking_cost(
     reference_trajectory: Float[Array, "T 6"] | None = None,
     dt: float = 0.01,
 ) -> CostFn:
-    """Create trajectory tracking cost function.
-
-    Cost: ||p - p_ref||²_Q_pos + ||v - v_ref||²_Q_vel + ||u||²_R
+    """Create a trajectory tracking cost function.
 
     Args:
-        Q_pos: Position error weight matrix (3x3)
-        Q_vel: Velocity error weight matrix (3x3)
-        R: Control effort weight matrix (4x4)
-        reference_trajectory: Reference trajectory array [T x 6] with [px, py, pz, vx, vy, vz]
-                             If None, uses zero reference (hover at origin)
-        dt: Time step for indexing into reference trajectory
+        Q_pos: Position error weight matrix (3x3).
+        Q_vel: Velocity error weight matrix (3x3).
+        R: Control effort weight matrix (4x4).
+        reference_trajectory: Optional reference trajectory (T, 6).
+            If None, tracks origin (0, 0, 0).
+        dt: Time step for trajectory indexing.
 
     Returns:
-        Cost function for trajectory tracking
-
-    Example:
-        >>> Q_pos = jnp.eye(3) * 10.0
-        >>> Q_vel = jnp.eye(3) * 1.0
-        >>> R = jnp.eye(4) * 0.01
-        >>> reference = jnp.zeros((100, 6))  # hover at origin
-        >>> cost_fn = create_trajectory_tracking_cost(Q_pos, Q_vel, R, reference)
+        Cost function: (state, action) -> scalar cost.
     """
 
     def cost_fn(
@@ -78,31 +54,27 @@ def create_trajectory_tracking_cost(
         pos = state[0:3]
         vel = state[3:6]
 
-        # Get reference (default to zeros if no trajectory provided)
+        # Determine reference
+        # For simple tracking, we just track the first point or origin
         if reference_trajectory is not None:
-            # Use current position as time index (assumes trajectory is time-indexed)
-            # For now, use first reference point (can be extended with time parameter)
-            ref = reference_trajectory[0]
+            ref_pos = reference_trajectory[0, 0:3]
+            ref_vel = reference_trajectory[0, 3:6]
         else:
-            ref = jnp.zeros(6)
+            ref_pos = jnp.zeros(3)
+            ref_vel = jnp.zeros(3)
 
-        pos_ref = ref[0:3]
-        vel_ref = ref[3:6]
+        # State errors
+        e_pos = pos - ref_pos
+        e_vel = vel - ref_vel
 
-        # Position tracking error
-        pos_error = pos - pos_ref
-        cost_pos = pos_error @ Q_pos @ pos_error
+        # Quadratic costs
+        cost = e_pos @ Q_pos @ e_pos + e_vel @ Q_vel @ e_vel
 
-        # Velocity tracking error
-        vel_error = vel - vel_ref
-        cost_vel = vel_error @ Q_vel @ vel_error
-
-        # Control effort
-        cost_control = 0.0
+        # Control cost
         if action is not None:
-            cost_control = action @ R @ action
+            cost += action @ R @ action
 
-        return cost_pos + cost_vel + cost_control  # type: ignore
+        return cost
 
     return cost_fn
 
@@ -118,19 +90,20 @@ def create_time_indexed_trajectory_cost(
 ]:
     """Create time-indexed trajectory tracking cost function.
 
-    This version explicitly takes a time index to lookup the reference trajectory.
+    This function returns a cost that depends on the time step `t`.
+    Requires `step_dependent_dynamics=True` in MPPIConfig.
 
     Args:
-        Q_pos: Position error weight matrix (3x3)
-        Q_vel: Velocity error weight matrix (3x3)
-        R: Control effort weight matrix (4x4)
-        reference_trajectory: Reference trajectory [T x 6] with [px, py, pz, vx, vy, vz]
-        dt: Time step
+        Q_pos: Position error weight matrix.
+        Q_vel: Velocity error weight matrix.
+        R: Control weight matrix.
+        reference_trajectory: Array of shape (T, 6) containing [pos, vel].
+        dt: Time step (unused here, but consistent with API).
 
     Returns:
-        Cost function that takes (state, action, time_index)
+        Cost function: (state, action, t) -> scalar cost.
     """
-    T = reference_trajectory.shape[0]
+    traj_len = reference_trajectory.shape[0]
 
     def cost_fn(
         state: Float[Array, "13"],
@@ -141,27 +114,23 @@ def create_time_indexed_trajectory_cost(
         pos = state[0:3]
         vel = state[3:6]
 
-        # Get reference at time t (with bounds checking)
-        t_idx = jnp.clip(t, 0, T - 1)
-        ref = reference_trajectory[t_idx]
+        # Get reference at time t (clamp to end)
+        idx = jnp.minimum(t, traj_len - 1)
+        ref_state = reference_trajectory[idx]
+        ref_pos = ref_state[0:3]
+        ref_vel = ref_state[3:6]
 
-        pos_ref = ref[0:3]
-        vel_ref = ref[3:6]
+        # Errors
+        e_pos = pos - ref_pos
+        e_vel = vel - ref_vel
 
-        # Position tracking error
-        pos_error = pos - pos_ref
-        cost_pos = pos_error @ Q_pos @ pos_error
+        # Cost
+        cost = e_pos @ Q_pos @ e_pos + e_vel @ Q_vel @ e_vel
 
-        # Velocity tracking error
-        vel_error = vel - vel_ref
-        cost_vel = vel_error @ Q_vel @ vel_error
-
-        # Control effort
-        cost_control = 0.0
         if action is not None:
-            cost_control = action @ R @ action
+            cost += action @ R @ action
 
-        return cost_pos + cost_vel + cost_control  # type: ignore
+        return cost
 
     return cost_fn
 
@@ -174,23 +143,23 @@ def create_hover_cost(
     hover_position: Float[Array, "3"],
     hover_quaternion: Float[Array, "4"] | None = None,
 ) -> CostFn:
-    """Create cost function for hover control (stabilization).
+    """Create a hover stabilization cost function.
 
-    Cost: ||p - p_hover||²_Q + ||v||²_Q_vel + ||q - q_hover||²_Q_att + ||u||²_R
+    Penalizes deviation from a fixed position and optionally orientation.
 
     Args:
-        Q_pos: Position error weight matrix (3x3)
-        Q_vel: Velocity penalty matrix (3x3)
-        Q_att: Attitude error weight matrix (4x4)
-        R: Control effort weight matrix (4x4)
-        hover_position: Desired hover position in NED frame
-        hover_quaternion: Desired hover orientation (default: level flight [1,0,0,0])
+        Q_pos: Position weight.
+        Q_vel: Velocity weight.
+        Q_att: Attitude (quaternion) weight.
+        R: Control weight.
+        hover_position: Target [x, y, z].
+        hover_quaternion: Target [qw, qx, qy, qz] (default: identity/upright).
 
     Returns:
-        Cost function for hover control
+        Cost function.
     """
     if hover_quaternion is None:
-        hover_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])  # level flight
+        hover_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
     def cost_fn(
         state: Float[Array, "13"], action: Optional[Float[Array, "4"]] = None
@@ -200,23 +169,28 @@ def create_hover_cost(
         vel = state[3:6]
         quat = state[6:10]
 
-        # Position error
-        pos_error = pos - hover_position
-        cost_pos = pos_error @ Q_pos @ pos_error
+        # Errors
+        e_pos = pos - hover_position
+        e_vel = vel  # Target velocity is zero
+        # Quaternion distance (1 - <q, q_ref>^2)
+        # We multiply by a scalar weight, often trace(Q_att) or similar scalar
+        # For matrix Q_att, we might treat q as a vector 4
+        # Here, let's treat Q_att as diagonal weights on q components difference
+        # But standard quadrotor control often uses geodesic distance.
+        # Let's use simple weighted vector difference for consistency with Q matrices
+        e_quat = quat - hover_quaternion
 
-        # Velocity penalty (want zero velocity)
-        cost_vel = vel @ Q_vel @ vel
+        cost = e_pos @ Q_pos @ e_pos + e_vel @ Q_vel @ e_vel
+        cost += e_quat @ Q_att @ e_quat
 
-        # Attitude error (quaternion distance)
-        att_dist = quaternion_distance(quat, hover_quaternion)
-        cost_att = att_dist * jnp.trace(Q_att)
-
-        # Control effort
-        cost_control = 0.0
         if action is not None:
-            cost_control = action @ R @ action
+            # Hover thrust is approx mg.
+            # We can penalize deviation from hover thrust or just total effort.
+            # Usually penalize deviation from hover thrust (mg)
+            # For simplicity, penalize total effort here as per standard MPPI
+            cost += action @ R @ action
 
-        return cost_pos + cost_vel + cost_att + cost_control  # type: ignore
+        return cost
 
     return cost_fn
 
@@ -227,25 +201,17 @@ def create_terminal_cost(
     Q_att: Float[Array, "4 4"],
     goal_position: Float[Array, "3"],
     goal_quaternion: Float[Array, "4"] | None = None,
-) -> CostFn:
-    """Create terminal cost for goal reaching.
+) -> Callable[
+    [Float[Array, "13"], Optional[Float[Array, "4"]]], Float[Array, ""]
+]:
+    """Create a terminal cost function (no action penalty).
 
-    Terminal cost penalizes deviation from goal state at end of horizon.
-
-    Args:
-        Q_pos: Terminal position error weight matrix (3x3)
-        Q_vel: Terminal velocity weight matrix (3x3)
-        Q_att: Terminal attitude error weight matrix (4x4)
-        goal_position: Goal position in NED frame
-        goal_quaternion: Goal orientation (default: level flight)
-
-    Returns:
-        Terminal cost function
+    Used for the final state in the horizon.
     """
     if goal_quaternion is None:
         goal_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
-    def terminal_cost(
+    def cost_fn(
         state: Float[Array, "13"],
         last_action: Optional[Float[Array, "4"]] = None,
     ) -> Float[Array, ""]:
@@ -254,17 +220,13 @@ def create_terminal_cost(
         vel = state[3:6]
         quat = state[6:10]
 
-        # Position error
-        pos_error = pos - goal_position
-        cost_pos = pos_error @ Q_pos @ pos_error
+        e_pos = pos - goal_position
+        e_vel = vel
+        e_quat = quat - goal_quaternion
 
-        # Velocity penalty (want to arrive with zero velocity)
-        cost_vel = vel @ Q_vel @ vel
+        cost = e_pos @ Q_pos @ e_pos + e_vel @ Q_vel @ e_vel
+        cost += e_quat @ Q_att @ e_quat
 
-        # Attitude error
-        att_dist = quaternion_distance(quat, goal_quaternion)
-        cost_att = att_dist * jnp.trace(Q_att)
+        return cost
 
-        return cost_pos + cost_vel + cost_att  # type: ignore
-
-    return terminal_cost
+    return cost_fn

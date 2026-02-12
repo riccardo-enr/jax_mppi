@@ -1,0 +1,191 @@
+---
+title: "API Reference"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+---
+
+This section provides a detailed reference for the core modules in `jax_mppi`.
+
+## `jax_mppi.mppi`
+
+The core implementation of Model Predictive Path Integral (MPPI) control.
+
+### `create`
+
+Initializes the MPPI controller configuration and state.
+
+```python
+def create(
+    nx: int,
+    nu: int,
+    noise_sigma: jax.Array,
+    num_samples: int = 100,
+    horizon: int = 15,
+    lambda_: float = 1.0,
+    noise_mu: Optional[jax.Array] = None,
+    u_min: Optional[jax.Array] = None,
+    u_max: Optional[jax.Array] = None,
+    u_init: Optional[jax.Array] = None,
+    U_init: Optional[jax.Array] = None,
+    u_scale: float = 1.0,
+    u_per_command: int = 1,
+    step_dependent_dynamics: bool = False,
+    rollout_samples: int = 1,
+    rollout_var_cost: float = 0.0,
+    rollout_var_discount: float = 0.95,
+    sample_null_action: bool = False,
+    noise_abs_cost: bool = False,
+    key: Optional[jax.Array] = None,
+) -> Tuple[MPPIConfig, MPPIState]
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `nx` | `int` | - | State dimension. |
+| `nu` | `int` | - | Action dimension. |
+| `noise_sigma` | `Array` | - | Exploration noise covariance matrix `(nu, nu)` or diagonal `(nu,)`. |
+| `num_samples` | `int` | `100` | Number of trajectory samples ($K$). |
+| `horizon` | `int` | `15` | Planning horizon ($T$). |
+| `lambda_` | `float` | `1.0` | Temperature parameter ($\lambda$). |
+| `noise_mu` | `Array` | `None` | Exploration noise mean `(nu,)`. Defaults to zeros. |
+| `u_min` | `Array` | `None` | Lower control bounds `(nu,)`. |
+| `u_max` | `Array` | `None` | Upper control bounds `(nu,)`. |
+| `u_init` | `Array` | `None` | Default action for shifting the horizon `(nu,)`. |
+| `U_init` | `Array` | `None` | Initial nominal trajectory `(T, nu)`. |
+| `u_scale` | `float` | `1.0` | Scaling factor for control inputs. |
+| `u_per_command` | `int` | `1` | Number of control steps to apply per command. |
+| `step_dependent_dynamics` | `bool` | `False` | If `True`, `dynamics` and `cost` receive `t` as an argument. |
+| `rollout_samples` | `int` | `1` | Number of rollouts per sample (for stochastic dynamics). |
+| `sample_null_action` | `bool` | `False` | If `True`, the first sample is unperturbed (nominal). |
+| `noise_abs_cost` | `bool` | `False` | If `True`, use L1 norm for noise cost; else L2 (quadratic). |
+| `key` | `Array` | `None` | JAX PRNG key. |
+
+**Returns:**
+
+*   `config` (`MPPIConfig`): Static configuration.
+*   `state` (`MPPIState`): Initial dynamic state.
+
+### `command`
+
+Computes the optimal control action and updates the controller state.
+
+```python
+def command(
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    current_obs: jax.Array,
+    dynamics: Callable,
+    running_cost: Callable,
+    terminal_cost: Optional[Callable] = None,
+    shift: bool = True,
+) -> Tuple[jax.Array, MPPIState]
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `config` | `MPPIConfig` | - | Controller configuration. |
+| `mppi_state` | `MPPIState` | - | Current controller state. |
+| `current_obs` | `Array` | - | Current system observation `(nx,)`. |
+| `dynamics` | `Callable` | - | Dynamics function `f(x, u) -> x_next`. |
+| `running_cost` | `Callable` | - | Stage cost function `c(x, u) -> cost`. |
+| `terminal_cost` | `Callable` | `None` | Terminal cost function `phi(x_T) -> cost`. |
+| `shift` | `bool` | `True` | Whether to shift the nominal trajectory forward after the step. |
+
+**Returns:**
+
+*   `action` (`Array`): Optimal control action `(nu,)` (or sequence if `u_per_command > 1`).
+*   `new_state` (`MPPIState`): Updated controller state.
+
+### `reset`
+
+Resets the nominal trajectory to the initial value (usually zeros or `u_init`).
+
+```python
+def reset(
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    key: jax.Array
+) -> MPPIState
+```
+
+### `get_rollouts`
+
+Generates visualization rollouts based on the current nominal trajectory and distribution.
+
+```python
+def get_rollouts(
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    current_obs: jax.Array,
+    dynamics: Callable,
+    num_rollouts: int = 1,
+) -> jax.Array
+```
+
+---
+
+## `jax_mppi.smppi`
+
+Smooth MPPI (SMPPI) implementation. SMPPI optimizes in a lifted control space (e.g., velocity or acceleration) to ensure smooth control trajectories.
+
+### `create`
+
+Initializes SMPPI. Similar to `mppi.create` but with additional parameters.
+
+```python
+def create(
+    nx: int,
+    nu: int,
+    noise_sigma: jax.Array,
+    # ... (standard MPPI args) ...
+    action_min: Optional[jax.Array] = None,
+    action_max: Optional[jax.Array] = None,
+    w_action_seq_cost: float = 1.0,
+    delta_t: float = 1.0,
+    # ...
+) -> Tuple[SMPPIConfig, SMPPIState]
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `action_min` | `Array` | `None` | Lower bounds on the integrated action. |
+| `action_max` | `Array` | `None` | Upper bounds on the integrated action. |
+| `w_action_seq_cost` | `float` | `1.0` | Weight for the smoothness penalty (change in action). |
+| `delta_t` | `float` | `1.0` | Integration timestep for lifting. |
+
+### `command`
+
+Computes the optimal smooth action. The returned action is the *integrated* value (e.g., position/velocity), not the optimized control rate.
+
+---
+
+## `jax_mppi.kmppi`
+
+Kernel MPPI (KMPPI) implementation. KMPPI parameterizes the control trajectory using basis functions (kernels) and control points, reducing dimensionality and enforcing smoothness.
+
+### `create`
+
+Initializes KMPPI.
+
+```python
+def create(
+    nx: int,
+    nu: int,
+    noise_sigma: jax.Array,
+    # ... (standard MPPI args) ...
+    num_support_pts: Optional[int] = None,
+    kernel: Optional[TimeKernel] = None,
+    # ...
+) -> Tuple[KMPPIConfig, KMPPIState, TimeKernel]
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `num_support_pts` | `int` | `horizon // 2` | Number of control points for interpolation. |
+| `kernel` | `TimeKernel` | `RBFKernel(1.0)` | Kernel function for interpolation. |
+
+### `command`
+
+Computes the optimal action using kernel interpolation.
