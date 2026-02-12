@@ -8,10 +8,12 @@ from jax_mppi.dynamics.quadrotor import (
     quaternion_multiply,
     quaternion_to_rotation_matrix,
 )
+from jax_mppi.dynamics.ugv import create_diffdrive_dynamics
 
 __all__ = [
     "create_linear_delta_dynamics",
     "create_quadrotor_dynamics",
+    "create_diffdrive_dynamics",
     "quaternion_to_rotation_matrix",
     "normalize_quaternion",
     "quaternion_multiply",
