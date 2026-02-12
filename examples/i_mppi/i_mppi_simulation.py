@@ -258,7 +258,6 @@ def main() -> None:
     print("Generating trajectory animation ...")
     animation_path = create_trajectory_gif(
         history_x,
-        history_info,
         grid_array,
         map_resolution,
         DT,
