@@ -21,6 +21,7 @@ jobs:
                   pixi-version: latest
                   environments: ci
                   locked: false
+                  cache: false
 
             - name: Run tests
               run: pixi run -e ci test

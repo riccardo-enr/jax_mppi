@@ -22,6 +22,7 @@ jobs:
                   pixi-version: latest
                   environments: ci
                   locked: false
+                  cache: false
 
             - name: Set up Node.js
               uses: actions/setup-node@v4
