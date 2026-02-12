@@ -1137,7 +1137,7 @@ packages:
 - pypi: ./
   name: jax-mppi
   version: 0.3.0
-  sha256: 1b8bbe9b746d7e9c9f15f6f85ebb03bd49db759b00089597858b45ec206086d3
+  sha256: 2bd22f6baf783dc31641536484c067c5b75713ebe08dfc7b84c102ad90cec919
   requires_dist:
   - jax>=0.9.0
   - numpy
