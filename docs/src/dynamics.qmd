@@ -2,7 +2,9 @@
 title: "Quadrotor Dynamics"
 format:
   html:
-    math: true
+    code-fold: false
+    toc: true
+    toc-depth: 3
 ---
 
 This section documents the 6-DOF quadrotor dynamics model used for trajectory rollouts in `jax_mppi`. The implementation follows the **NED-FRD** convention:

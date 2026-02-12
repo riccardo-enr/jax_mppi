@@ -1,78 +1,100 @@
-# jax_mppi
+---
+title: "JAX-MPPI: High-Performance Model Predictive Path Integral Control in JAX"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
 
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
-![License](https://img.shields.io/badge/license-MIT-blue)
-![JAX](https://img.shields.io/badge/backend-JAX-blue)
-![Status](https://img.shields.io/badge/status-planning-yellow)
+**jax_mppi** is a functional, JIT-compilable implementation of Model Predictive Path Integral (MPPI) control. It leverages JAX's high-performance numerical computing capabilities to deliver fast, parallelizable, and differentiable control algorithms for robotics and autonomous systems.
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/riccardo-enr/jax_mppi/blob/main/examples/i_mppi/i_mppi_interactive_simulation.ipynb)
+## Overview
 
-**jax_mppi** is a functional, JIT-compilable port of the [pytorch_mppi](https://github.com/UM-ARM-Lab/pytorch_mppi) library to JAX. It implements Model Predictive Path Integral (MPPI) control with a focus on performance and composability.
+Model Predictive Path Integral (MPPI) is a sampling-based control algorithm that solves stochastic optimal control problems. By simulating thousands of noisy trajectories in parallel and aggregating their costs, MPPI computes optimal control actions without requiring explicit gradients of the dynamics model.
 
+This library provides a robust, production-ready implementation of MPPI and its variants (Smooth MPPI, Kernel MPPI) tailored for high-frequency control loops.
+
+:::{.callout-note}
 ## Design Philosophy
-
 This library embraces JAX's functional paradigm:
-
-- **Pure Functions**: Core logic is implemented as pure functions `command(state, mppi_state) -> (action, mppi_state)`.
-- **Dataclass State**: State is held in `jax.tree_util.register_dataclass` containers, allowing easy integration with `jit`, `vmap`, and `grad`.
-- **No Side Effects**: Unlike the PyTorch version, there is no mutable `self`. State transitions are explicit.
+- **Pure Functions**: Core logic is implemented as pure functions `command(state, ...) -> (action, state)`.
+- **Dataclass State**: State is held in registered Pytree containers, enabling seamless integration with `jit`, `vmap`, and `grad`.
+- **No Side Effects**: State transitions are explicit; there is no mutable internal state.
+:::
 
 ## Key Features
 
-- **Core MPPI**: Robust implementation of the standard MPPI algorithm.
-- **Smooth MPPI (SMPPI)**: Maintains action sequences and smoothness costs for better trajectory generation.
-- **Kernel MPPI (KMPPI)**: Uses kernel interpolation for control points, reducing the parameter space.
-- **Autotuning**: Built-in hyperparameter optimization using CMA-ES, Ray Tune, and Quality Diversity.
-- **CUDA/C++ Backend**: High-performance implementations of all controllers in CUDA/C++17, exposed to Python via \`nanobind\`.
-- **JAX Integration**:
-  - `jax.vmap` for efficient batch processing.
-  - `jax.lax.scan` for fast horizon loops.
-  - Fully compatible with JIT compilation for high-performance control loops.
+- **Core MPPI**: Standard implementation for general-purpose control.
+- **Smooth MPPI (SMPPI)**: Optimizes in a lifted space (e.g., acceleration) to produce smooth control signals.
+- **Kernel MPPI (KMPPI)**: Parameterizes trajectories using kernels (e.g., RBF) for dimensionality reduction and smoothness.
+- **Autotuning**: Integrated hyperparameter optimization using CMA-ES, Ray Tune, and Quality Diversity.
+- **Hardware Acceleration**:
+  - **CUDA/C++ Backend**: Optimized kernels for extreme performance.
+  - **JAX JIT**: Just-In-Time compilation for fast Python-based execution.
+- **Composability**: Easily integrates with other JAX libraries and simulation environments.
 
 ## Installation
 
+### Dependencies
+
+- Python 3.10+
+- JAX (with CUDA support recommended for performance)
+- NumPy
+
+### Build from Source
+
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/jax_mppi.git
+git clone https://github.com/riccardo-enr/jax_mppi.git
 cd jax_mppi
 
-# Install dependencies
+# Install using pip (editable mode recommended for development)
 pip install -e .
 ```
 
-## Usage
+:::{.callout-warning}
+## GPU Support
+To leverage GPU acceleration, ensure you have installed the appropriate JAX version for your CUDA toolkit. See the [JAX Installation Guide](https://jax.readthedocs.io/en/latest/installation.html).
+:::
+
+## Quick Start
+
+Here is a minimal example of setting up an MPPI controller for a simple system.
 
 ```python
 import jax
 import jax.numpy as jnp
 from jax_mppi import mppi
 
-# Define dynamics and cost functions
+# 1. Define System Dynamics (x_next = f(x, u))
 def dynamics(state, action):
-    # Your dynamics model here
-    return state + action
+    # Simple integrator: position += velocity
+    return state + action * 0.1  # dt = 0.1
 
+# 2. Define Cost Function (J = sum(running_cost))
 def running_cost(state, action):
-    # Your cost function here
-    return jnp.sum(state**2) + jnp.sum(action**2)
+    target = jnp.array([1.0, 1.0])
+    return jnp.sum((state - target)**2) + 0.1 * jnp.sum(action**2)
 
-# Create configuration and initial state
+# 3. Initialize Controller
 config, mppi_state = mppi.create(
-    nx=4, nu=2,
-    noise_sigma=jnp.eye(2) * 0.1,
-    horizon=20,
-    lambda_=1.0
+    nx=2,  # State dimension
+    nu=2,  # Action dimension
+    noise_sigma=jnp.eye(2) * 0.5, # Exploration noise
+    horizon=20, # Planning horizon
+    lambda_=0.1 # Temperature
 )
 
-# Control loop
+# 4. Control Loop
+current_obs = jnp.zeros(2)
 key = jax.random.PRNGKey(0)
-current_obs = jnp.zeros(4)
 
-# JIT compile the command function for performance
+# JIT-compile the command step for performance
 jitted_command = jax.jit(mppi.command, static_argnames=['dynamics', 'running_cost'])
 
-for _ in range(100):
-    key, subkey = jax.random.split(key)
+print("Starting control loop...")
+for _ in range(10):
     action, mppi_state = jitted_command(
         config,
         mppi_state,
@@ -80,46 +102,52 @@ for _ in range(100):
         dynamics=dynamics,
         running_cost=running_cost
     )
-    # Apply action to environment...
+
+    # Simulate environment
+    current_obs = dynamics(current_obs, action)
+    print(f"State: {current_obs}, Action: {action}")
 ```
 
-## Project Structure
+## Usage
 
-```text
-jax_mppi/
-├── src/jax_mppi/
-│   ├── mppi.py              # Core MPPI implementation
-│   ├── smppi.py             # Smooth MPPI variant
-│   ├── kmppi.py             # Kernel MPPI variant
-│   ├── types.py             # Type definitions
-│   ├── autotune.py          # Autotuning core & CMA-ES
-│   ├── autotune_global.py   # Ray Tune integration
-│   └── autotune_qd.py       # Quality Diversity optimization
-├── examples/
-│   ├── pendulum.py          # Pendulum environment example
-│   ├── autotune_basic.py    # Basic autotuning example
-│   ├── autotune_pendulum.py # Autotuning pendulum
-│   └── smooth_comparison.py # Comparison of MPPI variants
-└── tests/                   # Unit and integration tests
+The library provides three main controller variants, each residing in its own module:
+
+- `jax_mppi.mppi`: Standard MPPI. Best for general use.
+- `jax_mppi.smppi`: Smooth MPPI. Best when smooth control inputs are critical (e.g., physical actuators).
+- `jax_mppi.kmppi`: Kernel MPPI. Best for high-dimensional or long-horizon tasks where parameter reduction is beneficial.
+
+For detailed API documentation, see the [API Reference](src/api_reference.qmd).
+
+## Examples
+
+The `examples/` directory contains runnable scripts demonstrating various capabilities:
+
+- **Pendulum**: `examples/pendulum.py` - Classic control benchmark.
+- **Quadrotor**: `examples/quadrotor/` - UAV control tasks (hover, circle tracking).
+- **I-MPPI**: `examples/i_mppi/` - Informative path planning with map exploration.
+
+:::{.callout-tip}
+## Running Examples
+To run an example, ensure your `PYTHONPATH` includes the source directory:
+```bash
+PYTHONPATH=src python examples/pendulum.py
 ```
+:::
 
-## Roadmap
+## Troubleshooting
 
-The development is structured in phases:
+### JAX JIT Errors
+If you encounter `TracerBoolConversionError`, ensure you are not using Python control flow (like `if x > 0`) inside JIT-compiled functions. Use `jax.lax.cond` or `jnp.where` instead.
 
-1. **Core MPPI**: Basic implementation with JAX parity.
-2. **Integration**: Pendulum example and verification.
-3. **Smooth MPPI**: Implementation of smoothness constraints.
-4. **Kernel MPPI**: Kernel-based control parameterization.
-5. **Comparisons**: Benchmarking and visual comparisons.
-6. **Autotuning**: Parameter optimization using CMA-ES, Ray Tune, and QD.
+### Performance Issues
+- Ensure you are using `jax.jit` on the main control loop.
+- Check if JAX is using the GPU (`jax.devices()`).
+- Reduce `num_samples` or `horizon` if the computation is too heavy for your hardware.
 
-## Credits
+## Citing
 
-This project is a direct port of [pytorch_mppi](https://github.com/UM-ARM-Lab/pytorch_mppi). We aim to maintain parity with the original implementation while leveraging JAX's unique features for performance and flexibility.
+If you use this library in your research, please cite the repository and the original MPPI papers.
 
-## Completed Plans
+## License
 
-- [Porting Plan](plan/completed/porting_pytorch_jax.md)
-- [Evosax Integration Plan](plan/completed/evosax_integration.md)
-- [CUDA MPPI Implementation Plan](plan/cuda_mppi_implementation.md)
+MIT License. See `LICENSE` for details.
