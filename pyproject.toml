@@ -23,7 +23,43 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering",
 ]
-dependencies = []
+dependencies = [
+    "jax>=0.4.20",
+    "numpy",
+    "jaxtyping",
+    "chex",
+    "pyyaml>=6.0",
+    "cmake>=3.18",
+    "nanobind",
+    "scikit-build-core>=0.3.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-benchmark",
+    "lark",
+    "gymnasium[classic_control]",
+    "matplotlib",
+    "ipywidgets",
+    "tqdm",
+    "basedpyright",
+    "ruff",
+    "nbstripout",
+    "seaborn",
+    "SciencePlots",
+    "pytz",
+]
+autotuning = [
+    "cma>=3.3.0",
+    "evosax>=0.1.0",
+]
+autotuning-extra = [
+    "ray[tune]",
+    "hyperopt",
+    "bayesian-optimization",
+    "ribs[all]",
+]
 
 [project.urls]
 Homepage = "https://github.com/riccardo-enr/jax_mppi"
