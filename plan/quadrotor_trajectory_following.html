@@ -297,31 +297,76 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="system-overview" class="level2">
 <h2 class="anchored" data-anchor-id="system-overview">System Overview</h2>
-<p><strong>State Space (13D)</strong>: Position (3D), velocity (3D), orientation (quaternion, 4D), angular velocity (3D) - Frame: NED (North-East-Down) world frame, FRD (Forward-Right-Down) body frame</p>
+<p><strong>State Space (13D)</strong>: Position (3D), velocity (3D), orientation (quaternion, 4D), angular velocity (3D)</p>
+<ul>
+<li>Frame: NED (North-East-Down) world frame, FRD (Forward-Right-Down) body frame</li>
+</ul>
 <p><strong>Control Input (4D)</strong>: Total thrust + body angular rates (roll, pitch, yaw rates)</p>
-<p><strong>Dynamics</strong>: 6-DOF rigid body with quaternion-based attitude representation - For detailed mathematical formulations, see <code>docs/src/dynamics.qmd</code></p>
+<p><strong>Dynamics</strong>: 6-DOF rigid body with quaternion-based attitude representation</p>
+<ul>
+<li>For detailed mathematical formulations, see <code>docs/src/dynamics.qmd</code></li>
+</ul>
 <p><strong>Cost Function</strong>: Position/velocity tracking error + control effort penalty</p>
 </section>
 <section id="implementation-summary" class="level2">
 <h2 class="anchored" data-anchor-id="implementation-summary">Implementation Summary</h2>
 <section id="phase-1-core-components" class="level3">
 <h3 class="anchored" data-anchor-id="phase-1-core-components">Phase 1: Core Components ✅</h3>
-<p><strong>Completed Components</strong>: - Quadrotor dynamics module (<code>src/jax_mppi/dynamics/quadrotor.py</code>) - Quaternion utilities and kinematics - 6-DOF dynamics with RK4 integration - Unit tests for quaternion norm preservation and energy conservation - Trajectory cost functions (<code>src/jax_mppi/costs/quadrotor.py</code>) - Position/velocity tracking, attitude tracking, terminal costs - Unit tests for all cost functions</p>
+<p><strong>Completed Components</strong>:</p>
+<ul>
+<li>Quadrotor dynamics module (<code>src/jax_mppi/dynamics/quadrotor.py</code>)
+<ul>
+<li>Quaternion utilities and kinematics</li>
+<li>6-DOF dynamics with RK4 integration</li>
+<li>Unit tests for quaternion norm preservation and energy conservation</li>
+</ul></li>
+<li>Trajectory cost functions (<code>src/jax_mppi/costs/quadrotor.py</code>)
+<ul>
+<li>Position/velocity tracking, attitude tracking, terminal costs</li>
+<li>Unit tests for all cost functions</li>
+</ul></li>
+</ul>
 </section>
 <section id="phase-2-trajectory-generators" class="level3">
 <h3 class="anchored" data-anchor-id="phase-2-trajectory-generators">Phase 2: Trajectory Generators ✅</h3>
-<p><strong>Completed</strong>: - Trajectory generation utilities (<code>examples/quadrotor/trajectories.py</code>) - Circular, figure-8, hover, helix trajectories - Waypoint interpolation with cubic Hermite splines - Trajectory metrics computation - 28 unit tests (all passing)</p>
+<p><strong>Completed</strong>:</p>
+<ul>
+<li>Trajectory generation utilities (<code>examples/quadrotor/trajectories.py</code>)
+<ul>
+<li>Circular, figure-8, hover, helix trajectories</li>
+<li>Waypoint interpolation with cubic Hermite splines</li>
+<li>Trajectory metrics computation</li>
+</ul></li>
+<li>28 unit tests (all passing)</li>
+</ul>
 </section>
 <section id="phase-3-basic-examples" class="level3">
 <h3 class="anchored" data-anchor-id="phase-3-basic-examples">Phase 3: Basic Examples ✅</h3>
-<p><strong>Example 1</strong>: <code>quadrotor_hover.py</code> - Stabilization around fixed setpoint - Visualization of state evolution, performance metrics (settling time, overshoot)</p>
-<p><strong>Example 2</strong>: <code>quadrotor_circle.py</code> - Circular trajectory tracking - Tracking error visualization, control inputs, 3D trajectory plots</p>
+<p><strong>Example 1</strong>: <code>quadrotor_hover.py</code> - Stabilization around fixed setpoint</p>
+<ul>
+<li>Visualization of state evolution, performance metrics (settling time, overshoot)</li>
+</ul>
+<p><strong>Example 2</strong>: <code>quadrotor_circle.py</code> - Circular trajectory tracking</p>
+<ul>
+<li>Tracking error visualization, control inputs, 3D trajectory plots</li>
+</ul>
 <p><strong>Integration Tests</strong>: 11 tests covering both examples</p>
 </section>
 <section id="phase-4-advanced-examples" class="level3">
 <h3 class="anchored" data-anchor-id="phase-4-advanced-examples">Phase 4: Advanced Examples ✅</h3>
-<p><strong>Example 3</strong>: <code>quadrotor_figure8_comparison.py</code> - MPPI variant comparison - Side-by-side comparison of MPPI, SMPPI, and KMPPI on aggressive figure-8 - Comprehensive metrics: tracking accuracy, control smoothness, energy consumption - 6-subplot visualization with performance comparison table - Demonstrates SMPPI produces smoother control (lower jerk)</p>
-<p><strong>Example 4</strong>: <code>quadrotor_custom_trajectory.py</code> - Waypoint following - User-defined waypoint trajectories with smooth interpolation - Command-line interface for custom waypoint specification - Default square pattern demonstration</p>
+<p><strong>Example 3</strong>: <code>quadrotor_figure8_comparison.py</code> - MPPI variant comparison</p>
+<ul>
+<li>Side-by-side comparison of MPPI, SMPPI, and KMPPI on aggressive figure-8</li>
+<li>Comprehensive metrics: tracking accuracy, control smoothness, energy consumption</li>
+<li>6-subplot visualization with performance comparison table</li>
+<li>Demonstrates SMPPI produces smoother control (lower jerk)</li>
+</ul>
+<p><strong>Example 4</strong>: <code>quadrotor_custom_trajectory.py</code> - Waypoint following</p>
+<ul>
+<li>User-defined waypoint trajectories with smooth interpolation</li>
+<li>Command-line interface for custom waypoint specification</li>
+<li>Default square pattern demonstration</li>
+</ul>
 <p><strong>Integration Tests</strong>: 13 tests for advanced examples</p>
 </section>
 <section id="phase-5-documentation" class="level3">
@@ -339,7 +384,7 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="file-structure" class="level2">
 <h2 class="anchored" data-anchor-id="file-structure">File Structure</h2>
-<pre><code>jax_mppi/
+<pre class="text"><code>jax_mppi/
 ├── src/jax_mppi/
 │   ├── dynamics/quadrotor.py      # 6-DOF dynamics with quaternions
 │   └── costs/quadrotor.py         # Trajectory tracking costs
