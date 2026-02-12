@@ -5,7 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.1] - 2026-02-12
+
+### Added
+- **PyPI Publishing Infrastructure**: Package is now published on PyPI as `jax-mppi`
+  - Automated release workflow with GitHub Actions
+  - Release preparation script (`scripts/prepare_release.py`) for version bumping and changelog updates
+  - Pixi tasks for building and publishing: `build-sdist`, `publish`, `publish-test`
+  - Comprehensive release documentation in `docs/RELEASE.md` and `.github/RELEASE_CHECKLIST.md`
+- **Package Distribution**: Source-only distribution strategy for CUDA/C++ extension compatibility
+  - Users build from source against their specific CUDA installation
+  - Binary wheels not published due to manylinux compatibility requirements
+
+### Changed
+- Reorganized publishing workflow to use pixi tasks for consistency
+- Updated development dependencies: added `build` and `twine` for packaging
+
+### Fixed
+- Linting warnings for unused imports in test files
+
 
 ## [0.3.0] - 2026-02-07
 
