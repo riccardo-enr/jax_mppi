@@ -219,7 +219,9 @@ if args.animation_only:
 
     # Load field data if available
     hf = data["history_field"] if "history_field" in data else None
-    hfo = data["history_field_origin"] if "history_field_origin" in data else None
+    hfo = (
+        data["history_field_origin"] if "history_field_origin" in data else None
+    )
 
     # Create animation using viz_utils
     print("Generating animation...")

@@ -37,9 +37,10 @@ if _imppi_dir not in sys.path:
 
 import jax  # noqa: E402
 import jax.numpy as jnp  # noqa: E402
-import numpy as np  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
 from env_setup import create_grid_map  # noqa: E402
+from tqdm import tqdm  # noqa: E402
 from ugv_sim_utils import (  # noqa: E402
     CONTROL_HZ,
     DT,
@@ -52,11 +53,9 @@ from ugv_sim_utils import (  # noqa: E402
     build_ugv_parallel_sim_fn,
     compute_smoothness,
 )
-from tqdm import tqdm  # noqa: E402
 from viz_utils import plot_trajectory_2d  # noqa: E402
 
 from jax_mppi import mppi  # noqa: E402
-from jax_mppi.i_mppi.ugv_environment import GOAL_POS_2D  # noqa: E402
 from jax_mppi.i_mppi.fsmi import (  # noqa: E402
     FSMIConfig,
     FSMIModule,
@@ -64,6 +63,7 @@ from jax_mppi.i_mppi.fsmi import (  # noqa: E402
     UniformFSMI,
     UniformFSMIConfig,
 )
+from jax_mppi.i_mppi.ugv_environment import GOAL_POS_2D  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Parameters
@@ -94,7 +94,9 @@ REF_HORIZON = 40  # gradient trajectory steps
 TARGET_WEIGHT = 1.0  # MPPI target tracking weight
 GOAL_WEIGHT = 0.2  # constant goal attraction weight
 
-MEDIA_DIR = os.path.join(_script_dir, "..", "..", "docs", "_media", "i_mppi_ugv")
+MEDIA_DIR = os.path.join(
+    _script_dir, "..", "..", "docs", "_media", "i_mppi_ugv"
+)
 SUMMARY_PATH = os.path.join(MEDIA_DIR, "ugv_imppi_summary.png")
 DATA_PATH = os.path.join(MEDIA_DIR, "ugv_imppi_flight_data.npz")
 

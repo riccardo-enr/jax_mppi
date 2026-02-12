@@ -12,17 +12,9 @@ import jax.numpy as jnp
 
 from jax_mppi.dynamics.ugv import rk4_step
 from jax_mppi.i_mppi.environment import (
-    DEPLETION_ALPHA,
-    GOAL_POS,
-    INFO_ZONES,
-    SENSOR_FOV_RAD,
-    SENSOR_MAX_RANGE,
-    WALLS,
     _COLLISION_PENALTY,
     _OCC_THRESHOLD,
-    _ROBOT_RADIUS,
-    _fov_coverage,
-    _fov_coverage_with_los,
+    GOAL_POS,
     _wall_cost,
 )
 

@@ -96,9 +96,7 @@ def rk4_step(
     next_state = next_state.at[4].set(next_omega)
 
     # Wrap heading to [-π, π]
-    next_theta = jnp.arctan2(
-        jnp.sin(next_state[2]), jnp.cos(next_state[2])
-    )
+    next_theta = jnp.arctan2(jnp.sin(next_state[2]), jnp.cos(next_state[2]))
     next_state = next_state.at[2].set(next_theta)
 
     return next_state

@@ -4,6 +4,9 @@ Mirrors examples/i_mppi/sim_utils.py but adapted for 5D diff-drive UGV.
 Reuses generic utilities (fov_grid_update, interp2d) from sim_utils.
 """
 
+# Import generic utilities from the UAV sim_utils
+import os
+import sys
 from typing import Any, Callable
 
 import jax
@@ -16,11 +19,9 @@ from jax_mppi.i_mppi.ugv_environment import (
     ugv_informative_running_cost,
 )
 
-# Import generic utilities from the UAV sim_utils
-import os
-import sys
-
-_parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "i_mppi")
+_parent = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "i_mppi"
+)
 if _parent not in sys.path:
     sys.path.insert(0, _parent)
 
