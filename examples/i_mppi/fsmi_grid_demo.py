@@ -196,7 +196,11 @@ def compare_fsmi_modes():
     print("\n=== Grid-based FSMI ===")
     H, W = grid_map.shape
     gm = GridMap(
-        grid=grid_map, origin=map_origin, resolution=resolution, width=W, height=H
+        grid=grid_map,
+        origin=map_origin,
+        resolution=resolution,
+        width=W,
+        height=H,
     )
     fsmi_gen_grid = FSMITrajectoryGenerator(config_grid, INFO_ZONES, gm)
     info_gain_grid = fsmi_gen_grid._info_gain_grid(

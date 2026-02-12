@@ -157,31 +157,53 @@ def create_parallel_trajectory_gif(
     Nx, Ny = fields[k0].shape
 
     fig, (ax_map, ax_field) = plt.subplots(
-        1, 2, figsize=(16, 8),
+        1,
+        2,
+        figsize=(16, 8),
         gridspec_kw={"width_ratios": [0.55, 0.45]},
     )
 
     # --- Map panel ---
     ax_map.imshow(
-        grid_np, cmap="Greys", origin="lower", extent=extent,
-        vmin=0, vmax=1, alpha=0.8, aspect="equal",
+        grid_np,
+        cmap="Greys",
+        origin="lower",
+        extent=extent,
+        vmin=0,
+        vmax=1,
+        alpha=0.8,
+        aspect="equal",
     )
     ax_map.plot(START_X, START_Y, "o", color="green", markersize=8)
-    ax_map.plot(float(GOAL_POS[0]), float(GOAL_POS[1]), "*", color="red", markersize=12)
+    ax_map.plot(
+        float(GOAL_POS[0]), float(GOAL_POS[1]), "*", color="red", markersize=12
+    )
 
     # Reference trajectory (animated)
     ref_traj_0 = ref_trajs[k0]
     (ref_line,) = ax_map.plot(
-        ref_traj_0[:, 0], ref_traj_0[:, 1],
-        color="magenta", linewidth=2, linestyle="--", label="Reference Traj",
+        ref_traj_0[:, 0],
+        ref_traj_0[:, 1],
+        color="magenta",
+        linewidth=2,
+        linestyle="--",
+        label="Reference Traj",
     )
-    (trail_line,) = ax_map.plot([], [], color="cyan", linewidth=2, label="Executed Traj")
+    (trail_line,) = ax_map.plot(
+        [], [], color="cyan", linewidth=2, label="Executed Traj"
+    )
     (uav_marker,) = ax_map.plot([], [], "o", color="cyan", markersize=8)
 
     # FOV wedge
     fov_patch = Polygon(
-        _fov_polygon(positions[k0, 0], positions[k0, 1], yaws[k0], grid_np, resolution),
-        closed=True, facecolor="cyan", alpha=0.2, edgecolor="cyan", linewidth=0.5,
+        _fov_polygon(
+            positions[k0, 0], positions[k0, 1], yaws[k0], grid_np, resolution
+        ),
+        closed=True,
+        facecolor="cyan",
+        alpha=0.2,
+        edgecolor="cyan",
+        linewidth=0.5,
     )
     ax_map.add_patch(fov_patch)
 
@@ -199,17 +221,30 @@ def create_parallel_trajectory_gif(
 
     # --- Info field panel ---
     ax_field.imshow(
-        grid_np, cmap="Greys", origin="lower", extent=extent,
-        vmin=0, vmax=1, alpha=0.3, aspect="equal",
+        grid_np,
+        cmap="Greys",
+        origin="lower",
+        extent=extent,
+        vmin=0,
+        vmax=1,
+        alpha=0.3,
+        aspect="equal",
     )
     fo_0 = field_origins[k0]
     field_extent_0 = [
-        fo_0[0], fo_0[0] + Nx * field_res,
-        fo_0[1], fo_0[1] + Ny * field_res,
+        fo_0[0],
+        fo_0[0] + Nx * field_res,
+        fo_0[1],
+        fo_0[1] + Ny * field_res,
     ]
     field_im = ax_field.imshow(
-        fields[k0], cmap=_INFO_GAIN_CMAP, origin="lower",
-        extent=field_extent_0, vmin=0, vmax=field_vmax, aspect="equal",
+        fields[k0],
+        cmap=_INFO_GAIN_CMAP,
+        origin="lower",
+        extent=field_extent_0,
+        vmin=0,
+        vmax=field_vmax,
+        aspect="equal",
     )
     plt.colorbar(field_im, ax=ax_field, label="FSMI", shrink=0.7)
     (field_uav_marker,) = ax_field.plot([], [], "o", color="red", markersize=8)
@@ -232,7 +267,12 @@ def create_parallel_trajectory_gif(
         # Info field panel
         field = fields[k]
         fo = field_origins[k]
-        field_ext = [fo[0], fo[0] + Nx * field_res, fo[1], fo[1] + Ny * field_res]
+        field_ext = [
+            fo[0],
+            fo[0] + Nx * field_res,
+            fo[1],
+            fo[1] + Ny * field_res,
+        ]
         field_im.set_data(field)
         field_im.set_extent(field_ext)
         field_uav_marker.set_data([x], [y])
@@ -261,11 +301,22 @@ def create_parallel_trajectory_gif(
             f"Parallel I-MPPI  t = {k * dt:.1f}s  |  field max = {field.max():.3f}"
         )
 
-        return [field_im, field_uav_marker, ref_line, trail_line, uav_marker, heading_line, fov_patch]
+        return [
+            field_im,
+            field_uav_marker,
+            ref_line,
+            trail_line,
+            uav_marker,
+            heading_line,
+            fov_patch,
+        ]
 
     anim = FuncAnimation(
-        fig, update, frames=len(frame_indices),
-        interval=1000 // fps, blit=False,
+        fig,
+        update,
+        frames=len(frame_indices),
+        interval=1000 // fps,
+        blit=False,
     )
     anim.save(save_path, writer=PillowWriter(fps=fps))
     plt.close(fig)

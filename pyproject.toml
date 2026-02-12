@@ -23,7 +23,46 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering",
 ]
-dependencies = []
+dependencies = [
+  "jax>=0.9.0",
+  "numpy",
+  "jaxtyping",
+  "chex",
+  "pyyaml>=6.0.3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-benchmark",
+  "lark",
+  "gymnasium[classic_control]",
+  "matplotlib",
+  "ipywidgets",
+  "tqdm",
+  "basedpyright",
+  "ruff>=0.14.14",
+  "nbstripout",
+  "seaborn",
+  "SciencePlots",
+  "pytz",
+]
+docs = [
+  "mkdocs",
+  "mkdocs-material",
+  "mkdocstrings[python]",
+]
+autotuning = [
+  "cma>=3.3.0",
+  "evosax>=0.1.0",
+]
+autotuning-extra = [
+  "cma>=3.3.0",
+  "evosax>=0.1.0",
+  "ray[tune]",
+  "hyperopt",
+  "ribs",
+]
 
 [project.urls]
 Homepage = "https://github.com/riccardo-enr/jax_mppi"
@@ -50,14 +89,20 @@ ignore-overlong-task-comments = true
 
 [tool.ruff.lint.per-file-ignores]
 "src/jax_mppi/costs/basic.py" = ["F722", "F821"]
+"src/jax_mppi/costs/quadrotor.py" = ["F722", "F821"]
 "src/jax_mppi/dynamics/linear.py" = ["F722", "F821"]
+"src/jax_mppi/dynamics/quadrotor.py" = ["F722", "F841"]
 "src/jax_mppi/kmppi.py" = ["E402"]
 "src/jax_mppi/smppi.py" = ["E402"]
+"src/jax_mppi/i_mppi/planner.py" = ["F841"]
 "examples/cuda/pendulum_jit.py" = ["E741"]
 "examples/quadrotor/custom_trajectory.py" = ["F401"]
+"examples/quadrotor/trajectories.py" = ["F722"]
+"examples/i_mppi/*.py" = ["E402", "F401", "F841", "I001"]
 "src/jax_mppi/autotune_evosax.py" = ["E722"]
 "src/jax_mppi/autotune_qd.py" = ["F401"]
-"*.ipynb" = ["E402"]                                 # Only for notebooks
+"tests/test_mppi.py" = ["F841"]
+"*.ipynb" = ["E402", "F401"]
 
 [tool.basedpyright]
 pythonVersion = "3.12"
@@ -81,3 +126,6 @@ wheel.packages = ["src/jax_mppi"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]

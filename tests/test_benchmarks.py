@@ -20,7 +20,7 @@ from jax_mppi.i_mppi.environment import (
     INFO_ZONES,
     WALLS,
     augmented_dynamics_with_grid,
-    parallel_imppi_running_cost,
+    informative_running_cost,
 )
 from jax_mppi.i_mppi.fsmi import (
     FSMIConfig,
@@ -143,7 +143,7 @@ class TestInfoFieldBenchmark:
 
 @pytest.mark.slow
 class TestParallelImppiStepBenchmark:
-    """Benchmark a single mppi.command call with parallel_imppi_running_cost."""
+    """Benchmark a single mppi.command call with informative_running_cost."""
 
     def test_mppi_step(self, benchmark):
         # Use real WALLS/INFO_ZONES since dynamics hard-codes them
@@ -194,7 +194,7 @@ class TestParallelImppiStepBenchmark:
         state = jnp.concatenate([quad, jnp.array([100.0, 100.0, 100.0])])
 
         cost_fn = partial(
-            parallel_imppi_running_cost,
+            informative_running_cost,
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,

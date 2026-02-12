@@ -16,11 +16,13 @@ The current JAX-MPPI library includes three MPPI variants (standard, SMPPI, KMPP
 ## System Overview
 
 **State Space (13D)**: Position (3D), velocity (3D), orientation (quaternion, 4D), angular velocity (3D)
+
 - Frame: NED (North-East-Down) world frame, FRD (Forward-Right-Down) body frame
 
 **Control Input (4D)**: Total thrust + body angular rates (roll, pitch, yaw rates)
 
 **Dynamics**: 6-DOF rigid body with quaternion-based attitude representation
+
 - For detailed mathematical formulations, see `docs/src/dynamics.qmd`
 
 **Cost Function**: Position/velocity tracking error + control effort penalty
@@ -30,6 +32,7 @@ The current JAX-MPPI library includes three MPPI variants (standard, SMPPI, KMPP
 ### Phase 1: Core Components ✅
 
 **Completed Components**:
+
 - Quadrotor dynamics module (`src/jax_mppi/dynamics/quadrotor.py`)
   - Quaternion utilities and kinematics
   - 6-DOF dynamics with RK4 integration
@@ -41,6 +44,7 @@ The current JAX-MPPI library includes three MPPI variants (standard, SMPPI, KMPP
 ### Phase 2: Trajectory Generators ✅
 
 **Completed**:
+
 - Trajectory generation utilities (`examples/quadrotor/trajectories.py`)
   - Circular, figure-8, hover, helix trajectories
   - Waypoint interpolation with cubic Hermite splines
@@ -50,9 +54,11 @@ The current JAX-MPPI library includes three MPPI variants (standard, SMPPI, KMPP
 ### Phase 3: Basic Examples ✅
 
 **Example 1**: `quadrotor_hover.py` - Stabilization around fixed setpoint
+
 - Visualization of state evolution, performance metrics (settling time, overshoot)
 
 **Example 2**: `quadrotor_circle.py` - Circular trajectory tracking
+
 - Tracking error visualization, control inputs, 3D trajectory plots
 
 **Integration Tests**: 11 tests covering both examples
@@ -60,12 +66,14 @@ The current JAX-MPPI library includes three MPPI variants (standard, SMPPI, KMPP
 ### Phase 4: Advanced Examples ✅
 
 **Example 3**: `quadrotor_figure8_comparison.py` - MPPI variant comparison
+
 - Side-by-side comparison of MPPI, SMPPI, and KMPPI on aggressive figure-8
 - Comprehensive metrics: tracking accuracy, control smoothness, energy consumption
 - 6-subplot visualization with performance comparison table
 - Demonstrates SMPPI produces smoother control (lower jerk)
 
 **Example 4**: `quadrotor_custom_trajectory.py` - Waypoint following
+
 - User-defined waypoint trajectories with smooth interpolation
 - Command-line interface for custom waypoint specification
 - Default square pattern demonstration
@@ -91,7 +99,7 @@ The current JAX-MPPI library includes three MPPI variants (standard, SMPPI, KMPP
 
 ## File Structure
 
-```
+```text
 jax_mppi/
 ├── src/jax_mppi/
 │   ├── dynamics/quadrotor.py      # 6-DOF dynamics with quaternions

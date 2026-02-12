@@ -6,6 +6,18 @@ import pytest
 
 from jax_mppi import autotune, mppi
 
+# Check if optional autotuning dependencies are available
+try:
+    import cma
+
+    HAS_CMA = True
+except ImportError:
+    HAS_CMA = False
+
+requires_cma = pytest.mark.skipif(
+    not HAS_CMA, reason="requires cma package (pip install cma)"
+)
+
 
 class TestParameterBasics:
     """Test basic parameter interface and properties."""
@@ -205,6 +217,7 @@ class TestParameterFlattening:
         assert flattened[0] == 1.5  # lambda
 
 
+@requires_cma
 class TestCMAESOpt:
     """Test CMA-ES optimizer."""
 
@@ -245,6 +258,7 @@ class TestCMAESOpt:
         assert best.mean_cost < 0.5
 
 
+@requires_cma
 class TestAutotuneCore:
     """Test core Autotune functionality."""
 

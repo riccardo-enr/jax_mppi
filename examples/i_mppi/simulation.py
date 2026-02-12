@@ -560,7 +560,9 @@ def main():
 
     with plt.style.context(["science", "no-latex"]):
         fig = plt.figure(figsize=(16, 10))
-        gs = fig.add_gridspec(2, 2, height_ratios=[1, 1], hspace=0.25, wspace=0.15)
+        gs = fig.add_gridspec(
+            2, 2, height_ratios=[1, 1], hspace=0.25, wspace=0.15
+        )
 
         # Row 1, Col 1: 2D Trajectories
         ax1 = fig.add_subplot(gs[0, 0])
@@ -568,8 +570,12 @@ def main():
 
         for w in WALLS:
             rect = Rectangle(
-                (w[0], w[1]), w[2] - w[0], w[3] - w[1],
-                facecolor="gray", alpha=0.5, edgecolor="none",
+                (w[0], w[1]),
+                w[2] - w[0],
+                w[3] - w[1],
+                facecolor="gray",
+                alpha=0.5,
+                edgecolor="none",
             )
             ax1.add_patch(rect)
 
@@ -577,19 +583,43 @@ def main():
             cx, cy = INFO_ZONES[i, 0], INFO_ZONES[i, 1]
             w, h = INFO_ZONES[i, 2], INFO_ZONES[i, 3]
             rect = Rectangle(
-                (cx - w / 2, cy - h / 2), w, h,
-                facecolor="yellow", alpha=0.3, edgecolor="none",
+                (cx - w / 2, cy - h / 2),
+                w,
+                h,
+                facecolor="yellow",
+                alpha=0.3,
+                edgecolor="none",
             )
             ax1.add_patch(rect)
 
         ax1.plot([], [], "s", color="yellow", label="Info Zone")
-        ax1.plot(GOAL_POS[0], GOAL_POS[1], "*", color="red", markersize=14, label="Goal")
-        ax1.plot(start_pos[0], start_pos[1], "o", color="green", markersize=10, label="Start")
+        ax1.plot(
+            GOAL_POS[0],
+            GOAL_POS[1],
+            "*",
+            color="red",
+            markersize=14,
+            label="Goal",
+        )
+        ax1.plot(
+            start_pos[0],
+            start_pos[1],
+            "o",
+            color="green",
+            markersize=10,
+            label="Start",
+        )
 
         colors = {"mppi": "blue", "smppi": "green", "kmppi": "orange"}
         for name in controllers:
             history_x = results[name]["history_x"]
-            ax1.plot(history_x[:, 0], history_x[:, 1], color=colors[name], linewidth=2, label=name.upper())
+            ax1.plot(
+                history_x[:, 0],
+                history_x[:, 1],
+                color=colors[name],
+                linewidth=2,
+                label=name.upper(),
+            )
 
         ax1.set_xlim(-1, 14)
         ax1.set_ylim(-1, 12)
@@ -613,7 +643,13 @@ def main():
 
         for name in controllers:
             history_x = results[name]["history_x"]
-            ax2.plot(history_x[:, 0], history_x[:, 1], history_x[:, 2], color=colors[name], linewidth=2)
+            ax2.plot(
+                history_x[:, 0],
+                history_x[:, 1],
+                history_x[:, 2],
+                color=colors[name],
+                linewidth=2,
+            )
 
         ax2.scatter(*start_pos, color="green", s=40)
         ax2.scatter(*GOAL_POS, color="red", s=60, marker="D")
@@ -628,10 +664,20 @@ def main():
         ax3 = fig.add_subplot(gs[1, :])
         ax3.set_title("Occupancy Grid with Trajectories")
 
-        extent = [0, grid_map.shape[1] * map_resolution, 0, grid_map.shape[0] * map_resolution]
+        extent = [
+            0,
+            grid_map.shape[1] * map_resolution,
+            0,
+            grid_map.shape[0] * map_resolution,
+        ]
         im = ax3.imshow(
-            np.array(grid_map), cmap="Greys", origin="lower", extent=extent,
-            vmin=0, vmax=1, aspect="equal",
+            np.array(grid_map),
+            cmap="Greys",
+            origin="lower",
+            extent=extent,
+            vmin=0,
+            vmax=1,
+            aspect="equal",
         )
         plt.colorbar(im, ax=ax3, label="Occupancy", shrink=0.6)
 
