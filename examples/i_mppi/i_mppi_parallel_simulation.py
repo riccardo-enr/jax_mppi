@@ -17,7 +17,6 @@ import argparse
 import os
 import sys
 import time
-from typing import Any
 
 # ---------------------------------------------------------------------------
 # Path setup – make helper modules importable regardless of working dir.
@@ -50,7 +49,7 @@ from sim_utils import (  # noqa: E402
     compute_smoothness,
 )
 from tqdm import tqdm  # noqa: E402
-from viz_utils import plot_trajectory_2d  # noqa: E402
+from viz_utils import create_trajectory_gif, plot_trajectory_2d  # noqa: E402
 
 from jax_mppi import mppi  # noqa: E402
 from jax_mppi.i_mppi.environment import GOAL_POS  # noqa: E402
@@ -105,225 +104,6 @@ DATA_PATH = os.path.join(MEDIA_DIR, "parallel_imppi_flight_data.npz")
 
 
 # ---------------------------------------------------------------------------
-# HTML visualization with info field overlay
-# ---------------------------------------------------------------------------
-
-
-def create_parallel_trajectory_gif(
-    history_x: jax.Array,
-    history_field: jax.Array,
-    history_field_origin: jax.Array,
-    history_ref_traj: jax.Array,
-    grid: jax.Array,
-    resolution: float,
-    field_res: float,
-    dt: float,
-    save_path: str,
-    fps: int = 10,
-    step_skip: int = 5,
-) -> str:
-    """Create animated GIF showing trajectory + reference trajectory + info field heatmap."""
-    from matplotlib.animation import FuncAnimation, PillowWriter
-    from matplotlib.patches import Polygon
-
-    from viz_utils import _INFO_GAIN_CMAP, _fov_polygon
-
-    states = np.array(history_x)  # (N, 13)
-    positions = states[:, :2]
-    quats = states[:, 6:10]  # quaternions [qw, qx, qy, qz]
-    # Extract yaw from quaternions
-    yaws = np.arctan2(
-        2 * (quats[:, 0] * quats[:, 3] + quats[:, 1] * quats[:, 2]),
-        1 - 2 * (quats[:, 2] ** 2 + quats[:, 3] ** 2),
-    )
-    fields = np.array(history_field)  # (N, Nx, Ny)
-    field_origins = np.array(history_field_origin)  # (N, 2)
-    ref_trajs = np.array(history_ref_traj)  # (N, horizon, 3)
-    n_steps = len(positions)
-
-    frame_indices = list(range(0, n_steps, step_skip))
-    if frame_indices[-1] != n_steps - 1:
-        frame_indices.append(n_steps - 1)
-
-    grid_np = np.array(grid)
-    extent = [0, grid.shape[1] * resolution, 0, grid.shape[0] * resolution]
-
-    field_vmax = (
-        float(np.percentile(fields[fields > 0], 99))
-        if np.any(fields > 0)
-        else 1.0
-    )
-    k0 = frame_indices[0]
-    Nx, Ny = fields[k0].shape
-
-    fig, (ax_map, ax_field) = plt.subplots(
-        1,
-        2,
-        figsize=(16, 8),
-        gridspec_kw={"width_ratios": [0.55, 0.45]},
-    )
-
-    # --- Map panel ---
-    ax_map.imshow(
-        grid_np,
-        cmap="Greys",
-        origin="lower",
-        extent=extent,
-        vmin=0,
-        vmax=1,
-        alpha=0.8,
-        aspect="equal",
-    )
-    ax_map.plot(START_X, START_Y, "o", color="green", markersize=8)
-    ax_map.plot(
-        float(GOAL_POS[0]), float(GOAL_POS[1]), "*", color="red", markersize=12
-    )
-
-    # Reference trajectory (animated)
-    ref_traj_0 = ref_trajs[k0]
-    (ref_line,) = ax_map.plot(
-        ref_traj_0[:, 0],
-        ref_traj_0[:, 1],
-        color="magenta",
-        linewidth=2,
-        linestyle="--",
-        label="Reference Traj",
-    )
-    (trail_line,) = ax_map.plot(
-        [], [], color="cyan", linewidth=2, label="Executed Traj"
-    )
-    (uav_marker,) = ax_map.plot([], [], "o", color="cyan", markersize=8)
-
-    # FOV wedge
-    fov_patch = Polygon(
-        _fov_polygon(
-            positions[k0, 0], positions[k0, 1], yaws[k0], grid_np, resolution
-        ),
-        closed=True,
-        facecolor="cyan",
-        alpha=0.2,
-        edgecolor="cyan",
-        linewidth=0.5,
-    )
-    ax_map.add_patch(fov_patch)
-
-    # Heading arrow
-    arrow_len = 0.5
-    (heading_line,) = ax_map.plot([], [], color="cyan", linewidth=2.5)
-
-    ax_map.set_xlim(-0.5, 14.5)
-    ax_map.set_ylim(-0.5, 12.5)
-    ax_map.set_xlabel("X (m)")
-    ax_map.set_ylabel("Y (m)")
-    ax_map.set_title("Trajectory")
-    ax_map.set_aspect("equal")
-    ax_map.legend(loc="upper right")
-
-    # --- Info field panel ---
-    ax_field.imshow(
-        grid_np,
-        cmap="Greys",
-        origin="lower",
-        extent=extent,
-        vmin=0,
-        vmax=1,
-        alpha=0.3,
-        aspect="equal",
-    )
-    fo_0 = field_origins[k0]
-    field_extent_0 = [
-        fo_0[0],
-        fo_0[0] + Nx * field_res,
-        fo_0[1],
-        fo_0[1] + Ny * field_res,
-    ]
-    field_im = ax_field.imshow(
-        fields[k0],
-        cmap=_INFO_GAIN_CMAP,
-        origin="lower",
-        extent=field_extent_0,
-        vmin=0,
-        vmax=field_vmax,
-        aspect="equal",
-    )
-    plt.colorbar(field_im, ax=ax_field, label="FSMI", shrink=0.7)
-    (field_uav_marker,) = ax_field.plot([], [], "o", color="red", markersize=8)
-
-    ax_field.set_xlim(-0.5, 14.5)
-    ax_field.set_ylim(-0.5, 12.5)
-    ax_field.set_xlabel("X (m)")
-    ax_field.set_title("Information Field")
-    ax_field.set_aspect("equal")
-
-    title_text = fig.suptitle(
-        f"Parallel I-MPPI  t = 0.0s  |  field max = {fields[k0].max():.3f}"
-    )
-
-    def update(frame_idx):
-        k = frame_indices[frame_idx]
-        x, y = positions[k, 0], positions[k, 1]
-        yaw = yaws[k]
-
-        # Info field panel
-        field = fields[k]
-        fo = field_origins[k]
-        field_ext = [
-            fo[0],
-            fo[0] + Nx * field_res,
-            fo[1],
-            fo[1] + Ny * field_res,
-        ]
-        field_im.set_data(field)
-        field_im.set_extent(field_ext)
-        field_uav_marker.set_data([x], [y])
-
-        # Reference trajectory
-        ref_traj = ref_trajs[k]
-        ref_line.set_data(ref_traj[:, 0], ref_traj[:, 1])
-
-        # Trail
-        trail_line.set_data(positions[: k + 1, 0], positions[: k + 1, 1])
-
-        # UAV
-        uav_marker.set_data([x], [y])
-
-        # Heading arrow
-        dx = arrow_len * np.cos(yaw)
-        dy = arrow_len * np.sin(yaw)
-        heading_line.set_data([x, x + dx], [y, y + dy])
-
-        # FOV wedge
-        fov_verts = _fov_polygon(x, y, yaw, grid_np, resolution)
-        fov_patch.set_xy(fov_verts)
-
-        # Title
-        title_text.set_text(
-            f"Parallel I-MPPI  t = {k * dt:.1f}s  |  field max = {field.max():.3f}"
-        )
-
-        return [
-            field_im,
-            field_uav_marker,
-            ref_line,
-            trail_line,
-            uav_marker,
-            heading_line,
-            fov_patch,
-        ]
-
-    anim = FuncAnimation(
-        fig,
-        update,
-        frames=len(frame_indices),
-        interval=1000 // fps,
-        blit=False,
-    )
-    anim.save(save_path, writer=PillowWriter(fps=fps))
-    plt.close(fig)
-    return save_path
-
-
-# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -356,18 +136,14 @@ def animation_from_data() -> None:
     dt = float(data["dt"])
     step_skip = 2
     fps = int(1.0 / (step_skip * dt))  # 1:1 real-time (25 fps)
-    anim_path = create_parallel_trajectory_gif(
-        data["history_x"],
-        data["history_field"],
-        data["history_field_origin"],
-        data["history_ref_traj"],
-        data["grid"],
-        float(data["map_resolution"]),
-        FIELD_RES,
-        dt,
+    anim_path = create_trajectory_gif(
+        history_x=data["history_x"],
+        grid=data["grid"],
+        resolution=float(data["map_resolution"]),
+        dt=dt,
         save_path=GIF_PATH,
-        step_skip=step_skip,
         fps=fps,
+        step_skip=step_skip,
     )
     print(f"Saved to: {anim_path}")
 
@@ -579,18 +355,15 @@ def main() -> None:
     # --- Animation with info field (optional) ---
     if args.animation:
         print("Generating trajectory animation with info field ...")
-        anim_path = create_parallel_trajectory_gif(
-            history_x,
-            history_field,
-            history_field_origin,
-            history_ref_traj,
-            grid_array,
-            map_resolution,
-            FIELD_RES,
-            DT,
+        step_skip = 2
+        anim_path = create_trajectory_gif(
+            history_x=history_x,
+            grid=grid_array,
+            resolution=map_resolution,
+            dt=DT,
             save_path=GIF_PATH,
-            step_skip=2,
-            fps=int(1.0 / (2 * DT)),  # 1:1 real-time (25 fps)
+            fps=int(1.0 / (step_skip * DT)),  # 1:1 real-time (25 fps)
+            step_skip=step_skip,
         )
         print(f"Saved to: {anim_path}")
 

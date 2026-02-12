@@ -35,7 +35,7 @@ import matplotlib.pyplot as plt
 from env_setup import create_grid_map
 from sim_utils import DT, CONTROL_HZ
 from tqdm import tqdm
-from viz_utils import create_trajectory_gif
+from viz_utils import create_trajectory_gif, plot_trajectory_2d
 
 from jax_mppi.i_mppi.environment import GOAL_POS, INFO_ZONES
 
@@ -217,26 +217,24 @@ if args.animation_only:
 
     print(f"Loaded {n_active} steps from saved data")
 
+    # Load field data if available
+    hf = data["history_field"] if "history_field" in data else None
+    hfo = data["history_field_origin"] if "history_field_origin" in data else None
+
     # Create animation using viz_utils
     print("Generating animation...")
-    # CUDA simulation doesn't track info zones in state, so create dummy info levels
-    dummy_info = np.zeros((n_active, len(INFO_ZONES)), dtype=np.float32)
-
     # Real-time playback: step_skip frames at 1/(step_skip*dt) fps
     step_skip = 5
     fps = int(1.0 / (step_skip * DT))  # Real-time: 10 fps for skip=5, dt=0.02
 
     create_trajectory_gif(
         history_x=history_x,
-        history_info=dummy_info,
         grid=grid_array,
         resolution=map_resolution,
         dt=DT,
         save_path=GIF_FILE,
         fps=fps,
         step_skip=step_skip,
-        origin=(0.0, 0.0),
-        info_gain_field=None,
     )
     print(f"Saved animation to {GIF_FILE}")
     print("\nAnimation created successfully!")
@@ -375,13 +373,6 @@ step_count = sim_steps
 done = False
 
 for step in range(sim_steps):
-    pos = state[0:3]
-    dist_to_goal = np.linalg.norm(pos - np.array(GOAL_POS))
-    if dist_to_goal < GOAL_DONE_THRESHOLD:
-        done = True
-        step_count = step
-        break
-
     # --- Low-rate: recompute info field + reference trajectory ---
     if step % FIELD_UPDATE_INTERVAL == 0:
         info_field.compute(
@@ -450,6 +441,14 @@ for step in range(sim_steps):
     controller.shift()
     pbar.update(1)
 
+    # Check goal after state update
+    pos = state[0:3]
+    dist_to_goal = np.linalg.norm(pos - np.array(GOAL_POS))
+    if dist_to_goal < GOAL_DONE_THRESHOLD:
+        done = True
+        step_count = step + 1  # +1 because we've completed this step
+        break
+
 runtime = time.perf_counter() - t0
 pbar.close()
 
@@ -460,10 +459,12 @@ if done:
     n_active = step_count
     actual_duration = n_active * DT
     status = "Completed"
+    print(f"  Task completed at step {n_active} ({actual_duration:.1f}s)")
 else:
     n_active = sim_steps
     actual_duration = SIM_DURATION
     status = "Timeout"
+    print(f"  Timeout reached ({SIM_DURATION}s)")
 
 history_x = history_x[:n_active]
 history_actions = history_actions[:n_active]
@@ -487,8 +488,11 @@ print("=" * 60)
 # Save flight data
 # ---------------------------------------------------------------------------
 os.makedirs(DATA_DIR, exist_ok=True)
-np.savez(
-    FLIGHT_DATA_FILE,
+history_field_arr = np.array(history_field) if history_field else None
+history_field_origin_arr = (
+    np.array(history_field_origin) if history_field_origin else None
+)
+save_dict = dict(
     history_x=history_x,
     history_actions=history_actions,
     grid_array=grid_array,
@@ -497,86 +501,40 @@ np.savez(
     n_active=n_active,
     status=status,
 )
+if history_field_arr is not None and history_field_origin_arr is not None:
+    save_dict["history_field"] = history_field_arr
+    save_dict["history_field_origin"] = history_field_origin_arr
+np.savez(FLIGHT_DATA_FILE, **save_dict)  # pyright: ignore[reportArgumentType]
 print(f"\nSaved flight data to {FLIGHT_DATA_FILE}")
 
 # ---------------------------------------------------------------------------
-# Plot
+# Plot (same style as JAX parallel sim)
 # ---------------------------------------------------------------------------
-fig, axes = plt.subplots(1, 2, figsize=(16, 7))
-
-# Left: trajectory on map
-ax = axes[0]
-extent = [0, width * map_resolution, 0, height * map_resolution]
-ax.imshow(grid_array, cmap="Greys", origin="lower", extent=extent, alpha=0.8)
-ax.plot(
-    history_x[:, 0], history_x[:, 1], "cyan", linewidth=2, label="Trajectory"
-)
-ax.plot(START_X, START_Y, "go", markersize=10, label="Start")
-ax.plot(
-    float(GOAL_POS[0]), float(GOAL_POS[1]), "r*", markersize=15, label="Goal"
-)
-for z in info_zones_np:
-    from matplotlib.patches import Rectangle
-
-    rect = Rectangle(
-        (z[0] - z[2] / 2, z[1] - z[3] / 2),
-        z[2],
-        z[3],
-        linewidth=2,
-        edgecolor="orange",
-        facecolor="yellow",
-        alpha=0.2,
-    )
-    ax.add_patch(rect)
-ax.set_xlabel("X (m)")
-ax.set_ylabel("Y (m)")
-ax.set_title(f"CUDA I-MPPI Trajectory [{status}]")
-ax.legend()
-ax.set_aspect("equal")
-ax.grid(True, alpha=0.3)
-
-# Right: control inputs
-ax2 = axes[1]
-t = np.arange(n_active) * DT
-ax2.plot(t, history_actions[:, 0], label="Thrust (N)")
-ax2.plot(t, history_actions[:, 1], label="wx_cmd")
-ax2.plot(t, history_actions[:, 2], label="wy_cmd")
-ax2.plot(t, history_actions[:, 3], label="wz_cmd")
-ax2.axhline(
-    HOVER_THRUST, color="gray", linestyle="--", alpha=0.5, label="Hover"
-)
-ax2.set_xlabel("Time (s)")
-ax2.set_ylabel("Control")
-ax2.set_title("Control Inputs [T, wx, wy, wz]")
-ax2.legend()
-ax2.grid(True, alpha=0.3)
-
-plt.tight_layout()
 plot_file = os.path.join(DATA_DIR, "cuda_imppi_test.png")
-plt.savefig(plot_file, dpi=150)
+fig = plot_trajectory_2d(
+    history_x,
+    grid_array,
+    map_resolution,
+    title=f"CUDA I-MPPI Trajectory [{status}]",
+)
+fig.savefig(plot_file, dpi=150, bbox_inches="tight")
 print(f"\nSaved plot to {plot_file}")
 plt.show()
 
 # Create animation using viz_utils
 print("\nGenerating trajectory animation...")
-# CUDA simulation doesn't track info zones in state, so create dummy info levels
-dummy_info = np.zeros((n_active, len(INFO_ZONES)), dtype=np.float32)
-
 # Real-time playback: step_skip frames at 1/(step_skip*dt) fps
 step_skip = 5
 fps = int(1.0 / (step_skip * DT))  # Real-time: 10 fps for skip=5, dt=0.02
 
 create_trajectory_gif(
     history_x=history_x,
-    history_info=dummy_info,
     grid=grid_array,
     resolution=map_resolution,
     dt=DT,
     save_path=GIF_FILE,
     fps=fps,
     step_skip=step_skip,
-    origin=(0.0, 0.0),
-    info_gain_field=None,
 )
 print(f"Saved animation to {GIF_FILE}")
 
