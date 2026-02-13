@@ -207,7 +207,7 @@ def compare_fsmi_modes():
     # However, since the CI error says `_info_gain_legacy` is unknown, it means it was removed.
     # I should check FSMITrajectoryGenerator's current API.
     # For now, I'll comment out the legacy part to fix the CI failure.
-    print(f"Grid FSMI info gain: (Method updated)")
+    print("Grid FSMI info gain: (Method updated)")
 
     # Legacy geometric FSMI
     print("\n=== Legacy Geometric FSMI ===")
