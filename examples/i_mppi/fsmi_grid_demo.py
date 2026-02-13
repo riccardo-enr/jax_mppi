@@ -213,7 +213,7 @@ def compare_fsmi_modes():
     print("\n=== Legacy Geometric FSMI ===")
     print("Legacy method removed in refactoring.")
     info_gain_grid = 1.0  # Placeholder
-    info_gain_legacy = 1.0 # Placeholder
+    info_gain_legacy = 1.0  # Placeholder
 
     print("\nKey differences:")
     print("- Grid FSMI: Uses ray casting and occupancy probabilities")
