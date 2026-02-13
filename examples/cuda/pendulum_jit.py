@@ -15,7 +15,10 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from jax_mppi import cuda_mppi
+try:
+    from jax_mppi import cuda_mppi  # type: ignore
+except ImportError:
+    cuda_mppi = None
 
 # Define pendulum dynamics in C++/CUDA
 PENDULUM_DYNAMICS = """
@@ -197,6 +200,11 @@ def main():
                 f"  ⚠ Pygame unavailable, continuing without visualization: {e}"
             )
             pygame = None
+    else:
+        # Explicitly set to None for type checkers to understand
+        pygame = None
+        screen = None
+        clock = None
 
     print("\nRunning simulation...")
     print(
@@ -232,7 +240,7 @@ def main():
                 f"  Step {step + 1}: theta={state[0]:.3f} rad, torque={action[0]:.3f} Nm"
             )
 
-        if pygame is not None:
+        if pygame is not None and screen is not None:
             # Draw pendulum
             screen.fill((245, 245, 245))
             width, height = screen.get_size()
