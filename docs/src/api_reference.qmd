@@ -1,0 +1,306 @@
+---
+title: "API Reference"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+This reference documentation details the public API for the `jax_mppi` package.
+
+# `jax_mppi.mppi`
+
+The core implementation of the Model Predictive Path Integral (MPPI) controller.
+
+## Configuration & State
+
+### `MPPIConfig`
+
+A frozen dataclass holding static configuration parameters.
+
+```python
+@dataclass(frozen=True)
+class MPPIConfig:
+    num_samples: int           # Number of trajectory samples (K)
+    horizon: int               # Planning horizon (T)
+    nx: int                    # State dimension
+    nu: int                    # Control dimension
+    lambda_: float             # Temperature parameter
+    u_scale: float             # Control scaling factor
+    u_per_command: int         # Control steps per command step
+    step_dependent_dynamics: bool  # Whether dynamics depend on time step t
+    rollout_samples: int       # Number of rollout samples per trajectory
+    rollout_var_cost: float    # Cost weight for rollout variance
+    rollout_var_discount: float # Discount factor for rollout variance
+    sample_null_action: bool   # Whether to include a zero-noise sample
+    noise_abs_cost: bool       # Whether to use L1 norm for noise cost
+```
+
+### `MPPIState`
+
+A JAX PyTree holding dynamic state variables.
+
+```python
+@dataclass
+class MPPIState:
+    U: jax.Array               # (T, nu) Nominal control trajectory
+    u_init: jax.Array          # (nu,) Default action for shifting
+    noise_mu: jax.Array        # (nu,) Mean of exploration noise
+    noise_sigma: jax.Array     # (nu, nu) Covariance of exploration noise
+    noise_sigma_inv: jax.Array # (nu, nu) Inverse covariance
+    u_min: Optional[jax.Array] # (nu,) Lower control bounds
+    u_max: Optional[jax.Array] # (nu,) Upper control bounds
+    key: jax.Array             # PRNG key for random number generation
+```
+
+## Functions
+
+### `create`
+
+Initializes the MPPI controller configuration and state.
+
+```python
+def create(
+    nx: int,
+    nu: int,
+    noise_sigma: jax.Array,
+    num_samples: int = 100,
+    horizon: int = 15,
+    lambda_: float = 1.0,
+    noise_mu: Optional[jax.Array] = None,
+    u_min: Optional[jax.Array] = None,
+    u_max: Optional[jax.Array] = None,
+    u_init: Optional[jax.Array] = None,
+    U_init: Optional[jax.Array] = None,
+    u_scale: float = 1.0,
+    u_per_command: int = 1,
+    step_dependent_dynamics: bool = False,
+    rollout_samples: int = 1,
+    rollout_var_cost: float = 0.0,
+    rollout_var_discount: float = 0.95,
+    sample_null_action: bool = False,
+    noise_abs_cost: bool = False,
+    key: Optional[jax.Array] = None,
+) -> Tuple[MPPIConfig, MPPIState]
+```
+
+**Returns:**
+- `config`: `MPPIConfig` object
+- `state`: Initial `MPPIState` object
+
+### `command`
+
+Computes the optimal control action and updates the controller state.
+
+```python
+def command(
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    current_obs: jax.Array,
+    dynamics: DynamicsFn,
+    running_cost: RunningCostFn,
+    terminal_cost: Optional[TerminalCostFn] = None,
+    shift: bool = True,
+) -> Tuple[jax.Array, MPPIState]
+```
+
+**Parameters:**
+- `dynamics`: Function `(state, action) -> next_state` (or `(state, action, t) -> next_state` if `step_dependent_dynamics=True`)
+- `running_cost`: Function `(state, action) -> cost`
+- `shift`: Whether to shift the nominal trajectory forward after computation (default: `True`)
+
+**Returns:**
+- `action`: Optimal control action `(nu,)` (or `(u_per_command * nu,)`)
+- `new_state`: Updated `MPPIState`
+
+### `reset`
+
+Resets the nominal trajectory to the initial default value.
+
+```python
+def reset(
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    key: jax.Array
+) -> MPPIState
+```
+
+### `get_rollouts`
+
+Generates rollout trajectories for visualization or debugging.
+
+```python
+def get_rollouts(
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    current_obs: jax.Array,
+    dynamics: DynamicsFn,
+    num_rollouts: int = 1,
+) -> jax.Array
+```
+
+**Returns:**
+- `rollouts`: Array of shape `(num_rollouts, horizon + 1, nx)` containing state trajectories.
+
+---
+
+# `jax_mppi.smppi`
+
+Smooth MPPI (SMPPI) implementation. Operates in a lifted control space where the nominal trajectory represents velocity/acceleration, ensuring smoother control actions.
+
+## Configuration & State
+
+### `SMPPIConfig`
+
+Extends `MPPIConfig` with smoothness parameters.
+
+```python
+@dataclass(frozen=True)
+class SMPPIConfig:
+    # ... (Inherits fields from MPPIConfig) ...
+    w_action_seq_cost: float   # Weight on smoothness penalty (action differences)
+    delta_t: float             # Integration timestep
+```
+
+### `SMPPIState`
+
+Extends `MPPIState` to include integrated action sequences.
+
+```python
+@dataclass
+class SMPPIState:
+    # ... (Inherits fields from MPPIState) ...
+    action_sequence: jax.Array # (T, nu) Integrated action sequence
+    action_min: Optional[jax.Array] # Lower bounds on actions
+    action_max: Optional[jax.Array] # Upper bounds on actions
+```
+
+## Functions
+
+### `create`
+
+Initializes SMPPI. Note the addition of action bounds and smoothness weights.
+
+```python
+def create(
+    nx: int,
+    nu: int,
+    noise_sigma: jax.Array,
+    # ... (Standard MPPI args) ...
+    action_min: Optional[jax.Array] = None,
+    action_max: Optional[jax.Array] = None,
+    w_action_seq_cost: float = 1.0,
+    delta_t: float = 1.0,
+    key: Optional[jax.Array] = None,
+) -> Tuple[SMPPIConfig, SMPPIState]
+```
+
+### `command`
+
+Computes optimal action using Smooth MPPI.
+
+```python
+def command(
+    config: SMPPIConfig,
+    smppi_state: SMPPIState,
+    current_obs: jax.Array,
+    dynamics: DynamicsFn,
+    running_cost: RunningCostFn,
+    terminal_cost: Optional[TerminalCostFn] = None,
+    shift: bool = True,
+) -> Tuple[jax.Array, SMPPIState]
+```
+
+### `reset`
+
+Resets both the control velocity `U` and the integrated `action_sequence`.
+
+```python
+def reset(
+    config: SMPPIConfig,
+    smppi_state: SMPPIState,
+    key: jax.Array
+) -> SMPPIState
+```
+
+---
+
+# `jax_mppi.kmppi`
+
+Kernel MPPI (KMPPI) implementation. Uses kernel interpolation (e.g., RBF) to parameterize the control trajectory with a smaller set of support points, enforcing smoothness and reducing dimensionality.
+
+## Configuration & State
+
+### `KMPPIConfig`
+
+```python
+@dataclass(frozen=True)
+class KMPPIConfig:
+    # ... (Inherits fields from MPPIConfig) ...
+    num_support_pts: int       # Number of control points for interpolation
+```
+
+### `KMPPIState`
+
+```python
+@dataclass
+class KMPPIState:
+    # ... (Inherits fields from MPPIState) ...
+    theta: jax.Array           # (num_support_pts, nu) Control points
+    Tk: jax.Array              # (num_support_pts,) Control point times
+    Hs: jax.Array              # (T,) Full trajectory times
+```
+
+## Functions
+
+### `create`
+
+Initializes KMPPI. **Returns a kernel function in addition to config and state.**
+
+```python
+def create(
+    nx: int,
+    nu: int,
+    noise_sigma: jax.Array,
+    # ... (Standard MPPI args) ...
+    num_support_pts: Optional[int] = None,
+    kernel: Optional[TimeKernel] = None,
+    key: Optional[jax.Array] = None,
+) -> Tuple[KMPPIConfig, KMPPIState, TimeKernel]
+```
+
+**Returns:**
+- `config`: `KMPPIConfig`
+- `state`: `KMPPIState`
+- `kernel_fn`: The kernel function (e.g., `RBFKernel`) used for interpolation.
+
+### `command`
+
+Computes optimal action. **Requires `kernel_fn` to be passed.**
+
+```python
+def command(
+    config: KMPPIConfig,
+    kmppi_state: KMPPIState,
+    current_obs: jax.Array,
+    dynamics: DynamicsFn,
+    running_cost: RunningCostFn,
+    kernel_fn: TimeKernel,     # <--- Required argument
+    terminal_cost: Optional[TerminalCostFn] = None,
+    shift: bool = True,
+) -> Tuple[jax.Array, KMPPIState]
+```
+
+### `reset`
+
+Resets the control points `theta` and interpolated trajectory `U`.
+
+```python
+def reset(
+    config: KMPPIConfig,
+    kmppi_state: KMPPIState,
+    kernel_fn: TimeKernel,     # <--- Required argument
+    key: jax.Array
+) -> KMPPIState
+```

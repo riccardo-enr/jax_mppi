@@ -106,7 +106,7 @@ ignore-overlong-task-comments = true
 
 [tool.basedpyright]
 pythonVersion = "3.12"
-exclude = ["third_party", "build", "dist", "__pycache__"]
+exclude = ["third_party", "build", "dist", "__pycache__", "**/.pixi", "examples"]
 typeCheckingMode = "basic"
 pythonPlatform = "Linux"
 reportGeneralTypeIssues = false
