@@ -199,6 +199,7 @@ class TestParallelImppiStepBenchmark:
             grid_origin=origin,
             grid_resolution=resolution,
             uniform_fsmi_fn=uniform.compute,
+            target=jnp.zeros(3),
         )
         dynamics_fn = partial(
             augmented_dynamics_with_grid,
