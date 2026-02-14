@@ -16,6 +16,8 @@ website:
         href: src/i_mppi.qmd
       - text: "Autotuning"
         href: autotuning.md
+      - text: "API Reference"
+        href: src/api_reference.qmd
       - text: "Plans"
         href: plan/index.md
   sidebar:
@@ -40,6 +42,9 @@ website:
         contents:
           - testing.md
           - releasing.md
+      - section: "Reference"
+        contents:
+          - src/api_reference.qmd
 
 format:
   html:
