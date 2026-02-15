@@ -146,7 +146,7 @@ def run_controller(
             step_dependent_dynamics=True,
         )
 
-        def update_fn(state, obs, running_cost):
+        def update_mppi(state, obs, running_cost):
             return mppi.command(
                 config=config,
                 mppi_state=state,
@@ -156,6 +156,8 @@ def run_controller(
                 terminal_cost=terminal_cost_fn,
                 shift=True,
             )
+
+        update_fn = update_mppi
 
     elif controller_type == "smppi":
         # Smooth MPPI - operates in lifted velocity space
@@ -198,7 +200,7 @@ def run_controller(
             key=key,
         )
 
-        def update_fn(state, obs, running_cost):
+        def update_smppi(state, obs, running_cost):
             return smppi.command(
                 config=config,
                 smppi_state=state,
@@ -208,6 +210,8 @@ def run_controller(
                 terminal_cost=terminal_cost_fn,
                 shift=True,
             )
+
+        update_fn = update_smppi
 
     elif controller_type == "kmppi":
         config, controller_state, kernel = kmppi.create(
@@ -223,7 +227,7 @@ def run_controller(
             step_dependent_dynamics=True,
         )
 
-        def update_fn(state, obs, running_cost):
+        def update_kmppi(state, obs, running_cost):
             return kmppi.command(
                 config=config,
                 kmppi_state=state,
@@ -234,6 +238,8 @@ def run_controller(
                 kernel_fn=kernel,
                 shift=True,
             )
+
+        update_fn = update_kmppi
 
     else:
         raise ValueError(f"Unknown controller type: {controller_type}")

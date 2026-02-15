@@ -1,4 +1,7 @@
-from jax_mppi import cuda_mppi
+try:
+    from jax_mppi import cuda_mppi  # type: ignore
+except ImportError:
+    cuda_mppi = None
 
 
 def main():

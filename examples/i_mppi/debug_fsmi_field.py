@@ -103,7 +103,7 @@ def compute_full_map_fsmi(
     # Zero out wall positions
     field_flat = jnp.where(is_wall, 0.0, field_flat)
 
-    return field_flat.reshape(Nx, Ny)
+    return jnp.reshape(field_flat, (Nx, Ny))
 
 
 def field_gradient_trajectory(
@@ -264,7 +264,7 @@ def main():
     positions_grid = np.stack(
         np.meshgrid(field_xs, field_ys, indexing="ij"), axis=-1
     )
-    flat_positions = jnp.array(positions_grid.reshape(-1, 2))
+    flat_positions = jnp.array(positions_grid.reshape(-1, 2), dtype=float)
     yaws = jnp.linspace(0, 2 * jnp.pi, N_YAW, endpoint=False)
     field_origin = jnp.array([field_xs[0], field_ys[0]])
 

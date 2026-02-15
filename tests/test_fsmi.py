@@ -2,7 +2,6 @@
 
 import jax
 import jax.numpy as jnp
-import pytest
 
 from jax_mppi.i_mppi.fsmi import (
     FSMIConfig,
@@ -80,7 +79,6 @@ def test_fsmi_target_selector():
     assert jnp.allclose(target, goal_pos)
 
 
-@pytest.mark.skip(reason="Old API - compute_fsmi_gain removed in refactoring")
 def test_fsmi_gain():
     walls = jnp.array([[5.0, 0.0, 5.0, 10.0]])
     info_zones = jnp.array([[8.0, 5.0, 2.0, 2.0, 100.0]])
@@ -89,17 +87,16 @@ def test_fsmi_gain():
     w, h = 20, 20
     grid_map = rasterize_environment(walls, info_zones, origin, w, h, res)
 
-    gain_blocked = compute_fsmi_gain(  # noqa: F821
+    mod = _default_fsmi_module()
+    gain_blocked = mod.compute_fsmi(
+        grid_map.grid,
         jnp.array([2.0, 5.0]),
-        grid_map.grid,
-        grid_map.origin,
-        grid_map.resolution,
+        0.0,
     )
-    gain_clear = compute_fsmi_gain(  # noqa: F821
-        jnp.array([6.0, 5.0]),
+    gain_clear = mod.compute_fsmi(
         grid_map.grid,
-        grid_map.origin,
-        grid_map.resolution,
+        jnp.array([6.0, 5.0]),
+        0.0,
     )
 
     assert gain_clear > gain_blocked
@@ -322,33 +319,7 @@ class TestUniformFSMI:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="Old API - cast_ray_fsmi removed in refactoring")
-class TestCastRayFSMI:
-    def test_free_space(self):
-        grid = jnp.zeros((10, 10))
-        origin = jnp.array([0.0, 0.0])
-        gain = cast_ray_fsmi(jnp.array([2.5, 2.5]), 0.0, grid, origin, 0.5)  # noqa: F821
-        assert jnp.isclose(gain, 0.0, atol=1e-5)
-
-    def test_into_unknown(self):
-        grid = jnp.zeros((10, 10)).at[4:6, 6:8].set(0.5)
-        origin = jnp.array([0.0, 0.0])
-        # Ray pointing right from (2.5, 2.25) toward unknown cells
-        gain = cast_ray_fsmi(jnp.array([2.5, 2.25]), 0.0, grid, origin, 0.5)  # noqa: F821
-        assert gain > 0
-
-    def test_wall_blocks(self):
-        origin = jnp.array([0.0, 0.0])
-        # Grid with wall then unknown
-        grid_blocked = jnp.zeros((10, 10)).at[5, 4].set(1.0).at[5, 6:8].set(0.5)
-        grid_clear = jnp.zeros((10, 10)).at[5, 6:8].set(0.5)
-        gain_blocked = cast_ray_fsmi(  # noqa: F821
-            jnp.array([0.25, 2.75]), 0.0, grid_blocked, origin, 0.5
-        )
-        gain_clear = cast_ray_fsmi(  # noqa: F821
-            jnp.array([0.25, 2.75]), 0.0, grid_clear, origin, 0.5
-        )
-        assert gain_clear >= gain_blocked
+# Removed TestCastRayFSMI as cast_ray_fsmi is deprecated
 
 
 # ---------------------------------------------------------------------------
@@ -356,29 +327,26 @@ class TestCastRayFSMI:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="Old API - compute_fsmi_gain removed in refactoring")
 class TestComputeFSMIGain:
     def test_in_unknown_region(self):
         gm = _make_simple_grid()
-        gain = compute_fsmi_gain(  # noqa: F821
-            jnp.array([1.0, 2.5]), gm.grid, gm.origin, gm.resolution
-        )
+        mod = _default_fsmi_module()
+        gain = mod.compute_fsmi(gm.grid, jnp.array([1.0, 2.5]), 0.0)
         assert gain > 0
 
     def test_in_free_region(self):
         grid = jnp.zeros((10, 10))
         origin = jnp.array([0.0, 0.0])
-        gain = compute_fsmi_gain(jnp.array([2.5, 2.5]), grid, origin, 0.5)  # noqa: F821
+        cfg = FSMIConfig(num_beams=8, max_range=3.0, ray_step=0.1, fov_rad=1.57)
+        mod = FSMIModule(cfg, origin, 0.5)
+        gain = mod.compute_fsmi(grid, jnp.array([2.5, 2.5]), 0.0)
         assert jnp.isclose(gain, 0.0, atol=1e-4)
 
     def test_near_vs_far(self):
         gm = _make_simple_grid()
-        gain_near = compute_fsmi_gain(  # noqa: F821
-            jnp.array([1.0, 2.5]), gm.grid, gm.origin, gm.resolution
-        )
-        gain_far = compute_fsmi_gain(  # noqa: F821
-            jnp.array([4.0, 4.0]), gm.grid, gm.origin, gm.resolution
-        )
+        mod = _default_fsmi_module()
+        gain_near = mod.compute_fsmi(gm.grid, jnp.array([1.0, 2.5]), 0.0)
+        gain_far = mod.compute_fsmi(gm.grid, jnp.array([4.0, 4.0]), 0.0)
         assert gain_near > gain_far
 
 
