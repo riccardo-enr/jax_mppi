@@ -162,6 +162,8 @@ class CMAMEOpt(Optimizer):
         behaviors = []
 
         for solution in solutions:
+            if self.evaluate_fn is None:
+                raise RuntimeError("Evaluation function not set")
             result = self.evaluate_fn(solution)
             results.append(result)
 

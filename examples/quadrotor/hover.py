@@ -215,7 +215,7 @@ def run_quadrotor_hover(
             ax1 = plt.subplot(3, 3, 1)
             ax1.plot(time, states[:, 0], label="px", color="C0")
             ax1.axhline(
-                hover_position[0], color="C0", linestyle="--", alpha=0.5
+                float(hover_position[0]), color="C0", linestyle="--", alpha=0.5
             )
             ax1.set_ylabel("X Position (m)")
             ax1.legend()
@@ -225,7 +225,7 @@ def run_quadrotor_hover(
             ax2 = plt.subplot(3, 3, 4)
             ax2.plot(time, states[:, 1], label="py", color="C1")
             ax2.axhline(
-                hover_position[1], color="C1", linestyle="--", alpha=0.5
+                float(hover_position[1]), color="C1", linestyle="--", alpha=0.5
             )
             ax2.set_ylabel("Y Position (m)")
             ax2.legend()
@@ -234,7 +234,7 @@ def run_quadrotor_hover(
             ax3 = plt.subplot(3, 3, 7)
             ax3.plot(time, states[:, 2], label="pz", color="C2")
             ax3.axhline(
-                hover_position[2], color="C2", linestyle="--", alpha=0.5
+                float(hover_position[2]), color="C2", linestyle="--", alpha=0.5
             )
             ax3.set_ylabel("Z Position (m)")
             ax3.set_xlabel("Time (s)")

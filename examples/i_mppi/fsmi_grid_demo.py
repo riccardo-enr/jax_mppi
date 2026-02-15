@@ -20,7 +20,6 @@ import numpy as np
 
 from jax_mppi.i_mppi.environment import INFO_ZONES
 from jax_mppi.i_mppi.fsmi import FSMIConfig, FSMIModule, FSMITrajectoryGenerator
-from jax_mppi.i_mppi.map import GridMap
 
 
 def create_synthetic_grid(width=100, height=100, resolution=0.1):
@@ -154,75 +153,7 @@ def visualize_grid_with_fsmi(grid_map, map_origin, resolution, config):
     plt.close()
 
 
-def compare_fsmi_modes():
-    """
-    Compare grid-based FSMI with legacy geometric method.
-    """
-    # Create grid
-    grid_map, map_origin, resolution = create_synthetic_grid()
-
-    # Setup both modes
-    config_grid = FSMIConfig(
-        use_grid_fsmi=True,
-        fov_rad=1.57,
-        num_beams=16,
-        max_range=5.0,
-        ray_step=0.1,
-        trajectory_subsample_rate=5,
-    )
-
-    config_legacy = FSMIConfig(
-        use_grid_fsmi=False,
-        info_weight=10.0,
-    )
-
-    # Test trajectory (straight line)
-    horizon = 40
-    dt = 0.05
-    pos0 = jnp.array([2.0, 5.0, -2.0])
-    target = jnp.array([8.0, 5.0, -2.0])
-
-    # Generate trajectory
-    direction = target - pos0
-    dist = jnp.linalg.norm(direction)
-    unit = direction / dist
-    step_d = 2.0 * dt * jnp.arange(horizon)  # ref_speed = 2.0
-    step_d = jnp.minimum(step_d, dist)
-    ref_traj = pos0[None, :] + step_d[:, None] * unit[None, :]
-
-    view_dir_xy = target[:2] - pos0[:2]
-
-    # Grid-based FSMI
-    print("\n=== Grid-based FSMI ===")
-    H, W = grid_map.shape
-    gm = GridMap(
-        grid=grid_map,
-        origin=map_origin,
-        resolution=resolution,
-        width=W,
-        height=H,
-    )
-    fsmi_gen_grid = FSMITrajectoryGenerator(config_grid, INFO_ZONES, gm)
-    info_gain_grid = fsmi_gen_grid._info_gain_grid(
-        ref_traj, view_dir_xy, grid_map, dt
-    )
-    print(f"Grid FSMI info gain: {info_gain_grid:.4f}")
-
-    # Legacy geometric FSMI
-    print("\n=== Legacy Geometric FSMI ===")
-    fsmi_gen_legacy = FSMITrajectoryGenerator(config_legacy, INFO_ZONES, gm)
-    info_levels = jnp.array([100.0, 100.0])
-    info_gain_legacy = fsmi_gen_legacy._info_gain_legacy(
-        ref_traj, view_dir_xy, info_levels, dt
-    )
-    print(f"Legacy info gain: {info_gain_legacy:.4f}")
-
-    print("\nKey differences:")
-    print("- Grid FSMI: Uses ray casting and occupancy probabilities")
-    print("- Legacy: Uses geometric gates (FOV, range, proximity)")
-    print(
-        f"- Ratio (Grid/Legacy): {info_gain_grid / (info_gain_legacy + 1e-6):.2f}"
-    )
+# Removed compare_fsmi_modes() as legacy mode is deprecated
 
 
 def demo_beam_computation():
@@ -321,9 +252,7 @@ def main():
     )
     visualize_grid_with_fsmi(grid_map, map_origin, resolution, config)
 
-    # Demo 3: Comparison
-    print("\n" + "=" * 60)
-    compare_fsmi_modes()
+    # Demo 3: Comparison (Removed)
 
     print("\n" + "=" * 60)
     print("Demo complete!")
