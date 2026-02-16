@@ -162,6 +162,8 @@ class CMAMEOpt(Optimizer):
         behaviors = []
 
         for solution in solutions:
+            if self.evaluate_fn is None:
+                raise RuntimeError("Must call setup_optimization() first")
             result = self.evaluate_fn(solution)
             results.append(result)
 

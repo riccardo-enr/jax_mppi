@@ -25,12 +25,20 @@ class TestParameterBasics:
     def test_tunable_parameter_is_abstract(self):
         """TunableParameter cannot be instantiated directly."""
         with pytest.raises(TypeError):
-            autotune.TunableParameter()
+            # Try to instantiate without implementing abstract methods
+            class IncompleteParameter(autotune.TunableParameter):
+                pass
+
+            IncompleteParameter()
 
     def test_optimizer_is_abstract(self):
         """Optimizer cannot be instantiated directly."""
         with pytest.raises(TypeError):
-            autotune.Optimizer()
+            # Try to instantiate without implementing abstract methods
+            class IncompleteOptimizer(autotune.Optimizer):
+                pass
+
+            IncompleteOptimizer()
 
     def test_evaluation_result_creation(self):
         """EvaluationResult can be created with all fields."""

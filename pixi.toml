@@ -63,6 +63,8 @@ pyyaml = ">=6.0.3"
 cmake = ">=3.18"
 nanobind = "*"
 scikit-build-core = ">=0.3.3"
+cma = ">=3.3.0"
+evosax = ">=0.1.0"
 pytest = "*"
 pytest-benchmark = "*"
 lark = "*"
@@ -81,7 +83,7 @@ pytz = "*"
 test = "pytest tests/"
 ruff-check = "python -m ruff check ."
 ruff-format = "python -m ruff format --check ."
-type-check = "python -m basedpyright ."
+type-check = "python -m basedpyright"
 
 [environments]
 default = { solve-group = "default" }
