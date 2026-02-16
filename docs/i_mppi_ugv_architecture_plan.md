@@ -62,6 +62,7 @@ Instead of hierarchical layers, we run **N parallel MPPI controllers** simultane
 ### 2.2 Portfolio Design Strategies
 
 #### Strategy 1: Exploration-Exploitation Portfolio
+
 | Controller | Info Weight | Goal Weight | Safety Weight | Role |
 |------------|-------------|-------------|---------------|------|
 | Explorer   | 0.7         | 0.1         | 0.2           | Maximize information gain |
