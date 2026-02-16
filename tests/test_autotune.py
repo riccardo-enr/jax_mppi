@@ -28,6 +28,7 @@ class TestParameterBasics:
             # Try to instantiate without implementing abstract methods
             class IncompleteParameter(autotune.TunableParameter):
                 pass
+
             IncompleteParameter()
 
     def test_optimizer_is_abstract(self):
@@ -36,6 +37,7 @@ class TestParameterBasics:
             # Try to instantiate without implementing abstract methods
             class IncompleteOptimizer(autotune.Optimizer):
                 pass
+
             IncompleteOptimizer()
 
     def test_evaluation_result_creation(self):

@@ -94,12 +94,12 @@ def test_fsmi_gain():
     gain_blocked = ufsmi.compute(
         grid_map.grid,
         jnp.array([2.0, 5.0]),
-        0.0  # yaw
+        0.0,  # yaw
     )
     gain_clear = ufsmi.compute(
         grid_map.grid,
         jnp.array([6.0, 5.0]),
-        0.0  # yaw
+        0.0,  # yaw
     )
 
     assert gain_clear > gain_blocked
