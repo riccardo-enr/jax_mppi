@@ -1,0 +1,145 @@
+---
+title: "Quadrotor Control Examples"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+**JAX-MPPI** includes a comprehensive suite of quadrotor control examples, demonstrating high-performance trajectory tracking and stabilization using Model Predictive Path Integral control. These examples showcase the library's ability to handle nonlinear 6-DOF dynamics and complex constraints.
+
+## Overview
+
+The quadrotor examples demonstrate:
+
+-   **Stabilization**: Hovering at a fixed setpoint from a displaced initial condition.
+-   **Trajectory Tracking**: Following dynamic paths like circles and figure-8s.
+-   **MPPI Variants**: Comparing standard MPPI, Smooth MPPI (SMPPI), and Kernel MPPI (KMPPI).
+-   **Real-time Performance**: Achieving 50 Hz control rates using JIT compilation.
+
+## Theoretical Background
+
+### Dynamics Model
+
+The quadrotor is modeled as a 6-DOF rigid body with the following state vector ($n_x = 13$):
+
+$$
+\mathbf{x} = [p_x, p_y, p_z, v_x, v_y, v_z, q_w, q_x, q_y, q_z, \omega_x, \omega_y, \omega_z]^T
+$$
+
+where:
+-   $\mathbf{p} = [p_x, p_y, p_z]$ is the position in the NED (North-East-Down) frame.
+-   $\mathbf{v} = [v_x, v_y, v_z]$ is the linear velocity in the world frame.
+-   $\mathbf{q} = [q_w, q_x, q_y, q_z]$ is the attitude quaternion (body to world).
+-   $\boldsymbol{\omega} = [\omega_x, \omega_y, \omega_z]$ is the angular velocity in the body frame.
+
+The control input ($n_u = 4$) consists of the total thrust and body rates (or motor speeds, depending on the specific model):
+
+$$
+\mathbf{u} = [T, \omega_{cmd, x}, \omega_{cmd, y}, \omega_{cmd, z}]^T
+$$
+
+:::{.callout-note}
+## Coordinate System
+The examples use the **NED (North-East-Down)** coordinate system.
+-   **x**: North
+-   **y**: East
+-   **z**: Down (so altitude is negative z)
+:::
+
+### Cost Function
+
+The tracking cost function is typically a weighted quadratic error between the current state and the reference trajectory:
+
+$$
+J(\mathbf{x}, \mathbf{u}) = (\mathbf{x} - \mathbf{x}_{ref})^T \mathbf{Q} (\mathbf{x} - \mathbf{x}_{ref}) + \mathbf{u}^T \mathbf{R} \mathbf{u}
+$$
+
+where $\mathbf{Q}$ and $\mathbf{R}$ are weighting matrices for state error and control effort, respectively.
+
+## Installation
+
+The core `jax-mppi` package is sufficient for running the control loops. However, for visualization, you need `matplotlib`.
+
+```bash
+pip install matplotlib
+```
+
+## Quick Start
+
+To run the basic hover stabilization example:
+
+```bash
+python examples/quadrotor/hover.py --visualize
+```
+
+This will simulate the quadrotor stabilizing from an initial displacement and display trajectory plots.
+
+## Usage
+
+The examples are located in `examples/quadrotor/` and can be run directly from the repository root.
+
+### Common Arguments
+
+Most examples support the following command-line arguments:
+
+-   `--steps`: Number of simulation steps (default: 500).
+-   `--samples`: Number of MPPI trajectories samples $K$ (default: 1000-2000).
+-   `--horizon`: Planning horizon $H$ (default: 30-50).
+-   `--lambda`: Temperature parameter $\lambda$ (default: 0.1 - 1.0).
+-   `--visualize`: Enable matplotlib plotting.
+-   `--seed`: Random seed for reproducibility.
+
+## Examples
+
+### 1. Hover Stabilization (`hover.py`)
+
+Stabilizes the quadrotor at a fixed position (e.g., $[0, 0, -5.0]$).
+
+```bash
+python examples/quadrotor/hover.py --visualize
+```
+
+**Key Features:**
+-   Demonstrates basic setpoint regulation.
+-   Uses terminal cost to improve convergence.
+
+### 2. Circle Tracking (`circle.py`)
+
+Tracks a circular trajectory of radius 5m at a speed of 5 m/s.
+
+```bash
+python examples/quadrotor/circle.py --visualize --samples 2000 --horizon 50
+```
+
+**Key Features:**
+-   Requires a longer horizon and more samples than hovering.
+-   Demonstrates tracking of time-varying references.
+
+### 3. Figure-8 Tracking (`figure8_comparison.py`)
+
+Tracks an aggressive Lemniscate of Bernoulli (figure-8) trajectory. This script compares different MPPI variants.
+
+```bash
+python examples/quadrotor/figure8_comparison.py --visualize
+```
+
+**Key Features:**
+-   **Aggressive Maneuvers**: High-speed turns require predictive capabilities.
+-   **Variant Comparison**: Runs MPPI, SMPPI, and KMPPI side-by-side.
+
+## Results & Performance
+
+The examples demonstrate that **SMPPI (Smooth MPPI)** typically produces smoother control inputs compared to standard MPPI, which can be "jittery" due to independent sampling at each time step.
+
+| Metric | MPPI | SMPPI | KMPPI |
+|--------|------|-------|-------|
+| **Tracking Error** | Low | Low | Low |
+| **Control Smoothness** | Low (High Jerk) | High | High |
+| **Computational Cost** | Base | +5-10% | +10-15% |
+
+:::{.callout-tip}
+## Tuning Tip
+For aggressive tracking (like the figure-8), increasing the horizon ($H=50$) and sample count ($K=2000$) significantly improves performance. Lowering $\lambda$ (e.g., to 0.05 or 0.1) can also help track the reference more tightly.
+:::
