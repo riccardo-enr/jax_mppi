@@ -178,7 +178,7 @@ class EvoSaxOptimizer(Optimizer):
         Returns:
             Best evaluation result from this step
         """
-        if self.es is None or self.es_state is None:
+        if self.es is None or self.es_state is None or self.rng_key is None:
             raise RuntimeError("Must call setup_optimization() first")
 
         # Ask: sample population with evosax API
