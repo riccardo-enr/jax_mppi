@@ -158,14 +158,9 @@ class TestParallelImppiStepBenchmark:
             origin,
             resolution,
         )
-        mod = FSMIModule(
-            FSMIConfig(num_beams=8, max_range=3.0, ray_step=0.1, fov_rad=1.57),
-            origin,
-            resolution,
-        )
-        cfg = InfoFieldConfig(field_res=0.5, field_extent=2.0, n_yaw=4)
-        pos_xy = jnp.array([5.0, 5.0])
-        info_field, field_origin = compute_info_field(mod, gm.grid, pos_xy, cfg)
+        # Note: mod and cfg for compute_info_field were used in previous code
+        # but are not needed by the new API for informative_running_cost.
+        # They were causing the TypeError by passing unknown arguments.
 
         # MPPI setup — 3 info zones -> NX=16
         noise_sigma = jnp.diag(jnp.array([2.0, 0.5, 0.5, 0.5]) ** 2)
@@ -193,15 +188,15 @@ class TestParallelImppiStepBenchmark:
         quad = quad.at[6].set(1.0)
         state = jnp.concatenate([quad, jnp.array([100.0, 100.0, 100.0])])
 
+        # Updated partial: target will be passed by mppi.command as positional arg.
+        # Removed 'info_field', 'field_origin', 'field_res' as they are not in the new API.
         cost_fn = partial(
             informative_running_cost,
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,
-            info_field=info_field,
-            field_origin=field_origin,
-            field_res=cfg.field_res,
             uniform_fsmi_fn=uniform.compute,
+            # target is passed positionally by MPPI
         )
         dynamics_fn = partial(
             augmented_dynamics_with_grid,
@@ -213,6 +208,11 @@ class TestParallelImppiStepBenchmark:
 
         @partial(jax.jit, static_argnums=(0,))
         def step(cfg, ctrl, s):
-            return mppi.command(cfg, ctrl, s, dynamics_fn, cost_fn)
+            # Pass a dummy target since MPPI passes it to running_cost
+            # If mppi.command is called without a target, it defaults to something or fails?
+            # mppi.command signature: (config, state, current_obs, dynamics, running_cost, terminal_cost, target)
+            # We need to supply a target for MPPI to pass to cost_fn
+            target = jnp.array([9.0, 5.0, -2.0])
+            return mppi.command(cfg, ctrl, s, dynamics_fn, cost_fn, target=target)
 
         _jax_benchmark(benchmark, step, mppi_config, mppi_state, state)
