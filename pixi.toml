@@ -83,7 +83,7 @@ evosax = ">=0.1.0"
 test = "pytest tests/"
 ruff-check = "python -m ruff check ."
 ruff-format = "python -m ruff format --check ."
-type-check = "python -m basedpyright ."
+type-check = "python -m basedpyright"
 
 [environments]
 default = { solve-group = "default" }

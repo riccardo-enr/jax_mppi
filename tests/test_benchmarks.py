@@ -209,10 +209,9 @@ class TestParallelImppiStepBenchmark:
         @partial(jax.jit, static_argnums=(0,))
         def step(cfg, ctrl, s):
             # Pass a dummy target since MPPI passes it to running_cost
-            # If mppi.command is called without a target, it defaults to something or fails?
             # mppi.command signature: (config, state, current_obs, dynamics, running_cost, terminal_cost, target)
-            # We need to supply a target for MPPI to pass to cost_fn
             target = jnp.array([9.0, 5.0, -2.0])
+            # Use keyword argument for target to be safe if position changes
             return mppi.command(cfg, ctrl, s, dynamics_fn, cost_fn, target=target)
 
         _jax_benchmark(benchmark, step, mppi_config, mppi_state, state)
