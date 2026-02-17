@@ -116,7 +116,7 @@ The workflow (`.github/workflows/publish-pypi.yml`) triggers on:
 
 Add your PyPI token as a GitHub secret:
 
-1. Go to: https://github.com/riccardo-enr/jax_mppi/settings/secrets/actions
+1. Go to: <https://github.com/riccardo-enr/jax_mppi/settings/secrets/actions>
 2. Click "New repository secret"
 3. Name: `PYPI_API_TOKEN`
 4. Value: Your PyPI API token (starts with `pypi-`)
@@ -198,7 +198,7 @@ Before releasing:
 
 After releasing:
 
-- [ ] Verify package on PyPI: https://pypi.org/project/jax-mppi/
+- [ ] Verify package on PyPI: <https://pypi.org/project/jax-mppi/>
 - [ ] Test installation: `pip install jax-mppi==X.Y.Z`
 - [ ] GitHub release created with correct notes
 - [ ] Announce release (optional): Twitter, Reddit, etc.
