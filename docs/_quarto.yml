@@ -15,7 +15,9 @@ website:
       - text: "I-MPPI"
         href: src/i_mppi.qmd
       - text: "Autotuning"
-        href: autotuning.md
+        href: src/autotuning.qmd
+      - text: "Reference"
+        href: src/api_reference.qmd
       - text: "Plans"
         href: plan/index.md
   sidebar:
@@ -32,10 +34,14 @@ website:
       - section: "Algorithms"
         contents:
           - src/i_mppi.qmd
-          - autotuning.md
+          - src/autotuning.qmd
       - section: "Examples"
         contents:
           - examples/pendulum.md
+          - src/quadrotor.qmd
+      - section: "Reference"
+        contents:
+          - src/api_reference.qmd
       - section: "Development"
         contents:
           - testing.md

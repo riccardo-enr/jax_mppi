@@ -178,7 +178,12 @@ class EvoSaxOptimizer(Optimizer):
         Returns:
             Best evaluation result from this step
         """
-        if self.es is None or self.es_state is None:
+        if (
+            self.es is None
+            or self.es_state is None
+            or self.rng_key is None
+            or self.evaluate_fn is None
+        ):
             raise RuntimeError("Must call setup_optimization() first")
 
         # Ask: sample population with evosax API
@@ -203,6 +208,9 @@ class EvoSaxOptimizer(Optimizer):
         fitness_array = jnp.array(fitness_values, dtype=jnp.float32)
 
         # Tell: update ES state with fitness values using evosax API
+        # We checked self.rng_key is not None at start of method
+        if self.rng_key is None:
+            raise RuntimeError("RNG key is None")
         self.rng_key, subkey = jax.random.split(self.rng_key)
         self.es_state, metrics = self.es.tell(
             subkey, solutions, fitness_array, self.es_state, params

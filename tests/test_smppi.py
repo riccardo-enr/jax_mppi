@@ -422,9 +422,10 @@ class TestSMPPIBounds:
             assert jnp.all(action <= 0.5 * config.u_scale)
 
             # Check action_sequence bounds
-            # pyright: ignore[reportOptionalOperand]
+        # These asserts check that action_min/max are not None implicitly via type checker
+        if state.action_min is not None:
             assert jnp.all(state.action_sequence >= state.action_min - 1e-5)
-            # pyright: ignore[reportOptionalOperand]
+        if state.action_max is not None:
             assert jnp.all(state.action_sequence <= state.action_max + 1e-5)
 
     def test_control_bounds_are_respected(self):
@@ -455,9 +456,9 @@ class TestSMPPIBounds:
             )
 
             # Check control velocity bounds
-            # pyright: ignore[reportOptionalOperand]
+        if state.u_min is not None:
             assert jnp.all(state.U >= state.u_min - 1e-5)
-            # pyright: ignore[reportOptionalOperand]
+        if state.u_max is not None:
             assert jnp.all(state.U <= state.u_max + 1e-5)
 
     def test_symmetric_bounds_inference(self):

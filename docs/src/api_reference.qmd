@@ -1,0 +1,189 @@
+---
+title: "API Reference"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+This page details the public API for the JAX-MPPI library.
+
+## MPPI (Core)
+
+The standard Model Predictive Path Integral controller implementation.
+
+### Configuration
+
+`jax_mppi.mppi.MPPIConfig`
+
+Configuration dataclass for the MPPI controller.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `num_samples` | int | Number of trajectory samples ($K$). |
+| `horizon` | int | Planning horizon in time steps ($T$). |
+| `nx` | int | State dimension. |
+| `nu` | int | Action dimension. |
+| `lambda_` | float | Temperature parameter ($\lambda$) for importance weighting. |
+| `noise_sigma` | jax.Array | Exploration noise covariance matrix. |
+| `u_min` | jax.Array | Minimum control bounds. |
+| `u_max` | jax.Array | Maximum control bounds. |
+| `u_init` | jax.Array | Default action for warm-starting. |
+| `step_dependent_dynamics` | bool | If True, dynamics function receives time $t$. |
+
+### State
+
+`jax_mppi.mppi.MPPIState`
+
+Runtime state of the controller, including the nominal trajectory and current noise parameters.
+
+- **`U`**: Nominal control trajectory `(T, nu)`.
+- **`u_init`**: Default action `(nu,)`.
+- **`noise_mu`**: Noise mean `(nu,)`.
+- **`noise_sigma`**: Noise covariance `(nu, nu)`.
+- **`key`**: JAX PRNG key.
+
+### Functions
+
+#### `create`
+
+```python
+def create(
+    nx: int,
+    nu: int,
+    noise_sigma: jax.Array,
+    num_samples: int = 100,
+    horizon: int = 15,
+    lambda_: float = 1.0,
+    noise_mu: Optional[jax.Array] = None,
+    u_min: Optional[jax.Array] = None,
+    u_max: Optional[jax.Array] = None,
+    u_init: Optional[jax.Array] = None,
+    U_init: Optional[jax.Array] = None,
+    u_scale: float = 1.0,
+    u_per_command: int = 1,
+    step_dependent_dynamics: bool = False,
+    rollout_samples: int = 1,
+    rollout_var_cost: float = 0.0,
+    rollout_var_discount: float = 0.95,
+    sample_null_action: bool = False,
+    noise_abs_cost: bool = False,
+    key: Optional[jax.Array] = None,
+) -> Tuple[MPPIConfig, MPPIState]
+```
+
+Initializes the MPPI controller configuration and state.
+
+#### `command`
+
+```python
+def command(
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    current_obs: jax.Array,
+    dynamics: DynamicsFn,
+    running_cost: RunningCostFn,
+    terminal_cost: Optional[TerminalCostFn] = None,
+    shift: bool = True,
+) -> Tuple[jax.Array, MPPIState]
+```
+
+Computes the optimal control action and updates the internal state.
+
+- **Returns**: `(action, new_state)` tuple.
+- **`shift`**: If True, shifts the nominal trajectory forward by one step.
+
+#### `reset`
+
+```python
+def reset(config: MPPIConfig, mppi_state: MPPIState, key: jax.Array) -> MPPIState
+```
+
+Resets the nominal trajectory to `u_init`.
+
+## SMPPI (Smooth MPPI)
+
+Smooth MPPI implementation that optimizes control derivatives (e.g., jerk or snap) to produce smooth trajectories.
+
+### Configuration
+
+`jax_mppi.smppi.SMPPIConfig`
+
+Extends `MPPIConfig` with:
+
+- **`w_action_seq_cost`**: Weight on the smoothness penalty.
+- **`delta_t`**: Integration timestep for converting derivatives to actions.
+
+### State
+
+`jax_mppi.smppi.SMPPIState`
+
+Extends `MPPIState` to track both the control derivative trajectory (`U`) and the integrated action sequence (`action_sequence`).
+
+### Functions
+
+#### `create`
+
+```python
+def create(..., w_action_seq_cost: float = 1.0, delta_t: float = 1.0, ...) -> Tuple[SMPPIConfig, SMPPIState]
+```
+
+#### `command`
+
+```python
+def command(
+    config: SMPPIConfig,
+    smppi_state: SMPPIState,
+    current_obs: jax.Array,
+    dynamics: DynamicsFn,
+    running_cost: RunningCostFn,
+    terminal_cost: Optional[TerminalCostFn] = None,
+    shift: bool = True,
+) -> Tuple[jax.Array, SMPPIState]
+```
+
+## KMPPI (Kernel MPPI)
+
+Kernel-based MPPI that parameterizes the control trajectory using a set of support points and a kernel function (e.g., RBF), reducing the dimensionality of the optimization problem.
+
+### Configuration
+
+`jax_mppi.kmppi.KMPPIConfig`
+
+Extends `MPPIConfig` with:
+
+- **`num_support_pts`**: Number of control points for interpolation.
+
+### State
+
+`jax_mppi.kmppi.KMPPIState`
+
+Maintains the control points (`theta`) instead of the full trajectory.
+
+### Functions
+
+#### `create`
+
+```python
+def create(..., num_support_pts: Optional[int] = None, kernel: Optional[TimeKernel] = None, ...) -> Tuple[KMPPIConfig, KMPPIState, TimeKernel]
+```
+
+Returns the kernel function in addition to config and state.
+
+#### `command`
+
+```python
+def command(
+    config: KMPPIConfig,
+    kmppi_state: KMPPIState,
+    current_obs: jax.Array,
+    dynamics: DynamicsFn,
+    running_cost: RunningCostFn,
+    kernel_fn: TimeKernel,
+    terminal_cost: Optional[TerminalCostFn] = None,
+    shift: bool = True,
+) -> Tuple[jax.Array, KMPPIState]
+```
+
+**Note**: Requires `kernel_fn` as an argument.
