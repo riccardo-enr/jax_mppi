@@ -24,13 +24,19 @@ class TestParameterBasics:
 
     def test_tunable_parameter_is_abstract(self):
         """TunableParameter cannot be instantiated directly."""
+        # Use a dummy concrete class to test initialization if we could,
+        # but here we just check if it fails to instantiate directly.
+        # However, for type checkers, we should ideally not even try to instantiate ABCs.
+        # If the test is purely runtime, `pytest.raises(TypeError)` is correct.
+        # But basedpyright flags this as static error.
+        # To satisfy type checkers, we can skip or use type: ignore.
         with pytest.raises(TypeError):
-            autotune.TunableParameter()
+            autotune.TunableParameter()  # type: ignore
 
     def test_optimizer_is_abstract(self):
         """Optimizer cannot be instantiated directly."""
         with pytest.raises(TypeError):
-            autotune.Optimizer()
+            autotune.Optimizer()  # type: ignore
 
     def test_evaluation_result_creation(self):
         """EvaluationResult can be created with all fields."""
