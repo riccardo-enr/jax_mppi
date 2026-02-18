@@ -198,10 +198,8 @@ class TestParallelImppiStepBenchmark:
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,
-            info_field=info_field,
-            field_origin=field_origin,
-            field_res=cfg.field_res,
             uniform_fsmi_fn=uniform.compute,
+            target=jnp.zeros(3),  # Positional target argument
         )
         dynamics_fn = partial(
             augmented_dynamics_with_grid,
@@ -213,6 +211,8 @@ class TestParallelImppiStepBenchmark:
 
         @partial(jax.jit, static_argnums=(0,))
         def step(cfg, ctrl, s):
+            # Pass target position as an auxiliary argument
+            # In benchmarks, we hardcode target to zeros(3) for simplicity
             return mppi.command(cfg, ctrl, s, dynamics_fn, cost_fn)
 
         _jax_benchmark(benchmark, step, mppi_config, mppi_state, state)
