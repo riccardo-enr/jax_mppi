@@ -79,8 +79,6 @@ def test_fsmi_target_selector():
     assert jnp.allclose(target, goal_pos)
 
 
-
-
 # ---------------------------------------------------------------------------
 # TestEntropyProxy
 # ---------------------------------------------------------------------------
@@ -291,8 +289,6 @@ class TestUniformFSMI:
         for i in range(3):
             individual = ufsmi.compute(gm.grid, positions[i], yaws[i])
             assert jnp.isclose(batch_vals[i], individual, atol=1e-5)
-
-
 
 
 # ---------------------------------------------------------------------------
