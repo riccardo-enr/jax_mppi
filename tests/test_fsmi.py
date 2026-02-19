@@ -368,7 +368,11 @@ class TestFSMITrajectoryGenerator:
 
         # NOTE: Fixed type check error: get_reference_trajectory expects (Array, Array)
         # gen.grid_map.grid is an Array, second element is Array
-        info_data = (gen.grid_map.grid, jnp.array([100.0, 100.0]))
+        # Cast gen.grid_map.grid to jax.Array to satisfy basedpyright
+        from typing import cast
+
+        grid_array = cast(jax.Array, gen.grid_map.grid)
+        info_data = (grid_array, jnp.array([100.0, 100.0]))
 
         traj, mode = gen.get_reference_trajectory(state, info_data, 20, 0.1)
         assert traj.shape == (20, 3)
