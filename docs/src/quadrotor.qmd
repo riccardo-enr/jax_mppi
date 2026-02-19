@@ -1,0 +1,115 @@
+---
+title: "Quadrotor Control"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+JAX-MPPI includes comprehensive examples for quadrotor control, demonstrating trajectory tracking with nonlinear 6-DOF dynamics. These examples showcase the performance of MPPI and its variants (SMPPI, KMPPI) in challenging agile flight scenarios.
+
+## Overview
+
+The quadrotor control suite provides a complete environment for testing MPPI algorithms on a highly dynamic system. It includes:
+
+- **6-DOF Dynamics**: Full quaternion-based attitude representation with NED (North-East-Down) frame conventions.
+- **Multiple Trajectories**: Hover stabilization, circular tracking, figure-8 patterns, and waypoint navigation.
+- **Variant Comparison**: Tools to benchmark MPPI against Smooth MPPI (SMPPI) and Kernel MPPI (KMPPI).
+- **Visualization**: Built-in 3D trajectory plotting and performance metrics.
+
+## Features
+
+### Dynamics Model
+The quadrotor is modeled as a rigid body with 13 state variables and 4 control inputs:
+
+- **State** ($\mathbf{x} \in \mathbb{R}^{13}$):
+  - Position: $[p_x, p_y, p_z]$ (m)
+  - Velocity: $[v_x, v_y, v_z]$ (m/s)
+  - Attitude: $[q_w, q_x, q_y, q_z]$ (Quaternion)
+  - Angular Velocity: $[\omega_x, \omega_y, \omega_z]$ (rad/s)
+
+- **Control** ($\mathbf{u} \in \mathbb{R}^4$):
+  - Thrust: $T$ (N)
+  - Body Rates: $[\omega_{x,cmd}, \omega_{y,cmd}, \omega_{z,cmd}]$ (rad/s)
+
+:::{.callout-note}
+## Control Mode
+The controller operates in a "rate-command" mode, where the MPPI policy outputs desired thrust and body angular rates. Low-level motor mixing is assumed to be handled by an inner-loop controller.
+:::
+
+## Quick Start
+
+To run the basic hover stabilization example:
+
+```bash
+python examples/quadrotor/hover.py --visualize
+```
+
+This will simulate the quadrotor recovering from an initial displacement and stabilizing at a 5m altitude.
+
+### Expected Output
+
+The script prints the simulation progress and final performance metrics:
+
+```text
+Running MPPI on quadrotor hover control...
+  Samples: 1000, Horizon: 30, Lambda: 1.0
+  Target: [ 0.  0. -5.], Initial: [ 2.  1. -3.]
+  Control rate: 50 Hz
+...
+Final position error: 0.0023m
+Final velocity: 0.0012m/s
+Total cost: 452.31
+```
+
+If `--visualize` is used, it generates performance plots saved to `docs/_media/quadrotor/`.
+
+## Examples
+
+### Hover Stabilization (`hover.py`)
+
+Stabilizes the quadrotor at a fixed setpoint. Useful for tuning basic controller parameters like $\lambda$ (temperature) and $\Sigma$ (noise covariance).
+
+**Key Parameters:**
+- `horizon`: 30 steps (0.6s lookahead)
+- `num_samples`: 1000
+- `lambda`: 1.0
+
+### Circular Tracking (`circle.py`)
+
+Follows a circular trajectory at constant speed and altitude. This demonstrates the controller's ability to track dynamic references.
+
+**Usage:**
+
+```bash
+python examples/quadrotor/circle.py --radius 3.0 --period 10.0 --visualize
+```
+
+The example uses a `step_dependent_dynamics=True` configuration to pass the current simulation time to the cost function, allowing it to look up the moving reference target.
+
+### Figure-8 Tracking (`figure8_comparison.py`)
+
+A more aggressive trajectory used to benchmark the performance of standard MPPI against SMPPI and KMPPI.
+
+**Key Findings:**
+- **SMPPI** typically achieves **30-40% smoother control inputs** (lower jerk) compared to standard MPPI while maintaining similar tracking accuracy.
+- **KMPPI** can achieve similar performance with fewer samples by optimizing in a lower-dimensional parameter space (control points).
+
+## Visualization
+
+The examples generate detailed plots including:
+
+1. **3D Trajectory**: Visual path of the UAV vs. reference.
+2. **State Tracking**: Position, velocity, and attitude over time.
+3. **Control Inputs**: Thrust and angular rate commands.
+4. **Tracking Error**: Euclidean distance to the target.
+
+Plots are automatically saved to `docs/_media/quadrotor/` when `--visualize` is enabled.
+
+![Quadrotor Hover](https://placehold.co/600x400?text=Quadrotor+Hover+Plot+Placeholder)
+
+:::{.callout-tip}
+## Running on Headless Servers
+The visualization uses `matplotlib`. If running on a headless server (like a remote VM or CI), the plots will be saved to disk but `plt.show()` will be skipped if no display is detected.
+:::

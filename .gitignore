@@ -44,3 +44,4 @@ CLAUDE.md
 # Debug
 ruff_errors.txt
 basedpyright_report.txt
+node_modules/
