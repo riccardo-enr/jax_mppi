@@ -1,0 +1,174 @@
+---
+title: "API Reference"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+This section documents the public API for the JAX-MPPI library, covering the core MPPI implementation and its variants.
+
+## Core MPPI (`jax_mppi.mppi`)
+
+The core module implements the standard Model Predictive Path Integral algorithm. It provides a functional interface where the state is immutable and explicitly passed between calls.
+
+### Configuration (`MPPIConfig`)
+
+The configuration dataclass stores static parameters that do not change during execution.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `num_samples` | int | Number of trajectory samples ($K$) per iteration. |
+| `horizon` | int | Planning horizon ($T$) in time steps. |
+| `nx` | int | State dimension ($n_x$). |
+| `nu` | int | Control dimension ($n_u$). |
+| `lambda_` | float | Temperature parameter ($\lambda$) for importance sampling. Higher values lead to more exploration (flatter distribution). |
+| `noise_sigma` | Array | Noise covariance matrix ($\Sigma$). |
+| `u_min`, `u_max` | Array | Control limits (optional). |
+
+### State (`MPPIState`)
+
+The state dataclass holds the dynamic variables of the controller, including the current nominal trajectory and random number generator state.
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `U` | Array | Current nominal control trajectory ($T \times n_u$). |
+| `key` | Array | JAX PRNG key for noise generation. |
+| `noise_mu` | Array | Mean of exploration noise. |
+| `noise_sigma` | Array | Covariance of exploration noise. |
+
+### Functions
+
+#### `create`
+
+Initializes the MPPI controller configuration and state.
+
+```python
+def create(
+    nx: int,
+    nu: int,
+    noise_sigma: jax.Array,
+    num_samples: int = 100,
+    horizon: int = 15,
+    lambda_: float = 1.0,
+    # ... other optional args
+) -> Tuple[MPPIConfig, MPPIState]
+```
+
+#### `command`
+
+Computes the optimal control action for the current state.
+
+```python
+def command(
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    current_obs: jax.Array,
+    dynamics: Callable,
+    running_cost: Callable,
+    terminal_cost: Optional[Callable] = None,
+    shift: bool = True,
+) -> Tuple[jax.Array, MPPIState]
+```
+
+- **Returns**: A tuple `(action, new_state)` where `action` is the optimal control input and `new_state` contains the updated nominal trajectory and PRNG key.
+
+## Smooth MPPI (`jax_mppi.smppi`)
+
+SMPPI extends MPPI by operating in a "lifted" control space (e.g., velocity or acceleration) to ensure smooth control trajectories.
+
+### Configuration (`SMPPIConfig`)
+
+Inherits from `MPPIConfig` and adds:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `w_action_seq_cost` | float | Weight for the action smoothness cost term. |
+| `delta_t` | float | Integration timestep for mapping control velocity to actions. |
+
+### State (`SMPPIState`)
+
+Adds fields for the integrated action sequence:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `U` | Array | Control **velocity** trajectory (lifted space). |
+| `action_sequence` | Array | Integrated action trajectory (actual control inputs). |
+
+### Functions
+
+#### `create`
+
+```python
+def create(
+    # ... standard args
+    w_action_seq_cost: float = 1.0,
+    delta_t: float = 1.0,
+) -> Tuple[SMPPIConfig, SMPPIState]
+```
+
+#### `command`
+
+Same signature as `mppi.command`, but internally integrates control velocities to produce smooth actions.
+
+## Kernel MPPI (`jax_mppi.kmppi`)
+
+KMPPI parameterizes the control trajectory using a set of kernel functions (e.g., RBFs), reducing the optimization dimensionality and enforcing smoothness.
+
+### Configuration (`KMPPIConfig`)
+
+Adds:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `num_support_pts` | int | Number of control points used for interpolation. |
+
+### State (`KMPPIState`)
+
+Stores control points instead of the full trajectory:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `theta` | Array | Control points ($N_{pts} \times n_u$). |
+| `U` | Array | Full interpolated trajectory (derived from $\theta$). |
+
+### Kernels
+
+#### `RBFKernel`
+
+Radial Basis Function kernel for time-domain interpolation.
+
+```python
+kernel = RBFKernel(sigma=1.0)
+```
+
+### Functions
+
+#### `create`
+
+Returns a kernel function in addition to config and state.
+
+```python
+def create(
+    # ... standard args
+    num_support_pts: Optional[int] = None,
+    kernel: Optional[TimeKernel] = None,
+) -> Tuple[KMPPIConfig, KMPPIState, TimeKernel]
+```
+
+#### `command`
+
+Requires the `kernel_fn` argument for interpolation.
+
+```python
+def command(
+    config: KMPPIConfig,
+    kmppi_state: KMPPIState,
+    current_obs: jax.Array,
+    dynamics: Callable,
+    running_cost: Callable,
+    kernel_fn: TimeKernel,  # Required!
+    # ...
+) -> Tuple[jax.Array, KMPPIState]
+```
