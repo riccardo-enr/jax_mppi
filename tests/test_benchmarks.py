@@ -158,14 +158,8 @@ class TestParallelImppiStepBenchmark:
             origin,
             resolution,
         )
-        mod = FSMIModule(
-            FSMIConfig(num_beams=8, max_range=3.0, ray_step=0.1, fov_rad=1.57),
-            origin,
-            resolution,
-        )
-        cfg = InfoFieldConfig(field_res=0.5, field_extent=2.0, n_yaw=4)
-        pos_xy = jnp.array([5.0, 5.0])
-        info_field, field_origin = compute_info_field(mod, gm.grid, pos_xy, cfg)
+        # mod and cfg were used for info_field but informative_running_cost no longer needs them
+        # Removed unused FSMIModule and InfoFieldConfig setup
 
         # MPPI setup — 3 info zones -> NX=16
         noise_sigma = jnp.diag(jnp.array([2.0, 0.5, 0.5, 0.5]) ** 2)
@@ -193,15 +187,26 @@ class TestParallelImppiStepBenchmark:
         quad = quad.at[6].set(1.0)
         state = jnp.concatenate([quad, jnp.array([100.0, 100.0, 100.0])])
 
+        # IMPORTANT: informative_running_cost expects `target` as positional argument after `t`.
+        # mppi.command calls cost(state, action, t).
+        # We need to bind `target` so the signature matches or use a wrapper.
+        # However, informative_running_cost signature is:
+        # (state, action, t, target, grid_map, uniform_fsmi_fn, info_weight=..., grid_origin=..., grid_resolution=..., target_weight=...)
+        #
+        # If we use partial to bind everything EXCEPT state, action, t, we must ensure target is bound.
+        # But mppi.command will call it as `cost_fn(state, action, t)`.
+        # So we need to partial bind `target` as well.
+
+        target_pos = jnp.array([9.0, 5.0, -2.0])
+
         cost_fn = partial(
             informative_running_cost,
+            target=target_pos,
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,
-            info_field=info_field,
-            field_origin=field_origin,
-            field_res=cfg.field_res,
             uniform_fsmi_fn=uniform.compute,
+            # Removed info_field, field_origin, field_res arguments
         )
         dynamics_fn = partial(
             augmented_dynamics_with_grid,
