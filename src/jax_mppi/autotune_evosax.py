@@ -181,6 +181,12 @@ class EvoSaxOptimizer(Optimizer):
         if self.es is None or self.es_state is None:
             raise RuntimeError("Must call setup_optimization() first")
 
+        if self.rng_key is None:
+            raise RuntimeError("Must call setup_optimization() first")
+
+        if self.evaluate_fn is None:
+            raise RuntimeError("Must call setup_optimization() first")
+
         # Ask: sample population with evosax API
         self.rng_key, subkey = jax.random.split(self.rng_key)
         params = self.es.default_params

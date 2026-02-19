@@ -299,8 +299,9 @@ class TestHoverCost:
         R = jnp.eye(4) * 0.01
 
         hover_position = jnp.zeros(3)
+        hover_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
-        cost_fn = create_hover_cost(Q_pos, Q_vel, Q_att, R, hover_position)
+        cost_fn = create_hover_cost(Q_pos, Q_vel, Q_att, R, hover_position, hover_quaternion)
 
         # State at hover position
         state1 = jnp.zeros(13)
@@ -326,8 +327,9 @@ class TestHoverCost:
         R = jnp.eye(4) * 0.01
 
         hover_position = jnp.zeros(3)
+        hover_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
-        cost_fn = create_hover_cost(Q_pos, Q_vel, Q_att, R, hover_position)
+        cost_fn = create_hover_cost(Q_pos, Q_vel, Q_att, R, hover_position, hover_quaternion)
 
         # State with zero velocity
         state1 = jnp.zeros(13)
@@ -407,8 +409,9 @@ class TestTerminalCost:
         Q_att = jnp.eye(4) * 1.0
 
         goal_position = jnp.zeros(3)
+        goal_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
-        terminal_cost = create_terminal_cost(Q_pos, Q_vel, Q_att, goal_position)
+        terminal_cost = create_terminal_cost(Q_pos, Q_vel, Q_att, goal_position, goal_quaternion)
 
         # State at goal
         state1 = jnp.zeros(13)
@@ -431,8 +434,9 @@ class TestTerminalCost:
         Q_att = jnp.eye(4) * 1.0
 
         goal_position = jnp.zeros(3)
+        goal_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
-        terminal_cost = create_terminal_cost(Q_pos, Q_vel, Q_att, goal_position)
+        terminal_cost = create_terminal_cost(Q_pos, Q_vel, Q_att, goal_position, goal_quaternion)
 
         # State at goal with zero velocity
         state1 = jnp.zeros(13)
@@ -455,8 +459,9 @@ class TestTerminalCost:
         Q_att = jnp.eye(4) * 1.0
 
         goal_position = jnp.zeros(3)
+        goal_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
-        terminal_cost = create_terminal_cost(Q_pos, Q_vel, Q_att, goal_position)
+        terminal_cost = create_terminal_cost(Q_pos, Q_vel, Q_att, goal_position, goal_quaternion)
         terminal_cost_jit = jax.jit(terminal_cost)
 
         state = jnp.zeros(13)
