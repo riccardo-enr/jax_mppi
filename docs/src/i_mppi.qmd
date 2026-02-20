@@ -4,28 +4,12 @@ bibliography: ["references.bib"]
 format:
   html:
     math: true
+    code-fold: false
+    toc: true
+    toc-depth: 3
 ---
 
-::: {.callout-tip}
-## Quick Start
-
-**I-MPPI** is a hierarchical framework combining information-theoretic planning with MPPI control for autonomous UAV exploration.
-
-**Core Concept**: Navigate to maximize information gain (reduce map uncertainty) while avoiding obstacles.
-
-**Two-Layer Architecture**:
-- **Layer 2 (FSMI)**: Generates informative reference trajectories (~5 Hz)
-- **Layer 3 (Biased MPPI)**: Tracks trajectories with local information gathering (~50 Hz)
-
-**Key Components**:
-- Occupancy grid representing environment uncertainty
-- Fast Shannon Mutual Information (FSMI) for efficient information gain computation
-- Biased sampling integrating information potential into MPPI
-
-**Try It**: See `examples/i_mppi/simulation.py` or the interactive Colab notebook.
-:::
-
-# Introduction: The Evolution of Autonomous Exploration
+# Overview
 
 The field of autonomous Unmanned Aerial Vehicle (UAV) exploration has transitioned from simple geometric coverage to complex, information-driven strategic maneuvers. In unstructured environments, a robot faces a fundamental duality: the global coverage problem ("where to go") and the reactive control problem ("how to move safely"). Traditional approaches often decouple these modules, resulting in "myopic" local planners that fail to escape local minima of uncertainty, or deterministic global planners that produce coarse, "jagged" paths unsuitable for the high-speed, non-linear dynamics of agile flight.
 
@@ -35,6 +19,25 @@ This document describes the **Hierarchical Informative Model Predictive Path Int
 ### Repository Scope
 The focus of this repository is the high-performance JAX implementation of **Layer 2 (Local Refinement)** and **Layer 3/4 (Reactive Control)**. The **Global Planner (Layer 1)**, such as FUEL, is considered an external input that provides the mission context and global waypoints.
 :::
+
+# Quick Start
+
+**I-MPPI** is a hierarchical framework combining information-theoretic planning with MPPI control for autonomous UAV exploration.
+
+**Core Concept**: Navigate to maximize information gain (reduce map uncertainty) while avoiding obstacles.
+
+**Two-Layer Architecture**:
+
+- **Layer 2 (FSMI)**: Generates informative reference trajectories (~5 Hz)
+- **Layer 3 (Biased MPPI)**: Tracks trajectories with local information gathering (~50 Hz)
+
+**Key Components**:
+
+- Occupancy grid representing environment uncertainty
+- Fast Shannon Mutual Information (FSMI) for efficient information gain computation
+- Biased sampling integrating information potential into MPPI
+
+**Try It**: See `examples/i_mppi/simulation.py` or the interactive Colab notebook.
 
 # Theoretical Foundations of I-MPPI
 
@@ -922,3 +925,7 @@ The key insight is that this *thermodynamic* potential field is richer than a cl
 - The field **evolves** as the map is updated, so depleted regions lose their attractive pull — the robot is never drawn back to already-explored space.
 
 Calling it **Informative MPPI** separates the exploration objective from the underlying mathematical solver framework.
+
+# API Reference
+
+For details on the `jax_mppi.i_mppi` module, see the [API Reference](api_reference.qmd#i-mppi-jax_mppi.i_mppi).

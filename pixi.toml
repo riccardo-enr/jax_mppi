@@ -76,6 +76,8 @@ nbstripout = "*"
 seaborn = "*"
 SciencePlots = "*"
 pytz = "*"
+cma = ">=3.3.0"
+evosax = ">=0.1.0"
 
 [feature.ci.tasks]
 test = "pytest tests/"

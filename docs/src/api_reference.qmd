@@ -1,0 +1,254 @@
+---
+title: "API Reference"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+# Core MPPI (`jax_mppi.mppi`)
+
+The core module implementing the standard Model Predictive Path Integral (MPPI) algorithm.
+
+## Functions
+
+### `create`
+
+```python
+def create(
+    nx: int,
+    nu: int,
+    noise_sigma: jax.Array,
+    num_samples: int = 100,
+    horizon: int = 15,
+    lambda_: float = 1.0,
+    noise_mu: Optional[jax.Array] = None,
+    u_min: Optional[jax.Array] = None,
+    u_max: Optional[jax.Array] = None,
+    u_init: Optional[jax.Array] = None,
+    U_init: Optional[jax.Array] = None,
+    u_scale: float = 1.0,
+    u_per_command: int = 1,
+    step_dependent_dynamics: bool = False,
+    rollout_samples: int = 1,
+    rollout_var_cost: float = 0.0,
+    rollout_var_discount: float = 0.95,
+    sample_null_action: bool = False,
+    noise_abs_cost: bool = False,
+    key: Optional[jax.Array] = None,
+) -> Tuple[MPPIConfig, MPPIState]
+```
+
+Factory function to initialize the MPPI controller configuration and state.
+
+**Parameters:**
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `nx` | `int` | - | State dimension. |
+| `nu` | `int` | - | Action dimension. |
+| `noise_sigma` | `jax.Array` | - | Exploration noise covariance matrix (nu, nu) or diagonal (nu,). |
+| `num_samples` | `int` | `100` | Number of trajectory samples ($K$). |
+| `horizon` | `int` | `15` | Planning horizon length ($T$). |
+| `lambda_` | `float` | `1.0` | Temperature parameter ($\lambda$). |
+| `u_min` | `Optional[jax.Array]` | `None` | Lower bounds on control inputs. |
+| `u_max` | `Optional[jax.Array]` | `None` | Upper bounds on control inputs. |
+| `u_init` | `Optional[jax.Array]` | `None` | Default action for new horizon steps. |
+| `U_init` | `Optional[jax.Array]` | `None` | Initial control trajectory guess (T, nu). |
+| `step_dependent_dynamics` | `bool` | `False` | Whether dynamics/cost depend on time step $t$. |
+
+**Returns:**
+
+*   `Tuple[MPPIConfig, MPPIState]`: The static configuration and dynamic state.
+
+### `command`
+
+```python
+def command(
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    current_obs: jax.Array,
+    dynamics: DynamicsFn,
+    running_cost: RunningCostFn,
+    terminal_cost: Optional[TerminalCostFn] = None,
+    shift: bool = True,
+) -> Tuple[jax.Array, MPPIState]
+```
+
+Computes the optimal control action and updates the internal state.
+
+**Parameters:**
+
+| Name | Type | Description |
+|---|---|---|
+| `config` | `MPPIConfig` | Static configuration. |
+| `mppi_state` | `MPPIState` | Current controller state. |
+| `current_obs` | `jax.Array` | Current observation/state ($x_0$). |
+| `dynamics` | `Callable` | Dynamics function `f(x, u) -> x_next`. |
+| `running_cost` | `Callable` | Running cost function `q(x, u) -> cost`. |
+| `terminal_cost` | `Optional[Callable]` | Terminal cost function `phi(x_T) -> cost`. |
+| `shift` | `bool` | Whether to shift the nominal trajectory forward (default: `True`). |
+
+**Returns:**
+
+*   `Tuple[jax.Array, MPPIState]`: The optimal action $u^*$ and the updated state.
+
+### `reset`
+
+```python
+def reset(
+    config: MPPIConfig,
+    mppi_state: MPPIState,
+    key: jax.Array
+) -> MPPIState
+```
+
+Resets the nominal trajectory to `u_init`.
+
+---
+
+# Smooth MPPI (`jax_mppi.smppi`)
+
+Implements Smooth MPPI (SMPPI), which operates in a lifted control space (e.g., optimizing acceleration to control velocity) to enforce smoothness.
+
+## Functions
+
+### `create`
+
+```python
+def create(
+    nx: int,
+    nu: int,
+    noise_sigma: jax.Array,
+    # ... standard MPPI args ...
+    action_min: Optional[jax.Array] = None,
+    action_max: Optional[jax.Array] = None,
+    w_action_seq_cost: float = 1.0,
+    delta_t: float = 1.0,
+    key: Optional[jax.Array] = None,
+) -> Tuple[SMPPIConfig, SMPPIState]
+```
+
+Initializes SMPPI. Note that `noise_sigma` applies to the *lifted* space (e.g., acceleration noise).
+
+**Additional Parameters:**
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `action_min` | `Optional[jax.Array]` | `None` | Lower bounds on the *integrated* action. |
+| `action_max` | `Optional[jax.Array]` | `None` | Upper bounds on the *integrated* action. |
+| `w_action_seq_cost` | `float` | `1.0` | Weight for the smoothness penalty (action difference cost). |
+| `delta_t` | `float` | `1.0` | Integration time step for lifting. |
+
+### `command`
+
+Same signature as `mppi.command`.
+
+---
+
+# Kernel MPPI (`jax_mppi.kmppi`)
+
+Implements Kernel MPPI (KMPPI), which parameterizes the control trajectory using a set of support points and kernel interpolation.
+
+## Functions
+
+### `create`
+
+```python
+def create(
+    nx: int,
+    nu: int,
+    noise_sigma: jax.Array,
+    # ... standard MPPI args ...
+    num_support_pts: Optional[int] = None,
+    kernel: Optional[TimeKernel] = None,
+    key: Optional[jax.Array] = None,
+) -> Tuple[KMPPIConfig, KMPPIState, TimeKernel]
+```
+
+Initializes KMPPI.
+
+**Additional Parameters:**
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `num_support_pts` | `int` | `horizon // 2` | Number of control points for interpolation. |
+| `kernel` | `TimeKernel` | `RBFKernel` | Kernel function instance. |
+
+**Returns:**
+
+*   `Tuple[KMPPIConfig, KMPPIState, TimeKernel]`: Config, state, and the kernel function.
+
+### `command`
+
+```python
+def command(
+    config: KMPPIConfig,
+    kmppi_state: KMPPIState,
+    current_obs: jax.Array,
+    dynamics: DynamicsFn,
+    running_cost: RunningCostFn,
+    kernel_fn: TimeKernel,
+    terminal_cost: Optional[TerminalCostFn] = None,
+    shift: bool = True,
+) -> Tuple[jax.Array, KMPPIState]
+```
+
+**Note:** Takes `kernel_fn` as an additional required argument.
+
+---
+
+# Autotuning (`jax_mppi.autotune`)
+
+Framework for automatic hyperparameter optimization.
+
+## Classes
+
+### `Autotune`
+
+Main orchestrator for optimization.
+
+```python
+class Autotune:
+    def __init__(
+        self,
+        params_to_tune: list[TunableParameter],
+        evaluate_fn: Callable[[], EvaluationResult],
+        optimizer: Optional[Optimizer] = None,
+        reload_state_fn: Optional[Callable] = None,
+    )
+```
+
+**Methods:**
+
+*   `optimize_all(iterations: int) -> EvaluationResult`: Runs the full optimization loop.
+*   `get_best_result() -> EvaluationResult`: Returns the best result found so far.
+
+### `TunableParameter`
+
+Base class for parameters.
+
+*   `LambdaParameter(holder, min_value=0.0001)`
+*   `NoiseSigmaParameter(holder, min_value=0.0001)`
+*   `MuParameter(holder)`
+*   `HorizonParameter(holder, min_value=5, max_value=100)`
+
+### `CMAESOpt`
+
+CMA-ES optimizer wrapper.
+
+```python
+class CMAESOpt(Optimizer):
+    def __init__(self, population: int = 10, sigma: float = 0.1)
+```
+
+---
+
+# Types (`jax_mppi.types`)
+
+Common type definitions.
+
+*   `DynamicsFn`: `Callable[[jax.Array, jax.Array], jax.Array]` or `Callable[[jax.Array, jax.Array, float], jax.Array]`
+*   `RunningCostFn`: `Callable[[jax.Array, jax.Array], jax.Array]`
+*   `TerminalCostFn`: `Callable[[jax.Array, jax.Array], jax.Array]`
