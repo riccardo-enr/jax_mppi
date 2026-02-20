@@ -1,0 +1,186 @@
+---
+title: "Autotuning"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+# Overview
+
+The **JAX-MPPI Autotuning Framework** provides automated hyperparameter optimization for MPPI controllers. It supports optimizing critical parameters such as temperature ($\lambda$), exploration noise covariance ($\Sigma$), and planning horizon ($H$) using various optimization strategies.
+
+**Key Features:**
+
+- **Multiple Backends**: Support for `cma` (CPU-based CMA-ES) and `evosax` (JAX-native, GPU-accelerated evolutionary strategies).
+- **Global Optimization**: Integration with Ray Tune for global search over large parameter spaces.
+- **Quality Diversity**: Support for QD algorithms to find diverse, high-performing parameter sets.
+
+# Installation
+
+The basic autotuning framework requires the `cma` package:
+
+```bash
+pip install cma
+```
+
+For GPU-accelerated optimization, install `evosax`:
+
+```bash
+pip install evosax
+```
+
+For global optimization features, install `ray[tune]`, `hyperopt`, and `bayesian-optimization`:
+
+```bash
+pip install "ray[tune]" hyperopt bayesian-optimization
+```
+
+# Quick Start
+
+Here is a minimal example using CMA-ES to tune the temperature ($\lambda$) and noise scale ($\Sigma$) of an MPPI controller.
+
+```python
+import jax.numpy as jnp
+from jax_mppi import mppi, autotune
+
+# 1. Initialize MPPI and hold state
+config, state = mppi.create(
+    nx=4, nu=1, noise_sigma=jnp.eye(1)*0.1, lambda_=1.0
+)
+holder = autotune.ConfigStateHolder(config, state)
+
+# 2. Define evaluation function
+def evaluate():
+    # Run a simulation/rollout with current holder.config and holder.state
+    # This function should return an EvaluationResult with the cost
+    # For this example, we return a dummy cost
+    current_lambda = holder.config.lambda_
+    cost = (current_lambda - 0.5)**2  # Fake objective: target lambda=0.5
+    return autotune.EvaluationResult(
+        mean_cost=cost,
+        rollouts=None,
+        params={},
+        iteration=0
+    )
+
+# 3. Configure Tuner
+tuner = autotune.Autotune(
+    params_to_tune=[
+        autotune.LambdaParameter(holder, min_value=0.1),
+        autotune.NoiseSigmaParameter(holder, min_value=0.1),
+    ],
+    evaluate_fn=evaluate,
+    optimizer=autotune.CMAESOpt(population=10),
+)
+
+# 4. Run Optimization
+best_result = tuner.optimize_all(iterations=20)
+print(f"Best parameters: {best_result.params}")
+```
+
+# Usage
+
+## Basic Usage (CMA-ES)
+
+The standard workflow involves three steps:
+
+1.  **Wrap Config/State**: Create a `ConfigStateHolder` to allow the tuner to modify parameters in-place.
+2.  **Define Evaluation**: Create a function that runs your simulation or real-world experiment using the current parameters in the holder and returns an `EvaluationResult`.
+3.  **Run Tuner**: Instantiate `Autotune` with the desired `TunableParameter` objects and an `Optimizer`.
+
+## Advanced Usage
+
+### GPU Acceleration with Evosax
+
+For faster optimization, especially when the evaluation function is also JAX-JIT compiled, use `evosax`:
+
+```python
+from jax_mppi import autotune_evosax
+
+tuner = autotune.Autotune(
+    params_to_tune=[...],
+    evaluate_fn=evaluate,
+    optimizer=autotune_evosax.CMAESOpt(population=100),  # GPU-accelerated
+)
+```
+
+### Global Optimization with Ray Tune
+
+For broad searches over non-convex landscapes, use `autotune_global`. This requires `ray`.
+
+```python
+from ray import tune
+from jax_mppi import autotune_global as autog
+
+# Define search space using Ray Tune's API
+params = [
+    autog.GlobalLambdaParameter(holder, search_space=tune.loguniform(0.1, 10.0)),
+]
+
+tuner = autog.AutotuneGlobal(
+    params_to_tune=params,
+    evaluate_fn=evaluate,
+    optimizer=autog.RayOptimizer(),
+)
+
+best = tuner.optimize_all(iterations=100)
+```
+
+### Quality Diversity (QD)
+
+To find a population of diverse solutions (e.g., parameters that work well for different behaviors), use `autotune_qd`.
+
+```python
+from jax_mppi import autotune_qd
+
+tuner = autotune.Autotune(
+    params_to_tune=[...],
+    evaluate_fn=evaluate,
+    optimizer=autotune_qd.CMAMEOpt(population=20, bins=10),
+)
+```
+
+# Tunable Parameters
+
+The framework supports tuning the following parameters:
+
+| Parameter Class | Target | Description |
+|---|---|---|
+| `LambdaParameter` | `config.lambda_` | Temperature parameter controlling exploration. |
+| `NoiseSigmaParameter` | `state.noise_sigma` | Exploration noise covariance diagonal. |
+| `MuParameter` | `state.noise_mu` | Exploration noise mean. |
+| `HorizonParameter` | `config.horizon` | Planning horizon length (automatically resizes buffers). |
+
+# Theoretical Background
+
+The goal of autotuning is to find the optimal set of hyperparameters $\theta$ (e.g., temperature $\lambda$, noise covariance $\Sigma$) that minimizes the expected cost of the control task:
+
+$$
+\theta^* = \arg\min_{\theta \in \Theta} \mathcal{J}(\theta)
+$$
+
+where $\mathcal{J}(\theta)$ is the expected cumulative cost:
+
+$$
+\mathcal{J}(\theta) = \mathbb{E}_{\tau \sim \pi_{\text{MPPI}}(\theta)} \left[ \sum_{t=0}^{T_{task}} c(\mathbf{x}_t, \mathbf{u}_t) \right]
+$$
+
+Since this objective is noisy and non-differentiable with respect to $\theta$ (in the general case), we use derivative-free optimization methods like **CMA-ES** (Covariance Matrix Adaptation Evolution Strategy).
+
+## CMA-ES
+
+CMA-ES models the population of candidate parameters as a multivariate normal distribution $\mathcal{N}(\mathbf{m}, \sigma^2 \mathbf{C})$. It iteratively updates the mean $\mathbf{m}$ and covariance $\mathbf{C}$ based on the performance of sampled candidates, naturally adapting the search direction and scale.
+
+# API Reference
+
+For detailed API documentation of the `autotune` module, see the [API Reference](src/api_reference.qmd#autotuning-jax_mppi.autotune).
+
+# Troubleshooting
+
+### `ImportError: No module named 'cma'`
+The `cma` package is optional. Install it via `pip install cma`.
+
+### `AttributeError: 'NoneType' object has no attribute ...`
+Ensure that your `evaluate_fn` returns a valid `EvaluationResult` and that the optimization loop is correctly initializing the result object.
