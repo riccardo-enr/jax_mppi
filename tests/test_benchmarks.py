@@ -193,8 +193,9 @@ class TestParallelImppiStepBenchmark:
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,
-            # removed info_field/field_origin/field_res args
             uniform_fsmi_fn=uniform.compute,
+            # Fix: bind target argument
+            target=jnp.array([5.0, 5.0, -2.0]),
         )
         dynamics_fn = partial(
             augmented_dynamics_with_grid,
