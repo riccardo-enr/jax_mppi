@@ -158,14 +158,9 @@ class TestParallelImppiStepBenchmark:
             origin,
             resolution,
         )
-        mod = FSMIModule(
-            FSMIConfig(num_beams=8, max_range=3.0, ray_step=0.1, fov_rad=1.57),
-            origin,
-            resolution,
-        )
-        cfg = InfoFieldConfig(field_res=0.5, field_extent=2.0, n_yaw=4)
-        pos_xy = jnp.array([5.0, 5.0])
-        info_field, field_origin = compute_info_field(mod, gm.grid, pos_xy, cfg)
+        # Note: compute_info_field is part of the architecture but not used
+        # in the current informative_running_cost implementation.
+        # It's kept here to simulate the context preparation step if needed.
 
         # MPPI setup — 3 info zones -> NX=16
         noise_sigma = jnp.diag(jnp.array([2.0, 0.5, 0.5, 0.5]) ** 2)
@@ -198,9 +193,7 @@ class TestParallelImppiStepBenchmark:
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,
-            info_field=info_field,
-            field_origin=field_origin,
-            field_res=cfg.field_res,
+            # removed info_field/field_origin/field_res args
             uniform_fsmi_fn=uniform.compute,
         )
         dynamics_fn = partial(
