@@ -7,17 +7,18 @@ This document covers manual publishing and initial setup.
 ## Prerequisites
 
 1. **Create PyPI accounts**:
-   - TestPyPI: https://test.pypi.org/account/register/
-   - PyPI: https://pypi.org/account/register/
+   - TestPyPI: <https://test.pypi.org/account/register/>
+   - PyPI: <https://pypi.org/account/register/>
 
 2. **Generate API tokens** (recommended over passwords):
-   - TestPyPI: https://test.pypi.org/manage/account/token/
-   - PyPI: https://pypi.org/manage/account/token/
+   - TestPyPI: <https://test.pypi.org/manage/account/token/>
+   - PyPI: <https://pypi.org/manage/account/token/>
 
    Save tokens securely - you'll use them for authentication.
 
 3. **Configure credentials** (optional but recommended):
    Create/edit `~/.pypirc`:
+
    ```ini
    [distutils]
    index-servers =
@@ -39,10 +40,12 @@ This document covers manual publishing and initial setup.
 ### 1. Update Version
 
 Before publishing, update the version in both files:
+
 - `pyproject.toml` - line 3: `version = "0.3.0"`
 - `pixi.toml` - line 3: `version = "0.3.0"`
 
 Follow [semantic versioning](https://semver.org/):
+
 - `MAJOR.MINOR.PATCH` (e.g., `0.3.0` → `0.3.1` for bug fixes)
 
 ### 2. Update Changelog
@@ -145,18 +148,22 @@ pixi run -e dev publish
 ## Troubleshooting
 
 ### "File already exists" error
+
 You're trying to upload a version that already exists. Bump the version number and rebuild.
 
 ### Authentication failures
+
 - Ensure API tokens are correctly set in `~/.pypirc`
 - Or provide credentials interactively when prompted
 - Username should be `__token__` when using API tokens
 
 ### Missing dependencies during install
+
 - Check `dependencies` in `pyproject.toml` are correct
 - Ensure version constraints are appropriate (not too strict)
 
 ### Import errors after install
+
 - Verify package structure: source code must be in `src/jax_mppi/`
 - Check `__init__.py` files exist in all package directories
 
@@ -170,7 +177,7 @@ gh release create vX.Y.Z dist/* \
   --notes "See CHANGELOG.md for details"
 ```
 
-Or create manually at: https://github.com/riccardo-enr/jax_mppi/releases
+Or create manually at: <https://github.com/riccardo-enr/jax_mppi/releases>
 
 ## Automation (Future)
 
