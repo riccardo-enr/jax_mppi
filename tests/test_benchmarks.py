@@ -17,6 +17,7 @@ import pytest
 
 from jax_mppi import mppi
 from jax_mppi.i_mppi.environment import (
+    GOAL_POS,
     INFO_ZONES,
     WALLS,
     augmented_dynamics_with_grid,
@@ -198,10 +199,8 @@ class TestParallelImppiStepBenchmark:
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,
-            info_field=info_field,
-            field_origin=field_origin,
-            field_res=cfg.field_res,
             uniform_fsmi_fn=uniform.compute,
+            target=GOAL_POS,
         )
         dynamics_fn = partial(
             augmented_dynamics_with_grid,
