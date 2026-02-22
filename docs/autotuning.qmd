@@ -1,0 +1,259 @@
+---
+title: "Autotuning"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+# Autotuning
+
+## Overview
+
+The `jax_mppi` autotuning framework provides a powerful way to optimize MPPI hyperparameters automatically. Instead of manually tuning temperature ($\lambda$), noise covariance ($\Sigma$), or planning horizon, you can define an objective function and let the optimizer find the best configuration.
+
+Key features include:
+
+- **Multiple Backends**: Support for `cma` (CPU), `evosax` (JAX/GPU), and `Ray Tune` (Distributed).
+- **Flexible Parameters**: Tune scalar values (temperature), vectors (noise diagonal), or structural parameters (horizon).
+- **Quality Diversity**: Explore diverse high-performing parameter sets using CMA-ME.
+- **State Preservation**: Optimizes parameters while maintaining valid MPPI state (e.g., resizing buffers when horizon changes).
+
+## Theoretical Background
+
+The goal of autotuning is to find the optimal set of hyperparameters $\theta$ that minimizes the expected cost of the control task. We formulate this as an optimization problem:
+
+$$
+\theta^* = \arg\min_{\theta \in \Theta} \mathcal{J}(\theta)
+$$
+
+where $\Theta$ is the admissible hyperparameter space, and the objective function $\mathcal{J}(\theta)$ is the expected cumulative cost:
+
+$$
+\mathcal{J}(\theta) = \mathbb{E}_{\tau \sim \pi_{\text{MPPI}}(\theta)} \left[ \sum_{t=0}^{T_{task}} c(\mathbf{x}_t, \mathbf{u}_t) \right]
+$$
+
+Since $\mathcal{J}(\theta)$ is typically non-convex and stochastic, we employ derivative-free optimization methods like CMA-ES.
+
+### CMA-ES
+
+CMA-ES (Covariance Matrix Adaptation Evolution Strategy) models candidate solutions using a multivariate normal distribution $\mathcal{N}(\mathbf{m}, \sigma^2 \mathbf{C})$. At each generation $g$:
+
+1.  **Sampling**: Sample $\lambda_{pop}$ candidates: $\theta_i \sim \mathbf{m}^{(g)} + \sigma^{(g)} \mathcal{N}(\mathbf{0}, \mathbf{C}^{(g)})$.
+2.  **Evaluation**: Run MPPI simulations to estimate $\mathcal{J}(\theta_i)$.
+3.  **Update**: Update mean $\mathbf{m}$, covariance $\mathbf{C}$, and step size $\sigma$ based on the best performing candidates.
+
+For more details on Quality Diversity and Global Optimization, see [References](src/references.bib).
+
+## Installation
+
+The autotuning components are optional. Install the core package with autotuning dependencies:
+
+```bash
+# Basic autotuning (cma, evosax)
+pip install jax-mppi[autotuning]
+
+# Extended autotuning (Ray Tune, Hyperopt, Ribs)
+pip install jax-mppi[autotuning-extra]
+```
+
+Or install specific backends manually:
+```bash
+pip install cma evosax ray[tune] ribs
+```
+
+## Quick Start
+
+Here is a minimal example using the standard CMA-ES optimizer.
+
+```python
+import jax.numpy as jnp
+from jax_mppi import mppi, autotune
+
+# 1. Initialize MPPI
+# Assume 'dynamics' and 'running_cost' are defined
+config, state = mppi.create(
+    nx=4, nu=1,
+    noise_sigma=jnp.eye(1) * 0.1,
+    horizon=20,
+    lambda_=1.0
+)
+
+# 2. Create a holder for mutable access
+holder = autotune.ConfigStateHolder(config, state)
+
+# 3. Define the evaluation function
+def evaluate():
+    # Simulate the controller with current parameters
+    # This function should run a rollout and return the total cost
+    # For demonstration, we return a dummy cost based on lambda
+    current_lambda = holder.config.lambda_
+    cost = (current_lambda - 0.5)**2  # Optimal lambda is 0.5
+
+    return autotune.EvaluationResult(
+        mean_cost=cost,
+        rollouts=jnp.zeros((1, 20, 4)), # Placeholder
+        params={},
+        iteration=0
+    )
+
+# 4. Configure the Tuner
+tuner = autotune.Autotune(
+    params_to_tune=[
+        autotune.LambdaParameter(holder, min_value=0.1),
+    ],
+    evaluate_fn=evaluate,
+    optimizer=autotune.CMAESOpt(population=5, sigma=0.1),
+)
+
+# 5. Run Optimization
+print("Starting optimization...")
+best_result = tuner.optimize_all(iterations=10)
+print(f"Best Cost: {best_result.mean_cost}")
+print(f"Best Lambda: {holder.config.lambda_}")
+```
+
+:::{.callout-note}
+## State Updates
+The `ConfigStateHolder` updates the `config` and `state` in-place. After optimization, `holder.config` contains the best found parameters.
+:::
+
+## Usage
+
+### Tunable Parameters
+
+The framework uses `TunableParameter` classes to define which parts of the MPPI configuration to optimize.
+
+| Parameter Class | Target | Description |
+|-----------------|--------|-------------|
+| `LambdaParameter` | `config.lambda_` | Temperature parameter affecting exploration/exploitation balance. |
+| `NoiseSigmaParameter` | `state.noise_sigma` | Exploration noise covariance diagonal. |
+| `MuParameter` | `state.noise_mu` | Exploration noise mean. |
+| `HorizonParameter` | `config.horizon` | Planning horizon. Automatically resizes internal buffers. |
+
+### JAX-Native Optimization (`evosax`)
+
+For faster optimization, especially when the evaluation function is JIT-compilable, use the `evosax` backend.
+
+```python
+from jax_mppi import autotune_evosax
+
+optimizer = autotune_evosax.CMAESOpt(
+    population=128,  # Larger populations are efficient on GPU
+    sigma=0.1
+)
+```
+
+:::{.callout-tip}
+## Performance
+`evosax` runs the entire optimization loop on the GPU if the evaluation function is JIT-compatible, offering 10-100x speedups over CPU-based `cma`.
+:::
+
+### Global Optimization (`Ray Tune`)
+
+For non-convex landscapes or hyperparameter search over orders of magnitude:
+
+```python
+from ray import tune
+from jax_mppi import autotune_global as autog
+
+params = [
+    autog.GlobalLambdaParameter(
+        holder,
+        search_space=tune.loguniform(0.01, 10.0)
+    )
+]
+
+tuner = autog.AutotuneGlobal(
+    params_to_tune=params,
+    evaluate_fn=evaluate,
+    optimizer=autog.RayOptimizer(),
+)
+```
+
+## Examples
+
+### Tuning Multiple Parameters
+
+```python
+tuner = autotune.Autotune(
+    params_to_tune=[
+        autotune.LambdaParameter(holder),
+        autotune.NoiseSigmaParameter(holder),
+        autotune.HorizonParameter(holder, min_value=10, max_value=50)
+    ],
+    evaluate_fn=evaluate,
+    optimizer=autotune.CMAESOpt(population=20),
+)
+```
+
+### Quality Diversity with CMA-ME
+
+Find diverse solutions (e.g., aggressive vs. conservative controllers).
+
+```python
+from jax_mppi import autotune_qd
+
+# Define behavior descriptor (e.g., average velocity)
+def evaluate_qd():
+    cost, velocity = run_simulation()
+    return autotune_qd.QDEvaluationResult(
+        mean_cost=cost,
+        behavior_descriptor=jnp.array([velocity]),
+        # ...
+    )
+
+tuner = autotune.Autotune(
+    params_to_tune=[...],
+    evaluate_fn=evaluate_qd,
+    optimizer=autotune_qd.CMAMEOpt(population=20, bins=10),
+)
+```
+
+## API Reference
+
+### `Autotune`
+
+The main orchestrator class.
+
+**Constructor**:
+`Autotune(params_to_tune, evaluate_fn, optimizer=None, reload_state_fn=None)`
+
+- `params_to_tune`: List of `TunableParameter` instances.
+- `evaluate_fn`: Callable returning `EvaluationResult`.
+- `optimizer`: Instance of `Optimizer` (default: `CMAESOpt`).
+
+### `ConfigStateHolder`
+
+Mutable container for MPPI configuration.
+
+**Constructor**: `ConfigStateHolder(config, state)`
+
+- `config`: MPPI configuration dataclass (immutable, replaced on update).
+- `state`: MPPI state dataclass (immutable, replaced on update).
+
+### `EvaluationResult`
+
+Named tuple returned by evaluation function.
+
+- `mean_cost`: float (optimization objective).
+- `rollouts`: Array (optional, for visualization).
+- `params`: dict (parameter values used).
+- `iteration`: int.
+
+## Troubleshooting
+
+### `ImportError: No module named 'cma'`
+The `cma` package is optional. Install it via `pip install cma`.
+
+### `AttributeError: 'NoneType' object has no attribute 'ask'`
+Ensure you called `tuner.optimize_all()` or `optimizer.setup_optimization()` before stepping.
+
+### Horizon Tuning Issues
+Changing `horizon` requires resizing JAX arrays, which triggers recompilation. This can be slow. Avoid tuning horizon inside a JIT-compiled loop.
+
+:::{.callout-warning}
+## Horizon Recompilation
+Because `HorizonParameter` changes array shapes, `jax.jit` compiled functions will recompile every time the horizon changes. Use with caution in inner loops.
+:::
