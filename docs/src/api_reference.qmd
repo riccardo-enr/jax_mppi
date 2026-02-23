@@ -46,26 +46,26 @@ def create(
 
 **Parameters:**
 
-*   `nx`: State dimension.
-*   `nu`: Action dimension.
-*   `noise_sigma`: Noise covariance matrix `(nu, nu)`.
-*   `num_samples`: Number of trajectory samples ($K$).
-*   `horizon`: Planning horizon ($T$).
-*   `lambda_`: Temperature parameter ($\lambda$).
-*   `noise_mu`: Noise mean (default: zeros).
-*   `u_min`: Lower bounds on control inputs.
-*   `u_max`: Upper bounds on control inputs.
-*   `u_init`: Default action for shift (default: zeros).
-*   `U_init`: Initial nominal trajectory `(T, nu)`.
-*   `u_scale`: Scaling factor for control inputs.
-*   `u_per_command`: Number of control steps to apply per command.
-*   `step_dependent_dynamics`: If `True`, dynamics/cost functions receive `t` as an argument.
-*   `sample_null_action`: If `True`, explicitly sample a zero-noise trajectory.
+* `nx`: State dimension.
+* `nu`: Action dimension.
+* `noise_sigma`: Noise covariance matrix `(nu, nu)`.
+* `num_samples`: Number of trajectory samples ($K$).
+* `horizon`: Planning horizon ($T$).
+* `lambda_`: Temperature parameter ($\lambda$).
+* `noise_mu`: Noise mean (default: zeros).
+* `u_min`: Lower bounds on control inputs.
+* `u_max`: Upper bounds on control inputs.
+* `u_init`: Default action for shift (default: zeros).
+* `U_init`: Initial nominal trajectory `(T, nu)`.
+* `u_scale`: Scaling factor for control inputs.
+* `u_per_command`: Number of control steps to apply per command.
+* `step_dependent_dynamics`: If `True`, dynamics/cost functions receive `t` as an argument.
+* `sample_null_action`: If `True`, explicitly sample a zero-noise trajectory.
 
 **Returns:**
 
-*   `config`: Static configuration object.
-*   `state`: Dynamic state object (including nominal trajectory).
+* `config`: Static configuration object.
+* `state`: Dynamic state object (including nominal trajectory).
 
 ---
 
@@ -87,18 +87,18 @@ def command(
 
 **Parameters:**
 
-*   `config`: MPPI configuration.
-*   `mppi_state`: Current MPPI state.
-*   `current_obs`: Current system observation `(nx,)`.
-*   `dynamics`: Function `(state, action) -> next_state` (or `(state, action, t)` if `step_dependent_dynamics=True`).
-*   `running_cost`: Function `(state, action) -> cost`.
-*   `terminal_cost`: Optional function `(state) -> cost`.
-*   `shift`: Whether to shift the nominal trajectory for the next step (Receding Horizon).
+* `config`: MPPI configuration.
+* `mppi_state`: Current MPPI state.
+* `current_obs`: Current system observation `(nx,)`.
+* `dynamics`: Function `(state, action) -> next_state` (or `(state, action, t)` if `step_dependent_dynamics=True`).
+* `running_cost`: Function `(state, action) -> cost`.
+* `terminal_cost`: Optional function `(state) -> cost`.
+* `shift`: Whether to shift the nominal trajectory for the next step (Receding Horizon).
 
 **Returns:**
 
-*   `action`: Optimal control action `(nu,)` (or `(u_per_command * nu,)`).
-*   `new_state`: Updated MPPI state.
+* `action`: Optimal control action `(nu,)` (or `(u_per_command * nu,)`).
+* `new_state`: Updated MPPI state.
 
 ---
 
@@ -132,7 +132,7 @@ def get_rollouts(
 
 **Returns:**
 
-*   `rollouts`: Array of shape `(num_rollouts, horizon+1, nx)`.
+* `rollouts`: Array of shape `(num_rollouts, horizon+1, nx)`.
 
 ---
 
@@ -160,9 +160,9 @@ def create(
 
 **Additional Parameters:**
 
-*   `action_min`, `action_max`: Bounds on the *integrated* action (e.g., position/angle limits if controlling velocity).
-*   `w_action_seq_cost`: Weight for the smoothness penalty (cost on change in action).
-*   `delta_t`: Integration timestep for converting control velocity to action.
+* `action_min`, `action_max`: Bounds on the *integrated* action (e.g., position/angle limits if controlling velocity).
+* `w_action_seq_cost`: Weight for the smoothness penalty (cost on change in action).
+* `delta_t`: Integration timestep for converting control velocity to action.
 
 ---
 
@@ -206,14 +206,14 @@ def create(
 
 **Additional Parameters:**
 
-*   `num_support_pts`: Number of control points (anchors) to optimize. Defaults to `horizon // 2`.
-*   `kernel`: A `TimeKernel` instance (e.g., `RBFKernel`).
+* `num_support_pts`: Number of control points (anchors) to optimize. Defaults to `horizon // 2`.
+* `kernel`: A `TimeKernel` instance (e.g., `RBFKernel`).
 
 **Returns:**
 
-*   `config`: KMPPI configuration.
-*   `state`: KMPPI state (including control points `theta`).
-*   `kernel`: The kernel function instance used for interpolation.
+* `config`: KMPPI configuration.
+* `state`: KMPPI state (including control points `theta`).
+* `kernel`: The kernel function instance used for interpolation.
 
 ---
 
@@ -283,10 +283,10 @@ class Autotune:
 
 Abstract base class for parameters.
 
-*   `LambdaParameter(holder, min_value=0.0001)`: Tunes temperature.
-*   `NoiseSigmaParameter(holder, min_value=0.0001)`: Tunes noise covariance diagonal.
-*   `MuParameter(holder)`: Tunes noise mean.
-*   `HorizonParameter(holder, min_value=5, max_value=100)`: Tunes planning horizon.
+* `LambdaParameter(holder, min_value=0.0001)`: Tunes temperature.
+* `NoiseSigmaParameter(holder, min_value=0.0001)`: Tunes noise covariance diagonal.
+* `MuParameter(holder)`: Tunes noise mean.
+* `HorizonParameter(holder, min_value=5, max_value=100)`: Tunes planning horizon.
 
 #### `ConfigStateHolder`
 
@@ -299,17 +299,17 @@ class ConfigStateHolder:
 
 #### Optimizers
 
-*   `CMAESOpt(population=10, sigma=0.1)`: Wrapper for the `cma` library (CPU-based).
+* `CMAESOpt(population=10, sigma=0.1)`: Wrapper for the `cma` library (CPU-based).
 
 ### `jax_mppi.autotune_global`
 
 Integration with Ray Tune for global optimization.
 
-*   `AutotuneGlobal`: Main class for Ray Tune integration.
-*   `RayOptimizer`: Optimizer backend using Ray.
+* `AutotuneGlobal`: Main class for Ray Tune integration.
+* `RayOptimizer`: Optimizer backend using Ray.
 
 ### `jax_mppi.autotune_qd`
 
 Quality Diversity optimization.
 
-*   `CMAMEOpt`: CMA-ME (Covariance Matrix Adaptation MAP-Elites) optimizer.
+* `CMAMEOpt`: CMA-ME (Covariance Matrix Adaptation MAP-Elites) optimizer.
