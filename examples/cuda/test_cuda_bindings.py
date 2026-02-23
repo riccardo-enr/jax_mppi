@@ -1,10 +1,17 @@
 import numpy as np
 
-from jax_mppi import cuda_mppi
+try:
+    from jax_mppi import cuda_mppi  # type: ignore
+except ImportError:
+    cuda_mppi = None
 
 
 def main():
     print("Testing CUDA MPPI Bindings...")
+
+    if cuda_mppi is None:
+        print("Error: cuda_mppi module not found. Please build the C++ extension.")
+        return
 
     # 1. Create Config
     config = cuda_mppi.MPPIConfig(

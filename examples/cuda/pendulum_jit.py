@@ -15,7 +15,10 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from jax_mppi import cuda_mppi
+try:
+    from jax_mppi import cuda_mppi  # type: ignore
+except ImportError:
+    cuda_mppi = None
 
 # Define pendulum dynamics in C++/CUDA
 PENDULUM_DYNAMICS = """
@@ -104,6 +107,10 @@ def main():
     print("=" * 60)
     print("JIT-Compiled MPPI Pendulum Swing-Up Example")
     print("=" * 60)
+
+    if cuda_mppi is None:
+        print("Error: cuda_mppi module not found. Please build the C++ extension.")
+        return
 
     # Configuration
     config = cuda_mppi.MPPIConfig(
@@ -234,17 +241,17 @@ def main():
 
         if pygame is not None:
             # Draw pendulum
-            screen.fill((245, 245, 245))
-            width, height = screen.get_size()
+            screen.fill((245, 245, 245))  # type: ignore
+            width, height = screen.get_size()  # type: ignore
             origin = (width // 2, height // 2)
             length = int(min(width, height) * 0.35)
             theta = state[0]
             x = origin[0] + int(length * np.sin(theta))
             # Theta = 0 should be upright (upwards on screen).
             y = origin[1] - int(length * np.cos(theta))
-            pygame.draw.line(screen, (30, 30, 30), origin, (x, y), 4)
-            pygame.draw.circle(screen, (200, 60, 60), (x, y), 12)
-            pygame.draw.circle(screen, (30, 30, 30), origin, 6)
+            pygame.draw.line(screen, (30, 30, 30), origin, (x, y), 4)  # type: ignore
+            pygame.draw.circle(screen, (200, 60, 60), (x, y), 12)  # type: ignore
+            pygame.draw.circle(screen, (30, 30, 30), origin, 6)  # type: ignore
             # Torque indicator: circle + arrow around origin
             torque = float(action[0])
             max_torque = float(config.u_scale)
@@ -274,7 +281,7 @@ def main():
                 )
 
                 pygame.draw.arc(
-                    screen, (20, 120, 200), arc_rect, start_angle, end_angle, 3
+                    screen, (20, 120, 200), arc_rect, start_angle, end_angle, 3  # type: ignore
                 )
 
                 # Arrow head at end of arc
@@ -300,10 +307,10 @@ def main():
                 hy2 = ay + int(head_len * np.sin(right))
 
                 pygame.draw.line(
-                    screen, (20, 120, 200), (ax, ay), (hx1, hy1), 3
+                    screen, (20, 120, 200), (ax, ay), (hx1, hy1), 3  # type: ignore
                 )
                 pygame.draw.line(
-                    screen, (20, 120, 200), (ax, ay), (hx2, hy2), 3
+                    screen, (20, 120, 200), (ax, ay), (hx2, hy2), 3  # type: ignore
                 )
 
             pygame.display.flip()
