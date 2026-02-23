@@ -17,7 +17,10 @@ import time
 # IMPORTANT: Import CUDA module FIRST, before JAX!
 # This prevents CUDA context conflicts
 sys.path.insert(0, "third_party/cuda-mppi/build")
-import cuda_mppi
+try:
+    import cuda_mppi  # type: ignore
+except ImportError:
+    cuda_mppi = None
 
 # Path setup
 _candidates = [
@@ -200,6 +203,10 @@ GOAL_DONE_THRESHOLD = 1.5
 print("=" * 60)
 print("CUDA I-MPPI Simulation")
 print("=" * 60)
+
+if cuda_mppi is None and not args.animation_only:
+    print("Error: cuda_mppi module not found. Please build the C++ extension.")
+    sys.exit(1)
 
 if args.animation_only:
     print("Animation-only mode: loading saved flight data...")
