@@ -7,7 +7,7 @@ format:
 ---
 
 ::: {.callout-tip}
-## Quick Start
+### Quick Start
 
 **I-MPPI** is a hierarchical framework combining information-theoretic planning with MPPI control for autonomous UAV exploration.
 
@@ -25,22 +25,22 @@ format:
 **Try It**: See `examples/i_mppi/simulation.py` or the interactive Colab notebook.
 :::
 
-## Introduction: The Evolution of Autonomous Exploration
+### Introduction: The Evolution of Autonomous Exploration
 
 The field of autonomous Unmanned Aerial Vehicle (UAV) exploration has transitioned from simple geometric coverage to complex, information-driven strategic maneuvers. In unstructured environments, a robot faces a fundamental duality: the global coverage problem ("where to go") and the reactive control problem ("how to move safely"). Traditional approaches often decouple these modules, resulting in "myopic" local planners that fail to escape local minima of uncertainty, or deterministic global planners that produce coarse, "jagged" paths unsuitable for the high-speed, non-linear dynamics of agile flight.
 
 This document describes the **Hierarchical Informative Model Predictive Path Integral (I-MPPI)** framework. This architecture synthesizes global strategic planning, analytical viewpoint refinement via Fast Shannon Mutual Information (FSMI), and reactive Biased-MPPI control with sensitivity-based feedback.
 
 ::: {.callout-note}
-### Repository Scope
+#### Repository Scope
 The focus of this repository is the high-performance JAX implementation of **Layer 2 (Local Refinement)** and **Layer 3/4 (Reactive Control)**. The **Global Planner (Layer 1)**, such as FUEL, is considered an external input that provides the mission context and global waypoints.
 :::
 
-## Theoretical Foundations of I-MPPI
+### Theoretical Foundations of I-MPPI
 
 Model Predictive Path Integral (MPPI) control is a sampling-based stochastic optimal control method that optimizes control sequences without requiring explicit gradients of the dynamics. Formally, the MPPI algorithm can be derived as a solution to an optimal control problem that minimizes the Kullback-Leibler (KL) divergence between a controlled trajectory distribution and an optimal distribution defined by the cost function.
 
-### Optimal Control Duality & Free Energy
+#### Optimal Control Duality & Free Energy
 
 The mathematical derivation of the MPPI algorithm is rooted in the definition of the **free energy** of the dynamical system. The value function $V(x, t)$ of a stochastic system can be linearized through a logarithmic transformation, leading to the Path Integral formulation. The **Free Energy** ($\mathcal{F}$) of the dynamical system is defined as:
 
@@ -55,11 +55,11 @@ The "optimal trajectory" is the mean of the distribution $\mathbb{Q}^*$ that min
 
 $$ \omega^k = \frac{\exp\left(-\frac{1}{\lambda}(J^k - \rho)\right)}{\sum_{j=1}^{K} \exp\left(-\frac{1}{\lambda}(J^j - \rho)\right)} $$
 
-## Occupancy Grid Map
+### Occupancy Grid Map
 
 The environment is represented as a 2D occupancy probability grid $\mathbf{G} \in [0,1]^{H \times W}$, where each cell stores the probability of being occupied.
 
-### Representation
+#### Representation
 
 | Cell value | Interpretation |
 |------------|---------------|
@@ -67,7 +67,7 @@ The environment is represented as a 2D occupancy probability grid $\mathbf{G} \i
 | $p = 0.5$ | Unknown (maximum entropy) |
 | $p = 1.0$ | Known occupied (wall) |
 
-### Coordinate Transforms
+#### Coordinate Transforms
 
 The grid is anchored at a world-frame origin $\mathbf{o} = [o_x, o_y]$ with resolution $r$ (meters per cell). Conversion between world coordinates $\mathbf{p}_w$ and grid indices $\mathbf{p}_g$:
 
@@ -76,7 +76,7 @@ $$
 \mathbf{p}_w = \mathbf{o} + (\mathbf{p}_g + 0.5)\,r
 $$
 
-### Rasterization
+#### Rasterization
 
 The grid is constructed by rasterizing the environment:
 
@@ -84,7 +84,7 @@ The grid is constructed by rasterizing the environment:
 2. **Information zones** are axis-aligned rectangles $[c_x, c_y, w, h]$. Cells inside a zone are set to $p = 0.5$ (unknown).
 3. **Priority**: walls override zones; zones override free space.
 
-## Information Metrics: FSMI
+### Information Metrics: FSMI
 
 To quantify how future measurements will reduce map uncertainty, we define a Unified Cost Function $J(\tau)$ that balances dynamical effort with information reward:
 
@@ -94,7 +94,7 @@ J(\tau) &= \underbrace{\left[\phi(x_T) + \sum_{t=0}^{T-1} \mathcal{L}_{motion}(x
 \end{aligned}
 $$
 
-### Shannon Mutual Information
+#### Shannon Mutual Information
 
 The informative reward is the **Shannon Mutual Information (MI)** between the map $M$ and a future sensor measurement $Z$:
 $$ I(M; Z) = H(M) - H(M|Z) $$
@@ -135,7 +135,7 @@ $$
 
 This creates a Gaussian mixture model where each cell along the ray contributes a Gaussian component weighted by its occupancy probability.
 
-### Fast Shannon Mutual Information (FSMI)
+#### Fast Shannon Mutual Information (FSMI)
 
 Computing Shannon MI analytically for a sensor beam involves casting rays through the occupancy grid and evaluating the expected information gain. The FSMI algorithm (@Zhang2020-gi) provides a closed-form solution.
 
@@ -204,7 +204,7 @@ $$
 
 This reduces complexity from $O(n^2)$ to $O(n)$ per beam, making it suitable for the Layer 3 reactive controller running at 50 Hz.
 
-### CSQMI vs FSMI for 3D Field of View {#csqmi-vs-fsmi-3d}
+#### CSQMI vs FSMI for 3D Field of View {#csqmi-vs-fsmi-3d}
 
 When the sensor provides a **3D field of view** (e.g., RGB-D camera, 3D lidar), the number of beams $B$ scales dramatically compared to a planar 2D scan:
 
@@ -262,11 +262,11 @@ Both CSQMI and FSMI variants are **embarrassingly parallel over beams**: each be
 **For 3D occupancy grids** (voxel/OctoMap representations): FSMI-RLE becomes competitive or superior, offering exact Shannon MI with lower memory and comparable speed on sparse maps.
 
 ::: {.callout-tip}
-### Implementation Strategy
+#### Implementation Strategy
 A **two-stage approach** can combine both: use CSQMI for fast trajectory ranking across many candidates, then refine the top-$k$ with FSMI-RLE for more accurate final selection.
 :::
 
-### Trajectory-Based FSMI {#trajectory-fsmi}
+#### Trajectory-Based FSMI {#trajectory-fsmi}
 
 Both FSMI and CSQMI can be extended from single-viewpoint evaluation to trajectory evaluation. The key is **Assumption 2** from [@Charrow2015-ub]:
 
@@ -427,13 +427,13 @@ def fsmi_trajectory_with_discount(trajectory_poses, occupancy_grid):
 
 **Phase 1: Prototype**
 ```python
-# Start with Method 1 (Direct Sum)
+## Start with Method 1 (Direct Sum)
 mi_trajectory = fsmi_trajectory_simple(trajectory, map)
 ```
 
 **Phase 2: Validate**
 ```python
-# Compare with conservative filtering
+## Compare with conservative filtering
 mi_filtered = fsmi_trajectory_parallel_filtered(trajectory, map)
 overcounting_ratio = mi_trajectory / mi_filtered
 
@@ -444,21 +444,21 @@ if overcounting_ratio < 1.2:
 
 **Phase 3: Optimize**
 ```python
-# If overcounting is significant, use discount factor
+## If overcounting is significant, use discount factor
 mi_discounted = fsmi_trajectory_with_discount(trajectory, map)
 ```
 
 ::: {.callout-important}
-### FSMI vs CSQMI for Trajectories
+#### FSMI vs CSQMI for Trajectories
 
 FSMI is **inherently more parallelizable** for trajectory evaluation because independence filtering is **optional** (approximation quality vs. speed trade-off). CSQMI **requires** sequential filtering for correctness, creating a GPU bottleneck for trajectory-based planning.
 :::
 
-## FOV Coverage & Line-of-Sight {#fov-coverage}
+### FOV Coverage & Line-of-Sight {#fov-coverage}
 
 The FOV coverage model determines what fraction of an information zone is visible from the UAV's current pose, and is used both in the dynamics (depletion) and cost function (reward).
 
-### Geometric Checks
+#### Geometric Checks
 
 For each sample point in a zone, three conditions must hold:
 
@@ -474,7 +474,7 @@ $$
 
 where $\mathbf{s}_i$ are $N = 25$ sample points uniformly distributed across the zone, $\mathbf{p}$ is the UAV position, and $\psi$ is yaw.
 
-### Ray-March Line-of-Sight
+#### Ray-March Line-of-Sight
 
 When LOS checking is enabled, the grid is sampled along a straight ray from the UAV to each sample point at fixed intervals (0.2 m). If any sample hits a cell with $p \geq 0.7$, the point is considered occluded:
 
@@ -482,7 +482,7 @@ $$
 \text{LOS}(\mathbf{p}, \mathbf{s}) = \prod_{l=0}^{L-1} \mathbb{1}\!\left[G[\mathbf{p} + l \cdot \Delta \hat{\mathbf{d}}] < 0.7\right]
 $$
 
-### Entropy-Weighted Coverage
+#### Entropy-Weighted Coverage
 
 Raw FOV coverage treats all visible zone cells equally, meaning already-explored cells ($p \approx 0.2$, known free) contribute the same as unknown cells ($p = 0.5$). To create self-regulating depletion, each sample is weighted by an **entropy proxy**:
 
@@ -498,7 +498,7 @@ $$
 
 As a zone is explored and its grid cells move from $p = 0.5$ toward $p = 0.2$, the entropy weight drops ($w(0.2) = 0.64 \to 0$), naturally slowing depletion without requiring explicit thresholds.
 
-## Information Zone Depletion {#information-zone-depletion}
+### Information Zone Depletion {#information-zone-depletion}
 
 Each information zone $j$ carries a scalar level $i_j \in [0, 100]$ representing remaining information content. The depletion dynamics are:
 
@@ -511,7 +511,7 @@ where:
 - $\alpha = 0.02$ is the per-step depletion scaling factor
 - $c_j^{(t)} \in [0, 1]$ is the FOV coverage (optionally entropy-weighted)
 
-### Self-Regulating Feedback Loop
+#### Self-Regulating Feedback Loop
 
 With entropy-weighted coverage, the system exhibits a natural feedback loop:
 
@@ -522,7 +522,7 @@ With entropy-weighted coverage, the system exhibits a natural feedback loop:
 
 This prevents "over-depletion" of zones that still contain uncertain cells behind obstacles.
 
-## Cost Functions
+### Cost Functions
 
 The I-MPPI running cost combines several terms:
 
@@ -530,7 +530,7 @@ $$
 J_t = J_{\text{collision}} + J_{\text{grid}} + J_{\text{target}} + J_{\text{bounds}} + J_{\text{height}} + J_{\text{info}} + J_{\text{control}}
 $$
 
-### Collision Cost
+#### Collision Cost
 
 Proximity to wall segments incurs a large penalty:
 
@@ -544,7 +544,7 @@ $$
 J_{\text{grid}} = \begin{cases} 1000 & \text{if } G[\mathbf{p}] \geq 0.7 \\ 0 & \text{otherwise} \end{cases}
 $$
 
-### Information Cost (Reward)
+#### Information Cost (Reward)
 
 For the basic I-MPPI cost, information reward is based on FOV coverage of each zone weighted by remaining info:
 
@@ -558,7 +558,7 @@ $$
 J_{\text{info}} = -\lambda_{\text{info}} \cdot I_{\text{Uniform}}(\mathbf{p}, \psi)
 $$
 
-### Target Attraction
+#### Target Attraction
 
 $$
 J_{\text{target}} = w_{\text{target}} \|\mathbf{p} - \mathbf{p}_{\text{ref}}(t)\|
@@ -566,7 +566,7 @@ $$
 
 where $\mathbf{p}_{\text{ref}}(t)$ is either a static goal or a point on the Layer 2 reference trajectory.
 
-### Bounds and Height
+#### Bounds and Height
 
 $$
 J_{\text{bounds}} = 1000 \cdot \mathbb{1}[\mathbf{p} \notin \text{workspace}], \qquad
@@ -575,7 +575,7 @@ $$
 
 where $p_z^* = -2.0$ m is the target altitude (NED convention: negative = up).
 
-### Control Regularization
+#### Control Regularization
 
 $$
 J_{\text{control}} = \lambda_u \|\mathbf{u}\|^2
@@ -583,7 +583,7 @@ $$
 
 with $\lambda_u = 0.01$.
 
-## Hierarchical Architecture
+### Hierarchical Architecture
 
 I-MPPI employs a three-layer GNC stack:
 
@@ -631,11 +631,11 @@ graph TD
 2. **Layer 2: Local Refinement**: Refines global paths into an Informed Reference Trajectory $(\tau_{ref})$ maximizing info gain.
 3. **Layer 3: Reactive Control (Biased-MPPI)**: Uses a mixture distribution to track $\tau_{ref}$ while maintaining local informativeness.
 
-## Target Selection
+### Target Selection
 
 Layer 2 selects the next target for the reference trajectory based on remaining information levels.
 
-### Score-Based Zone Selection
+#### Score-Based Zone Selection
 
 Each information zone is scored by:
 
@@ -645,19 +645,19 @@ $$
 
 where $i_j$ is the remaining info level, $\mathbf{p}_j$ is the zone center, and $w_d$ is a distance penalty weight.
 
-### Depletion Mask
+#### Depletion Mask
 
 Zones with $i_j < i_{\text{threshold}}$ are masked out (score set to $-\infty$). The zone with the highest score is selected as the current target.
 
-### Goal Fallback
+#### Goal Fallback
 
 When no zone has remaining information above the threshold, the system falls back to the mission goal position $\mathbf{p}_{\text{goal}}$, and the UAV proceeds directly to the goal.
 
-## Biased MPPI Mixture Sampling
+### Biased MPPI Mixture Sampling
 
 Layer 3 uses **biased MPPI** to track the Layer 2 reference trajectory while maintaining reactive obstacle avoidance and local informativeness. The key idea is to use a mixture sampling distribution that biases a fraction of samples toward the reference.
 
-### Mixture Distribution
+#### Mixture Distribution
 
 The $K$ total samples are split into two groups:
 
@@ -678,7 +678,7 @@ $$
 
 where $\mathbf{U}_{\text{ref}}$ is the reference control sequence from Layer 2.
 
-### MPPI Variants
+#### MPPI Variants
 
 Biased sampling is implemented for all three MPPI variants:
 
@@ -686,7 +686,7 @@ Biased sampling is implemented for all three MPPI variants:
 - **Biased SMPPI**: reference converted to velocity space via $\delta_{\text{ref}}^{vel} = (\mathbf{U}_{\text{ref}} - \mathbf{a}_{\text{seq}}) / \Delta t$
 - **Biased KMPPI**: reference projected to control-point space by solving $\boldsymbol{\theta}_{\text{ref}} = (\mathbf{K}^T\mathbf{K})^{-1}\mathbf{K}^T \mathbf{U}_{\text{ref}}$, then bias offset $\delta_{\text{ref}} = \boldsymbol{\theta}_{\text{ref}} - \boldsymbol{\theta}$
 
-## Feedback-MPPI & Sensitivity Analysis
+### Feedback-MPPI & Sensitivity Analysis
 
 To support agile maneuvers, F-MPPI computes local linear feedback gains $F$ derived from sensitivity analysis:
 
@@ -694,7 +694,7 @@ $$ F = \frac{\partial u^*}{\partial x_0} = \sum_{k=0}^{K} \frac{\partial \pi}{\p
 
 The control law becomes $u = u^* + F(\hat{x} - x_{sp})$, allowing for high-bandwidth corrections ($\ge 200$ Hz).
 
-## Parallel I-MPPI Architecture {#parallel-imppi}
+### Parallel I-MPPI Architecture {#parallel-imppi}
 
 The hierarchical (sequential) I-MPPI architecture couples Layer 2 and Layer 3 through a **reference trajectory**: Layer 2 plans at 5 Hz, then Layer 3 tracks that trajectory at 50 Hz. This introduces two limitations:
 
@@ -703,7 +703,7 @@ The hierarchical (sequential) I-MPPI architecture couples Layer 2 and Layer 3 th
 
 The **Parallel I-MPPI** architecture eliminates the reference trajectory entirely. Instead, a single MPPI controller runs at 50 Hz and consults an **information potential field** $\mathcal{I}(x, y)$ that is computed concurrently at a lower rate.
 
-### Architecture Overview
+#### Architecture Overview
 
 ```{mermaid}
 graph TD
@@ -732,7 +732,7 @@ graph TD
 
 **Key difference from sequential I-MPPI**: there is no reference trajectory $\tau_{\text{ref}}$ and no biased sampling. MPPI "discovers" informative paths by following the spatial gradient of $\mathcal{I}$.
 
-### Information Potential Field
+#### Information Potential Field
 
 At low rate (5–10 Hz), the FSMI field generator evaluates FSMI at a coarse grid of candidate viewpoints in the local workspace around the UAV.
 
@@ -747,7 +747,7 @@ $$
 where $\Psi = \{0, \frac{2\pi}{N_\psi}, \dots, \frac{2\pi(N_\psi - 1)}{N_\psi}\}$ is a discrete set of yaw angles.
 
 ::: {.callout-tip}
-### Yaw-dependent variant
+#### Yaw-dependent variant
 When the UAV's sensor has a limited azimuthal FOV (e.g., forward-facing camera), the field can retain yaw dependence: $\mathcal{I}(x, y, \psi)$. MPPI rollouts then query with their heading angle, adding yaw-steering incentive to the cost.
 :::
 
@@ -788,7 +788,7 @@ def compute_info_field(grid_map, uav_pos, field_res, field_extent, yaw_angles):
 
 **Computational budget**: For a $10 \times 10$ m workspace at 0.5 m resolution ($20 \times 20 = 400$ positions) with $N_\psi = 8$ yaw angles, the field requires 3,200 FSMI evaluations — parallelized via `vmap` on GPU.
 
-### MPPI Cost with Field Lookup
+#### MPPI Cost with Field Lookup
 
 The MPPI running cost incorporates the information field via bilinear interpolation at each rollout position:
 
@@ -809,11 +809,11 @@ $$
 The **field lookup** $J_{\text{info}}$ provides medium-range strategic guidance (which region to fly toward), while the **Uniform-FSMI** term $J_{\text{local}}$ provides immediate viewpoint-specific information (which way to look right now). Together they replace both the target attraction $J_{\text{target}}$ and the biased sampling of sequential I-MPPI.
 
 ::: {.callout-note}
-### Why bilinear interpolation?
+#### Why bilinear interpolation?
 The field is computed on a coarse grid (0.5 m spacing), but MPPI rollouts have continuous positions. Bilinear interpolation is $O(1)$ per query — negligible compared to dynamics rollouts — and provides smooth gradients that MPPI can exploit through its importance-weighted averaging.
 :::
 
-### Main Loop Pseudocode
+#### Main Loop Pseudocode
 
 ```python
 def parallel_imppi_loop(state, grid_map, mppi, fsmi_module, config):
@@ -870,7 +870,7 @@ def parallel_imppi_loop(state, grid_map, mppi, fsmi_module, config):
 
 The field update is **non-blocking** in practice: on GPU, the field computation can overlap with the next MPPI step via asynchronous dispatch. The MPPI controller always reads the latest available field.
 
-### Sequential vs Parallel Comparison
+#### Sequential vs Parallel Comparison
 
 | Aspect | Sequential (current) | Parallel (proposed) |
 |--------|---------------------|---------------------|
@@ -884,7 +884,7 @@ The field update is **non-blocking** in practice: on GPU, the field computation 
 | **Yaw planning** | Implicit in reference | Explicit via field or $J_{\text{local}}$ |
 | **Implementation** | Requires trajectory generator + biased sampling | Requires field computation + interpolation |
 
-### Relation to Artificial Potential Fields
+#### Relation to Artificial Potential Fields
 
 The information potential field $\mathcal{I}(x, y)$ naturally evokes the **Artificial Potential Field (APF)** framework [@Khatib1986], where obstacles generate repulsive potentials and goals generate attractive potentials, guiding the robot via gradient descent. Parallel I-MPPI extends this paradigm in three key ways:
 
@@ -907,11 +907,11 @@ The information potential field $\mathcal{I}(x, y)$ naturally evokes the **Artif
 This formulation can be viewed as a *thermodynamic APF*, where the temperature parameter $\lambda$ controls exploration vs. exploitation, and the free energy $\mathcal{F}$ naturally balances kinetic cost (control effort) with potential cost (information opportunity).
 
 ::: {.callout-tip}
-### Intuition for Robotics Readers
+#### Intuition for Robotics Readers
 If you are familiar with APF-based planners, think of Parallel I-MPPI as replacing the fixed-goal attractive potential with a *learned, dynamic information landscape* — and replacing gradient descent with *stochastic trajectory sampling* that respects full vehicle dynamics. The "Summary: Information as Energy" framing below makes this analogy precise through statistical mechanics.
 :::
 
-## Summary: Information as Energy
+### Summary: Information as Energy
 
 In **I-MPPI**, map uncertainty is treated as a **High Potential Energy** region. The solver naturally seeks to minimize free energy, causing the vehicle to "fall" into informative gravity wells. The information potential field $\mathcal{I}(x, y)$ makes this analogy concrete: it is literally a spatial energy landscape that MPPI descends through importance-weighted sampling.
 

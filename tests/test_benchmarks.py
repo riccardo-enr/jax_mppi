@@ -198,9 +198,6 @@ class TestParallelImppiStepBenchmark:
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,
-            info_field=info_field,
-            field_origin=field_origin,
-            field_res=cfg.field_res,
             uniform_fsmi_fn=uniform.compute,
         )
         dynamics_fn = partial(
