@@ -109,7 +109,9 @@ def main():
     print("=" * 60)
 
     if cuda_mppi is None:
-        print("Error: cuda_mppi module not found. Please build the C++ extension.")
+        print(
+            "Error: cuda_mppi module not found. Please build the C++ extension."
+        )
         return
 
     # Configuration
@@ -281,7 +283,12 @@ def main():
                 )
 
                 pygame.draw.arc(
-                    screen, (20, 120, 200), arc_rect, start_angle, end_angle, 3  # type: ignore
+                    screen,
+                    (20, 120, 200),
+                    arc_rect,
+                    start_angle,
+                    end_angle,
+                    3,  # type: ignore
                 )
 
                 # Arrow head at end of arc
@@ -307,10 +314,18 @@ def main():
                 hy2 = ay + int(head_len * np.sin(right))
 
                 pygame.draw.line(
-                    screen, (20, 120, 200), (ax, ay), (hx1, hy1), 3  # type: ignore
+                    screen,
+                    (20, 120, 200),
+                    (ax, ay),
+                    (hx1, hy1),
+                    3,  # type: ignore
                 )
                 pygame.draw.line(
-                    screen, (20, 120, 200), (ax, ay), (hx2, hy2), 3  # type: ignore
+                    screen,
+                    (20, 120, 200),
+                    (ax, ay),
+                    (hx2, hy2),
+                    3,  # type: ignore
                 )
 
             pygame.display.flip()
