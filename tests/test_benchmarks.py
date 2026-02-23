@@ -163,9 +163,10 @@ class TestParallelImppiStepBenchmark:
             origin,
             resolution,
         )
+        # Compute info field (for potential future use, but not passed to cost currently)
         cfg = InfoFieldConfig(field_res=0.5, field_extent=2.0, n_yaw=4)
         pos_xy = jnp.array([5.0, 5.0])
-        info_field, field_origin = compute_info_field(mod, gm.grid, pos_xy, cfg)
+        _ = compute_info_field(mod, gm.grid, pos_xy, cfg)
 
         # MPPI setup — 3 info zones -> NX=16
         noise_sigma = jnp.diag(jnp.array([2.0, 0.5, 0.5, 0.5]) ** 2)
