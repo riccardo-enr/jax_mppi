@@ -159,13 +159,6 @@ class TestParallelImppiStepBenchmark:
             origin,
             resolution,
         )
-        mod = FSMIModule(
-            FSMIConfig(num_beams=8, max_range=3.0, ray_step=0.1, fov_rad=1.57),
-            origin,
-            resolution,
-        )
-        cfg = InfoFieldConfig(field_res=0.5, field_extent=2.0, n_yaw=4)
-        pos_xy = jnp.array([5.0, 5.0])
         # Compute info field is benchmarked separately, but we run it here to have inputs
         # info_field, field_origin = compute_info_field(mod, gm.grid, pos_xy, cfg)
 
