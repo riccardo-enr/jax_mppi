@@ -17,6 +17,7 @@ import pytest
 
 from jax_mppi import mppi
 from jax_mppi.i_mppi.environment import (
+    GOAL_POS,
     INFO_ZONES,
     WALLS,
     augmented_dynamics_with_grid,
@@ -158,14 +159,8 @@ class TestParallelImppiStepBenchmark:
             origin,
             resolution,
         )
-        mod = FSMIModule(
-            FSMIConfig(num_beams=8, max_range=3.0, ray_step=0.1, fov_rad=1.57),
-            origin,
-            resolution,
-        )
-        cfg = InfoFieldConfig(field_res=0.5, field_extent=2.0, n_yaw=4)
-        pos_xy = jnp.array([5.0, 5.0])
-        info_field, field_origin = compute_info_field(mod, gm.grid, pos_xy, cfg)
+        # Compute info field is benchmarked separately, but we run it here to have inputs
+        # info_field, field_origin = compute_info_field(mod, gm.grid, pos_xy, cfg)
 
         # MPPI setup — 3 info zones -> NX=16
         noise_sigma = jnp.diag(jnp.array([2.0, 0.5, 0.5, 0.5]) ** 2)
@@ -195,12 +190,11 @@ class TestParallelImppiStepBenchmark:
 
         cost_fn = partial(
             informative_running_cost,
+            target=GOAL_POS,  # Bound the missing positional argument
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,
-            info_field=info_field,
-            field_origin=field_origin,
-            field_res=cfg.field_res,
+            # Removed info_field arguments as they are not supported by informative_running_cost
             uniform_fsmi_fn=uniform.compute,
         )
         dynamics_fn = partial(

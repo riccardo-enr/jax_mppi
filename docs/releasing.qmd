@@ -1,0 +1,79 @@
+---
+title: "Release Guide"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+# Overview
+
+This guide describes the procedure for releasing a new version of `jax_mppi` to PyPI. The process is fully automated via GitHub Actions, ensuring consistent and reproducible builds.
+
+# Prerequisites
+
+The release workflow requires the repository to be configured as a **Trusted Publisher** on PyPI. This allows GitHub Actions to authenticate using OIDC tokens, eliminating the need for long-lived API keys.
+
+## PyPI Trusted Publisher Setup
+
+1. Log in to your [PyPI account](https://pypi.org/).
+2. Navigate to **Publishing** in your project settings.
+3. Add a new **Trusted Publisher**.
+4. Select **GitHub**.
+5. Enter the repository details:
+    * **Owner**: `riccardo-enr`
+    * **Repository name**: `jax_mppi`
+    * **Workflow name**: `publish.yml`
+    * **Environment name**: (Leave empty)
+6. Click **Add**.
+
+# Release Process
+
+To release a new version, follow these steps:
+
+1.  **Update Version Number**
+
+    Edit `pyproject.toml` to increment the version number according to Semantic Versioning.
+
+    ```toml
+    [project]
+    version = "0.1.6"  # Example version
+    ```
+
+2.  **Commit and Push**
+
+    Commit the version bump and push to the `main` branch.
+
+    ```bash
+    git add pyproject.toml
+    git commit -m "Bump version to 0.1.6"
+    git push origin main
+    ```
+
+3.  **Create and Push Tag**
+
+    Create a git tag corresponding to the new version. The tag **must** start with `v`.
+
+    ```bash
+    git tag v0.1.6
+    git push origin v0.1.6
+    ```
+
+4.  **Monitor the Workflow**
+
+    Pushing the tag triggers the `Publish to PyPI` GitHub Action. Monitor its progress in the "Actions" tab of the repository. The workflow will:
+    - Build the package (sdist and wheel).
+    - Verify the build.
+    - Upload artifacts to PyPI.
+
+# Verification
+
+Once the workflow completes successfully:
+
+1.  **Check PyPI**: Visit the [PyPI project page](https://pypi.org/project/jax-mppi/) to confirm the new version is live.
+2.  **Test Installation**: Verify that the new version can be installed.
+
+    ```bash
+    pip install jax-mppi==0.1.6
+    ```
