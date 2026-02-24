@@ -63,6 +63,8 @@ Instead of hierarchical layers, we run **N parallel MPPI controllers** simultane
 
 #### Strategy 1: Exploration-Exploitation Portfolio
 
+The portfolio consists of four controllers with distinct cost weightings:
+
 | Controller | Info Weight | Goal Weight | Safety Weight | Role |
 |------------|-------------|-------------|---------------|------|
 | Explorer   | 0.7         | 0.1         | 0.2           | Maximize information gain |
