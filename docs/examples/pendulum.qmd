@@ -1,0 +1,174 @@
+---
+title: "Pendulum Swing-Up"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+# Overview
+
+The inverted pendulum swing-up is a classic control benchmark. The goal is to apply torque to a pendulum to swing it from a hanging position ($\theta = \pi$) to an upright position ($\theta = 0$) and stabilize it there.
+
+This example demonstrates how to:
+1.  Define a custom dynamics model in JAX.
+2.  Design a cost function for the swing-up task.
+3.  Configure and run the MPPI controller.
+
+# Theoretical Background
+
+The system consists of a mass $m$ attached to a rod of length $l$. The state is defined by the angle $\theta$ and angular velocity $\dot{\theta}$. The control input is the torque $\tau$ applied at the pivot.
+
+## Dynamics
+
+The equation of motion is:
+
+$$
+\ddot{\theta} = \frac{\tau - m g l \sin(\theta)}{m l^2}
+$$
+
+where:
+- $g = 9.81 \, \text{m/s}^2$ is the gravitational acceleration.
+- We use Euler integration to update the state over a timestep $\Delta t$.
+
+## Cost Function
+
+To achieve the swing-up and stabilization, we minimize a running cost $q(\mathbf{x}, \mathbf{u})$:
+
+$$
+q(\theta, \dot{\theta}, \tau) = w_{\theta} \theta^2 + w_{\dot{\theta}} \dot{\theta}^2 + w_{\tau} \tau^2
+$$
+
+where $w_{\theta}, w_{\dot{\theta}}, w_{\tau}$ are weights balancing position error, velocity dampening, and control effort.
+
+# Installation
+
+Ensure you have installed `jax_mppi` and its dependencies. For visualization, you might need `matplotlib`.
+
+```bash
+pip install jax-mppi[dev]
+```
+
+# Quick Start
+
+You can run the complete example from the command line:
+
+```bash
+python examples/basic/pendulum.py --visualize
+```
+
+# Code Explanation
+
+The full implementation is available in `examples/basic/pendulum.py`. Here we break down the key components.
+
+## 1. Dynamics Model
+
+We define the dynamics as a JAX-compatible pure function.
+
+```python
+import jax.numpy as jnp
+
+def pendulum_dynamics(state: jax.Array, action: jax.Array) -> jax.Array:
+    """
+    State: [theta, theta_dot]
+    Action: [torque]
+    """
+    g = 10.0  # gravity
+    m = 1.0   # mass
+    l = 1.0   # length
+    dt = 0.05 # timestep
+
+    theta, theta_dot = state[0], state[1]
+    torque = action[0]
+
+    # Clip control input
+    torque = jnp.clip(torque, -2.0, 2.0)
+
+    # Physics
+    theta_ddot = (torque - m * g * l * jnp.sin(theta)) / (m * l * l)
+
+    # Integration
+    theta_dot_next = theta_dot + theta_ddot * dt
+    theta_next = theta + theta_dot_next * dt
+
+    # Normalize angle to [-pi, pi]
+    theta_next = ((theta_next + jnp.pi) % (2 * jnp.pi)) - jnp.pi
+
+    return jnp.array([theta_next, theta_dot_next])
+```
+
+:::{.callout-important}
+## JIT Compatibility
+The dynamics function must be JIT-compilable. Avoid using standard Python lists or loops; use `jax.numpy` operations instead.
+:::
+
+## 2. Cost Function
+
+The cost function penalizes deviations from the target state $[0, 0]$.
+
+```python
+def pendulum_cost(state: jax.Array, action: jax.Array) -> jax.Array:
+    theta, theta_dot = state[0], state[1]
+    torque = action[0]
+
+    # Weights
+    w_angle = 1.0
+    w_vel = 0.1
+    w_u = 0.01
+
+    # Cost components
+    angle_cost = w_angle * theta**2
+    velocity_cost = w_vel * theta_dot**2
+    control_cost = w_u * torque**2
+
+    return angle_cost + velocity_cost + control_cost
+```
+
+## 3. Controller Configuration
+
+We initialize the MPPI controller with the defined dynamics and cost.
+
+```python
+from jax_mppi import mppi
+
+# Controller parameters
+config, mppi_state = mppi.create(
+    nx=2,                  # State dimension
+    nu=1,                  # Action dimension
+    horizon=20,            # Lookahead steps
+    num_samples=1000,      # Number of trajectories
+    noise_sigma=jnp.array([[1.0]]), # Exploration noise
+    lambda_=1.0            # Temperature
+)
+```
+
+# Running the Loop
+
+The control loop runs the MPPI step and applies the optimal action to the system.
+
+```python
+import jax
+
+# Initial state (hanging down)
+state = jnp.array([jnp.pi, 0.0])
+key = jax.random.PRNGKey(0)
+
+# JIT the command function for speed
+jitted_command = jax.jit(mppi.command, static_argnames=["dynamics", "running_cost"])
+
+for t in range(100):
+    key, subkey = jax.random.split(key)
+
+    # Compute control
+    action, mppi_state = jitted_command(
+        config,
+        mppi_state,
+        state,
+        dynamics=pendulum_dynamics,
+        running_cost=pendulum_cost
+    )
+
+    # Step simulation
+    state = pendulum_dynamics(state, action)
+```

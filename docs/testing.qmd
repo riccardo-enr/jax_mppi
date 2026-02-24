@@ -1,0 +1,153 @@
+---
+title: "Testing Guide"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+# Overview
+
+Robust testing is critical for control software. This guide explains the testing stack for `jax_mppi` and provides instructions on how to run and write tests to ensure correctness and stability.
+
+The test suite covers:
+- **Core Algorithms**: MPPI, Smooth MPPI, Kernel MPPI.
+- **Integration**: End-to-end control tasks (e.g., Pendulum).
+- **Autotuning**: Hyperparameter optimization frameworks.
+
+# Prerequisites
+
+The project uses `pytest` as the test runner. Ensure you have the development dependencies installed:
+
+```bash
+pip install jax-mppi[dev]
+```
+
+Or install `pytest` directly:
+
+```bash
+pip install pytest
+```
+
+# Usage
+
+You can run tests using `pytest` or `uv run pytest`.
+
+## Run All Tests
+
+To run the entire test suite:
+
+```bash
+pytest
+```
+
+## Run Specific Tests
+
+To run a specific test file:
+
+```bash
+pytest tests/test_mppi.py
+```
+
+To run a specific test case within a file:
+
+```bash
+pytest tests/test_mppi.py::TestMPPICommand::test_command_returns_correct_shapes
+```
+
+## Run with Output
+
+To see stdout/stderr output (useful for debugging):
+
+```bash
+pytest -s
+```
+
+# Test Structure
+
+The tests are located in the `tests/` directory and mirror the source code structure where appropriate.
+
+## Core MPPI Flavors
+
+### `tests/test_mppi.py`
+Tests for the base MPPI implementation (`jax_mppi.mppi`).
+- **Initialization**: Verifies `create()` returns correct shapes/types.
+- **Command Generation**: Tests `command()` produces valid actions within bounds.
+- **Configuration**: Validates settings like `u_per_command`, `step_dependent_dynamics`.
+- **Integration**: Basic convergence tests (cost decreases).
+
+### `tests/test_smppi.py`
+Tests for Smooth MPPI (`jax_mppi.smppi`).
+- **Lifted Space**: Checks that internal state `U` represents control velocity/acceleration.
+- **Smoothness**: Verifies smoothness cost penalties.
+- **Bounds**: Tests bounds on both control velocity (`u_min`/`u_max`) and action (`action_min`/`action_max`).
+- **Continuity**: Checks `shift` operation maintains continuity.
+
+### `tests/test_kmppi.py`
+Tests for Kernel MPPI (`jax_mppi.kmppi`).
+- **Kernels**: Tests properties of time-domain kernels (e.g., `RBFKernel`).
+- **Interpolation**: Verifies mapping from control points `theta` to trajectories `U`.
+- **Optimization**: Checks update rules on control points.
+
+## Integration & Examples
+
+### `tests/test_pendulum.py`
+End-to-end integration tests using a Pendulum environment.
+- **Stabilization**: Tests stabilization at upright position.
+- **Swing-up**: Tests swing-up from hanging position.
+- **Physics**: Sanity checks dynamics and cost functions.
+
+## Autotuning
+
+### `tests/test_autotune.py`
+Unit tests for the autotuning framework (`jax_mppi.autotune`).
+
+### `tests/test_autotune_integration.py`
+Integration tests ensuring the autotuner can improve performance on benchmark tasks.
+
+# Contributing Tests
+
+When adding new features or fixing bugs, please add corresponding tests.
+
+1.  **Locate the appropriate test file**: e.g., for `mppi.py` changes, use `tests/test_mppi.py`.
+2.  **Use Class-Based Structure**: Group related tests into classes (e.g., `TestMPPIBasics`).
+3.  **Property-Based Testing**: Test invariant properties (e.g., shapes, bounds) rather than just hardcoded values.
+4.  **JAX Compatibility**: Ensure tests check that functions can be JIT-compiled if intended.
+
+## Example Test Case
+
+```python
+import jax.numpy as jnp
+from jax_mppi import mppi
+
+class TestNewFeature:
+    def test_new_feature_behavior(self):
+        nx, nu = 2, 1
+        config, state = mppi.create(nx=nx, nu=nu, noise_sigma=jnp.eye(nu))
+
+        # Define dummy dynamics and cost
+        def dynamics(x, u): return x + u
+        def cost(x, u): return jnp.sum(x**2)
+
+        # Run command
+        action, new_state = mppi.command(
+            config, state, jnp.zeros(nx), dynamics, cost
+        )
+
+        # Assert expected behavior
+        assert action.shape == (nu,)
+        assert not jnp.isnan(action).any()
+```
+
+# Troubleshooting
+
+## `ModuleNotFoundError`
+Ensure you have installed the package in editable mode (`pip install -e .`) or set `PYTHONPATH` correctly.
+
+## JAX Device Errors
+If you run out of GPU memory or have CUDA issues, try forcing CPU execution:
+
+```bash
+JAX_PLATFORM_NAME=cpu pytest
+```
