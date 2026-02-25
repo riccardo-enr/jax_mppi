@@ -1,16 +1,39 @@
-# Pendulum Swing-Up
+---
+title: "Pendulum Swing-Up"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
 
 This example demonstrates how to use `jax_mppi` to control an inverted pendulum. The goal is to swing the pendulum up from a hanging position and stabilize it at the top.
 
-## Code
+## Overview
 
-The full example code is available in `examples/basic/pendulum.py`.
+The pendulum is a classic nonlinear control problem. The state consists of the angle $\theta$ and angular velocity $\dot{\theta}$. The control input is the torque $\tau$ applied at the pivot.
+
+The task is challenging because the upright position is unstable, and the system is underactuated (limited torque).
 
 ## Dynamics
 
 The pendulum dynamics are defined as a pure function:
 
+$$
+\ddot{\theta} = \frac{\tau - m g l \sin(\theta)}{m l^2}
+$$
+
+where:
+- $m=1.0$ kg is the mass
+- $l=1.0$ m is the length
+- $g=10.0$ m/s$^2$ is gravity
+
+In code:
+
 ```python
+import jax
+import jax.numpy as jnp
+
 def pendulum_dynamics(state: jax.Array, action: jax.Array) -> jax.Array:
     """Pendulum dynamics.
 
@@ -31,7 +54,7 @@ def pendulum_dynamics(state: jax.Array, action: jax.Array) -> jax.Array:
     # Clip torque to reasonable bounds
     torque = jnp.clip(torque, -2.0, 2.0)
 
-    # Pendulum dynamics: theta_ddot = (torque - m*g*l*sin(theta)) / (m*l^2)
+    # Pendulum dynamics
     theta_ddot = (torque - m * g * l * jnp.sin(theta)) / (m * l * l)
 
     # Euler integration
@@ -46,7 +69,11 @@ def pendulum_dynamics(state: jax.Array, action: jax.Array) -> jax.Array:
 
 ## Cost Function
 
-The running cost penalizes deviation from the upright position and high control effort:
+The running cost penalizes deviation from the upright position ($\theta=0$) and high control effort.
+
+$$
+J(\mathbf{x}, \mathbf{u}) = \theta^2 + 0.1 \dot{\theta}^2 + 0.01 \tau^2
+$$
 
 ```python
 def pendulum_cost(state: jax.Array, action: jax.Array) -> jax.Array:
@@ -67,8 +94,10 @@ def pendulum_cost(state: jax.Array, action: jax.Array) -> jax.Array:
 
 ## Running the Example
 
-You can run the example using:
+You can run the full example code provided in `examples/basic/pendulum.py`.
 
 ```bash
 python examples/basic/pendulum.py --visualize
 ```
+
+This will launch a simulation where you can see the pendulum swinging up and stabilizing.

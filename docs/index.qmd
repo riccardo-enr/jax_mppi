@@ -1,4 +1,11 @@
-# jax_mppi
+---
+title: "jax_mppi"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
@@ -23,7 +30,7 @@ This library embraces JAX's functional paradigm:
 - **Smooth MPPI (SMPPI)**: Maintains action sequences and smoothness costs for better trajectory generation.
 - **Kernel MPPI (KMPPI)**: Uses kernel interpolation for control points, reducing the parameter space.
 - **Autotuning**: Built-in hyperparameter optimization using CMA-ES, Ray Tune, and Quality Diversity.
-- **CUDA/C++ Backend**: High-performance implementations of all controllers in CUDA/C++17, exposed to Python via \`nanobind\`.
+- **CUDA/C++ Backend**: High-performance implementations of all controllers in CUDA/C++17, exposed to Python via `nanobind`.
 - **JAX Integration**:
   - `jax.vmap` for efficient batch processing.
   - `jax.lax.scan` for fast horizon loops.
