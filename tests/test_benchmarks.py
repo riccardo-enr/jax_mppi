@@ -165,7 +165,8 @@ class TestParallelImppiStepBenchmark:
         )
         cfg = InfoFieldConfig(field_res=0.5, field_extent=2.0, n_yaw=4)
         pos_xy = jnp.array([5.0, 5.0])
-        info_field, field_origin = compute_info_field(mod, gm.grid, pos_xy, cfg)
+        # info_field computation kept for context but unused in cost
+        compute_info_field(mod, gm.grid, pos_xy, cfg)
 
         # MPPI setup — 3 info zones -> NX=16
         noise_sigma = jnp.diag(jnp.array([2.0, 0.5, 0.5, 0.5]) ** 2)
@@ -193,14 +194,16 @@ class TestParallelImppiStepBenchmark:
         quad = quad.at[6].set(1.0)
         state = jnp.concatenate([quad, jnp.array([100.0, 100.0, 100.0])])
 
+        # IMPORTANT: 'target' is a positional argument in informative_running_cost
+        # but mppi.command calls cost_fn(state, action, t).
+        # We need to bind 'target' via partial so cost_fn signature matches (state, action, t).
+        # Also remove unused args: info_field, field_origin, field_res
         cost_fn = partial(
             informative_running_cost,
+            target=jnp.zeros(3),  # Dummy target
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,
-            info_field=info_field,
-            field_origin=field_origin,
-            field_res=cfg.field_res,
             uniform_fsmi_fn=uniform.compute,
         )
         dynamics_fn = partial(
