@@ -11,11 +11,20 @@ learns to swing it up to the upright position (theta = 0).
 
 import argparse
 import os
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from jax_mppi import cuda_mppi
+# Handle conditional import for optional CUDA extension
+if TYPE_CHECKING:
+    # This is just for type checking; the actual import is guarded below
+    from jax_mppi import cuda_mppi  # type: ignore
+else:
+    try:
+        from jax_mppi import cuda_mppi
+    except ImportError:
+        cuda_mppi = None
 
 # Define pendulum dynamics in C++/CUDA
 PENDULUM_DYNAMICS = """
@@ -105,6 +114,11 @@ def main():
     print("JIT-Compiled MPPI Pendulum Swing-Up Example")
     print("=" * 60)
 
+    if cuda_mppi is None:
+        print("\n❌ CUDA MPPI extension not found. Skipping example.")
+        print("   This example requires the 'cuda_mppi' extension to be installed.")
+        return
+
     # Configuration
     config = cuda_mppi.MPPIConfig(
         num_samples=1000,  # Number of sampled trajectories
@@ -178,9 +192,9 @@ def main():
     times = [0.0]
 
     # Optional pygame visualization
-    pygame = None
-    screen = None
-    clock = None
+    pygame: Any = None
+    screen: Any = None
+    clock: Any = None
     if args.visualization:
         try:
             import pygame as _pygame  # type: ignore
@@ -232,7 +246,7 @@ def main():
                 f"  Step {step + 1}: theta={state[0]:.3f} rad, torque={action[0]:.3f} Nm"
             )
 
-        if pygame is not None:
+        if pygame is not None and screen is not None:
             # Draw pendulum
             screen.fill((245, 245, 245))
             width, height = screen.get_size()

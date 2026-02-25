@@ -299,7 +299,6 @@ class TestHoverCost:
         R = jnp.eye(4) * 0.01
 
         hover_position = jnp.zeros(3)
-        # Dummy quaternion for initialization (not used if state matches)
         hover_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
         cost_fn = create_hover_cost(

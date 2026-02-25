@@ -1,5 +1,7 @@
 """Tests for the FSMI module (fsmi.py) and map utilities (map.py)."""
 
+from typing import Tuple, cast
+
 import jax
 import jax.numpy as jnp
 
@@ -372,11 +374,13 @@ class TestFSMITrajectoryGenerator:
         quad = quad.at[:3].set(jnp.array([5.0, 5.0, -2.0]))
         quad = quad.at[6].set(1.0)
         state = jnp.concatenate([quad, jnp.array([100.0, 100.0])])
-        # Cast JAX arrays to expected types if necessary, though JAX handles this.
-        # Issue reported: Tuple entry 1 is incorrect type.
-        # "numpy.bool[builtins.bool]" is not assignable to "Array"
-        # We ensure inputs are proper JAX arrays.
-        info_data = (gen.grid_map.grid, jnp.array([100.0, 100.0]))
+
+        # Explicit casting to reassure static type checkers
+        # Grid is usually chex.Array (alias for jax.Array or np.ndarray)
+        grid_data = cast(jax.Array, gen.grid_map.grid)
+        zone_info = cast(jax.Array, jnp.array([100.0, 100.0]))
+
+        info_data: Tuple[jax.Array, jax.Array] = (grid_data, zone_info)
         traj, mode = gen.get_reference_trajectory(state, info_data, 20, 0.1)
         assert traj.shape == (20, 3)
 
