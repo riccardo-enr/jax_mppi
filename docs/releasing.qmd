@@ -1,0 +1,74 @@
+---
+title: "Releasing Guide"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+This guide describes how to release a new version of `jax_mppi` to PyPI.
+
+## Overview
+
+The release process is partially automated. A helper script updates version numbers and the changelog, while a GitHub Action handles the actual build and publication to PyPI upon pushing a tag.
+
+## Prerequisites
+
+The repository must be configured as a Trusted Publisher on PyPI to allow GitHub Actions to publish packages.
+
+### PyPI Trusted Publisher Setup
+
+1. Log in to your [PyPI account](https://pypi.org/).
+2. Go to **Publishing** in your project settings.
+3. Add a new **Trusted Publisher**.
+4. Select **GitHub**.
+5. Enter the following details:
+    * **Owner**: `riccardo-enr`
+    * **Repository name**: `jax_mppi`
+    * **Workflow name**: `publish.yml`
+    * **Environment name**: (Leave empty)
+6. Click **Add**.
+
+## Release Process
+
+To release a new version:
+
+### 1. Prepare the Release
+
+Run the preparation script to update version numbers in `pyproject.toml` and `pixi.toml`, and add a new entry to `CHANGELOG.md`.
+
+```bash
+pixi run -e dev prepare-release <new_version>
+# Example: pixi run -e dev prepare-release 0.3.1
+```
+
+### 2. Review and Commit
+
+1.  **Check Changes**: Review the modifications to `pyproject.toml`, `pixi.toml`, and `CHANGELOG.md`.
+2.  **Update Changelog**: Edit `CHANGELOG.md` to include the specific changes for this version under the new section.
+3.  **Commit**:
+
+    ```bash
+    git add pyproject.toml pixi.toml CHANGELOG.md
+    git commit -m "chore: bump version to <new_version>"
+    git push origin main
+    ```
+
+### 3. Create and Push Tag
+
+Create a git tag for the release. The tag must start with `v`.
+
+```bash
+git tag v<new_version>
+git push origin v<new_version>
+```
+
+### 4. Verify Publication
+
+The `Publish to PyPI` GitHub Action will automatically run when the tag is pushed. It will:
+
+1.  Build the package (sdist and wheel).
+2.  Upload the artifacts to PyPI.
+
+You can verify the release on the [PyPI page](https://pypi.org/project/jax-mppi/).

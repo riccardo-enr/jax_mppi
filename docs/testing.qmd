@@ -1,10 +1,21 @@
-# Testing Guide
+---
+title: "Testing Guide"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
 
 This guide explains the testing stack for `jax_mppi` and provides instructions on how to run and write tests.
 
+## Overview
+
+The project uses `pytest` for running tests. The test suite is designed to ensure the correctness of core algorithms, check for regressions, and validate integration with different environments.
+
 ## Running Tests
 
-The project uses `pytest` for running tests. You can run all tests using `uv`:
+You can run all tests using `uv`:
 
 ```bash
 uv run pytest
