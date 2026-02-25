@@ -116,7 +116,9 @@ def main():
 
     if cuda_mppi is None:
         print("\n❌ CUDA MPPI extension not found. Skipping example.")
-        print("   This example requires the 'cuda_mppi' extension to be installed.")
+        print(
+            "   This example requires the 'cuda_mppi' extension to be installed."
+        )
         return
 
     # Configuration
