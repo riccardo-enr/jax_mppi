@@ -2,7 +2,6 @@
 
 import jax
 import jax.numpy as jnp
-import pytest
 
 from jax_mppi.i_mppi.fsmi import (
     FSMIConfig,
