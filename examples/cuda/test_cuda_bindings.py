@@ -1,10 +1,22 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
 
-from jax_mppi import cuda_mppi
+if TYPE_CHECKING:
+    from jax_mppi import cuda_mppi
+else:
+    try:
+        from jax_mppi import cuda_mppi
+    except ImportError:
+        cuda_mppi = None
 
 
 def main():
     print("Testing CUDA MPPI Bindings...")
+
+    if cuda_mppi is None:
+        print("CUDA MPPI extension not found. Skipping test.")
+        return
 
     # 1. Create Config
     config = cuda_mppi.MPPIConfig(
