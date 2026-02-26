@@ -203,7 +203,7 @@ class TestParallelImppiStepBenchmark:
             grid_origin=origin,
             grid_resolution=resolution,
             uniform_fsmi_fn=uniform.compute,
-            target=dummy_target, # Bound the required 'target' argument
+            target=dummy_target,  # Bound the required 'target' argument
         )
         dynamics_fn = partial(
             augmented_dynamics_with_grid,

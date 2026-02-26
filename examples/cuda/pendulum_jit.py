@@ -200,7 +200,7 @@ def main():
     clock: Any = None
     if args.visualization:
         if pygame is None:
-             print("  ⚠ Pygame unavailable, skipping visualization.")
+            print("  ⚠ Pygame unavailable, skipping visualization.")
         else:
             try:
                 pygame.init()
@@ -328,7 +328,7 @@ def main():
                 clock.tick(int(1.0 / config.dt))
 
         step += 1
-        if step >= 250: # Limit simulation steps for example
+        if step >= 250:  # Limit simulation steps for example
             break
 
     states = np.array(states)
@@ -365,7 +365,9 @@ def main():
     # Plot control torque
     # Only plot if we have actions (we might stop early)
     if len(actions) > 0:
-        axes[2].plot(times[1:len(actions)+1], actions[:, 0], "b-", linewidth=2)
+        axes[2].plot(
+            times[1 : len(actions) + 1], actions[:, 0], "b-", linewidth=2
+        )
         axes[2].axhline(y=0, color="r", linestyle="--")
         axes[2].set_xlabel("Time (s)")
         axes[2].set_ylabel("Torque (Nm)")
