@@ -1,4 +1,13 @@
-# Development Plans
+---
+title: "Development Plans"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+## Overview
 
 This section contains various development plans and investigations for the `jax-mppi` project.
 

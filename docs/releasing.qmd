@@ -1,4 +1,13 @@
-# Releasing Guide
+---
+title: "Releasing Guide"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+## Overview
 
 This guide describes how to release a new version of `jax_mppi` to PyPI.
 
@@ -6,7 +15,8 @@ This guide describes how to release a new version of `jax_mppi` to PyPI.
 
 The release process is automated using GitHub Actions, but it requires the repository to be configured as a Trusted Publisher on PyPI.
 
-### PyPI Trusted Publisher Setup
+:::{.callout-important}
+## PyPI Trusted Publisher Setup
 
 1. Log in to your [PyPI account](https://pypi.org/).
 2. Go to **Publishing** in your project settings (or create a new project if this is the first release).
@@ -20,6 +30,7 @@ The release process is automated using GitHub Actions, but it requires the repos
 6. Click **Add**.
 
 This allows the GitHub Action to authenticate with PyPI using OIDC tokens without needing a long-lived API token or password.
+:::
 
 ## Release Process
 
