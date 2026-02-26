@@ -11,11 +11,25 @@ learns to swing it up to the upright position (theta = 0).
 
 import argparse
 import os
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from jax_mppi import cuda_mppi
+# Handle optional CUDA extension import for type checking
+if TYPE_CHECKING:
+    import pygame
+
+    from jax_mppi import cuda_mppi
+else:
+    try:
+        from jax_mppi import cuda_mppi
+    except ImportError:
+        cuda_mppi = None
+    try:
+        import pygame
+    except ImportError:
+        pygame = None
 
 # Define pendulum dynamics in C++/CUDA
 PENDULUM_DYNAMICS = """
@@ -105,6 +119,10 @@ def main():
     print("JIT-Compiled MPPI Pendulum Swing-Up Example")
     print("=" * 60)
 
+    if cuda_mppi is None:
+        print("\n⚠ CUDA MPPI extension not found. Skipping example.")
+        return
+
     # Configuration
     config = cuda_mppi.MPPIConfig(
         num_samples=1000,  # Number of sampled trajectories
@@ -178,25 +196,24 @@ def main():
     times = [0.0]
 
     # Optional pygame visualization
-    pygame = None
-    screen = None
-    clock = None
+    screen: Any = None
+    clock: Any = None
     if args.visualization:
-        try:
-            import pygame as _pygame  # type: ignore
-
-            pygame = _pygame
-            pygame.init()
-            pygame.font.init()
-            screen = pygame.display.set_mode((640, 480))
-            pygame.display.set_caption("CUDA MPPI Pendulum (Real-time)")
-            clock = pygame.time.Clock()
-            pygame.font.SysFont("Arial", 20)
-        except Exception as e:
-            print(
-                f"  ⚠ Pygame unavailable, continuing without visualization: {e}"
-            )
-            pygame = None
+        if pygame is None:
+            print("  ⚠ Pygame unavailable, skipping visualization.")
+        else:
+            try:
+                pygame.init()
+                pygame.font.init()
+                screen = pygame.display.set_mode((640, 480))
+                pygame.display.set_caption("CUDA MPPI Pendulum (Real-time)")
+                clock = pygame.time.Clock()
+                pygame.font.SysFont("Arial", 20)
+            except Exception as e:
+                print(
+                    f"  ⚠ Pygame init failed, continuing without visualization: {e}"
+                )
+                screen = None
 
     print("\nRunning simulation...")
     print(
@@ -206,11 +223,11 @@ def main():
     # Main control loop
     step = 0
     while True:
-        if pygame is not None:
+        if pygame is not None and screen is not None:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    pygame = None
+                    screen = None
                     break
 
         # Compute optimal control
@@ -232,7 +249,7 @@ def main():
                 f"  Step {step + 1}: theta={state[0]:.3f} rad, torque={action[0]:.3f} Nm"
             )
 
-        if pygame is not None:
+        if pygame is not None and screen is not None:
             # Draw pendulum
             screen.fill((245, 245, 245))
             width, height = screen.get_size()
@@ -311,6 +328,8 @@ def main():
                 clock.tick(int(1.0 / config.dt))
 
         step += 1
+        if step >= 250:  # Limit simulation steps for example
+            break
 
     states = np.array(states)
     actions = np.array(actions)
@@ -344,11 +363,15 @@ def main():
     axes[1].grid(True, alpha=0.3)
 
     # Plot control torque
-    axes[2].plot(times[1:], actions[:, 0], "b-", linewidth=2)
-    axes[2].axhline(y=0, color="r", linestyle="--")
-    axes[2].set_xlabel("Time (s)")
-    axes[2].set_ylabel("Torque (Nm)")
-    axes[2].grid(True, alpha=0.3)
+    # Only plot if we have actions (we might stop early)
+    if len(actions) > 0:
+        axes[2].plot(
+            times[1 : len(actions) + 1], actions[:, 0], "b-", linewidth=2
+        )
+        axes[2].axhline(y=0, color="r", linestyle="--")
+        axes[2].set_xlabel("Time (s)")
+        axes[2].set_ylabel("Torque (Nm)")
+        axes[2].grid(True, alpha=0.3)
 
     plt.tight_layout()
 

@@ -193,15 +193,17 @@ class TestParallelImppiStepBenchmark:
         quad = quad.at[6].set(1.0)
         state = jnp.concatenate([quad, jnp.array([100.0, 100.0, 100.0])])
 
+        # Define a dummy target for the benchmark (since it's a running cost requirement)
+        # It can be a fixed point or a trajectory.
+        dummy_target = jnp.zeros(3)
+
         cost_fn = partial(
             informative_running_cost,
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,
-            info_field=info_field,
-            field_origin=field_origin,
-            field_res=cfg.field_res,
             uniform_fsmi_fn=uniform.compute,
+            target=dummy_target,  # Bound the required 'target' argument
         )
         dynamics_fn = partial(
             augmented_dynamics_with_grid,

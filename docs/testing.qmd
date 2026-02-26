@@ -1,14 +1,27 @@
-# Testing Guide
+---
+title: "Testing Guide"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+## Overview
 
 This guide explains the testing stack for `jax_mppi` and provides instructions on how to run and write tests.
 
 ## Running Tests
 
-The project uses `pytest` for running tests. You can run all tests using `uv`:
+The project uses `pytest` for running tests.
 
+:::{.callout-note}
+## Run All Tests
+You can run all tests using `uv`:
 ```bash
 uv run pytest
 ```
+:::
 
 To run a specific test file:
 
