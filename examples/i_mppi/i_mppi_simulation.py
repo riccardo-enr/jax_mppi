@@ -28,12 +28,11 @@ for _d in _candidates:
             sys.path.insert(0, _d)
         break
 
-import jax  # noqa: E402
-import jax.numpy as jnp  # noqa: E402
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
-from env_setup import create_grid_map  # noqa: E402
-from sim_utils import (  # noqa: E402
+import jax
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+from env_setup import create_grid_map
+from sim_utils import (
     CONTROL_HZ,
     DT,
     NOISE_SIGMA,
@@ -45,17 +44,17 @@ from sim_utils import (  # noqa: E402
     build_sim_fn,
     compute_smoothness,
 )
-from tqdm import tqdm  # noqa: E402
-from viz_utils import (  # noqa: E402
+from tqdm import tqdm
+from viz_utils import (
     create_trajectory_gif,
     plot_control_inputs,
     plot_info_levels,
     plot_trajectory_2d,
 )
 
-from jax_mppi import mppi  # noqa: E402
-from jax_mppi.i_mppi.environment import GOAL_POS, INFO_ZONES  # noqa: E402
-from jax_mppi.i_mppi.fsmi import (  # noqa: E402
+from jax_mppi import mppi
+from jax_mppi.i_mppi.environment import GOAL_POS, INFO_ZONES
+from jax_mppi.i_mppi.fsmi import (
     FSMIConfig,
     FSMITrajectoryGenerator,
     UniformFSMI,
@@ -244,8 +243,8 @@ def main() -> None:
     fig_traj = plot_trajectory_2d(
         history_x, grid_array, map_resolution, title="I-MPPI Trajectory"
     )
-    fig_info = plot_info_levels(history_info, DT)
-    fig_controls = plot_control_inputs(actions, DT)
+    _ = plot_info_levels(history_info, DT)
+    _ = plot_control_inputs(actions, DT)
 
     os.makedirs(MEDIA_DIR, exist_ok=True)
 

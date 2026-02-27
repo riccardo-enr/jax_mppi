@@ -27,6 +27,7 @@ Example:
     >>> best = tuner.optimize_all(iterations=100)
 """
 
+from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
@@ -46,7 +47,7 @@ from .autotune import (
 )
 
 
-class GlobalTunableParameter(TunableParameter):
+class GlobalTunableParameter(TunableParameter, ABC):
     """Parameter with Ray Tune search space definition.
 
     Extends TunableParameter with search space information for global optimization.
@@ -70,7 +71,7 @@ class GlobalTunableParameter(TunableParameter):
 
 
 @dataclass
-class GlobalLambdaParameter(LambdaParameter, GlobalTunableParameter):
+class GlobalLambdaParameter(LambdaParameter):
     """Lambda parameter with global search space."""
 
     search_space: Any = None
@@ -96,7 +97,7 @@ class GlobalLambdaParameter(LambdaParameter, GlobalTunableParameter):
 
 
 @dataclass
-class GlobalNoiseSigmaParameter(NoiseSigmaParameter, GlobalTunableParameter):
+class GlobalNoiseSigmaParameter(NoiseSigmaParameter):
     """Noise sigma parameter with global search space."""
 
     search_space: Any = None
@@ -132,7 +133,7 @@ class GlobalNoiseSigmaParameter(NoiseSigmaParameter, GlobalTunableParameter):
 
 
 @dataclass
-class GlobalMuParameter(MuParameter, GlobalTunableParameter):
+class GlobalMuParameter(MuParameter):
     """Noise mu parameter with global search space."""
 
     search_space: Any = None
@@ -156,7 +157,7 @@ class GlobalMuParameter(MuParameter, GlobalTunableParameter):
 
 
 @dataclass
-class GlobalHorizonParameter(HorizonParameter, GlobalTunableParameter):
+class GlobalHorizonParameter(HorizonParameter):
     """Horizon parameter with global search space."""
 
     search_space: Any = None
@@ -322,6 +323,9 @@ class AutotuneGlobal(Autotune):
         search_space = {}
         for param in self.params_to_tune:
             if isinstance(param, GlobalTunableParameter):
+                search_space.update(param.get_search_space_dict())
+            elif hasattr(param, "get_search_space_dict"):
+                # Duck typing check
                 search_space.update(param.get_search_space_dict())
         return search_space
 

@@ -45,7 +45,7 @@ Example with evosax (JAX-native, GPU-accelerated):
 import abc
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Callable, NamedTuple, Optional
+from typing import Any, Callable, Dict, NamedTuple, Optional
 
 import jax
 import jax.numpy as jnp
@@ -64,7 +64,7 @@ class EvaluationResult(NamedTuple):
 
     mean_cost: float
     rollouts: jax.Array
-    params: dict
+    params: Dict[str, Any]
     iteration: int
 
 
@@ -163,7 +163,7 @@ class Optimizer(abc.ABC):
         """
         ...
 
-    def optimize_all(self, iterations: int) -> EvaluationResult:
+    def optimize_all(self, iterations: int) -> Optional[EvaluationResult]:
         """Run full optimization loop.
 
         Args:
@@ -177,7 +177,7 @@ class Optimizer(abc.ABC):
             result = self.optimize_step()
             if best_result is None or result.mean_cost < best_result.mean_cost:
                 best_result = result
-        return best_result  # type: ignore
+        return best_result
 
 
 class LambdaParameter(TunableParameter):
@@ -642,7 +642,7 @@ class Autotune:
         """
         return self.optimizer.optimize_step()
 
-    def optimize_all(self, iterations: int) -> EvaluationResult:
+    def optimize_all(self, iterations: int) -> Optional[EvaluationResult]:
         """Run full optimization loop.
 
         Args:
