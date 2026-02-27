@@ -1,0 +1,131 @@
+---
+title: "Quadrotor Control Examples"
+format:
+  html:
+    math: true
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
+JAX-MPPI includes a comprehensive set of examples for quadrotor control, demonstrating trajectory tracking with full 6-DOF nonlinear dynamics. These examples showcase the performance of different MPPI variants (Standard, Smooth, and Kernel-based) on various tasks.
+
+## Overview
+
+The quadrotor examples are located in `examples/quadrotor/` and cover:
+
+1.  **Hover Stabilization**: Maintaining a fixed position and orientation.
+2.  **Trajectory Tracking**: Following circular and custom waypoint paths.
+3.  **Controller Comparison**: Benchmarking MPPI, SMPPI, and KMPPI on aggressive maneuvers.
+
+:::{.callout-note}
+## Coordinate Frame
+All examples use the **NED (North-East-Down)** coordinate system for the world frame and **FRD (Forward-Right-Down)** for the body frame. Altitude is negative Z (e.g., -5.0m is 5 meters above ground).
+:::
+
+## 1. Hover Stabilization
+
+This example demonstrates the basic ability of MPPI to stabilize the quadrotor at a target setpoint from a displaced initial state.
+
+### Key Concepts
+*   **Cost Function**: Penalizes position error, velocity (for damping), and attitude deviation.
+*   **Terminal Cost**: Ensures the final state approaches the target, improving stability.
+
+### Running the Example
+
+```bash
+python examples/quadrotor/hover.py --visualize
+```
+
+### Code Snippet
+
+```python
+# Create dynamics with bounds
+dynamics = create_quadrotor_dynamics(
+    dt=0.02,
+    mass=1.0,
+    u_min=jnp.array([0.0, -5.0, -5.0, -5.0]),  # Min thrust, max rates
+    u_max=jnp.array([40.0, 5.0, 5.0, 5.0])     # Max thrust (4g), max rates
+)
+
+# Define hover target (5m altitude)
+hover_pos = jnp.array([0.0, 0.0, -5.0])
+running_cost = create_hover_cost(Q_pos, Q_vel, Q_att, R, hover_pos)
+```
+
+## 2. Circular Trajectory Tracking
+
+This example shows the quadrotor tracking a dynamic reference trajectory (a circle in the horizontal plane).
+
+### Key Concepts
+*   **Time-Varying Reference**: The cost function depends on the current time step `t` to look up the reference position.
+*   **Step-Dependent Dynamics**: Enabled via `step_dependent_dynamics=True` in `MPPIConfig` to pass time `t` to the cost function.
+
+### Running the Example
+
+```bash
+python examples/quadrotor/circle.py --visualize --radius 3.0 --period 10.0
+```
+
+### Code Snippet
+
+```python
+# Create MPPI with time-dependent support
+config, mppi_state = mppi.create(
+    ...,
+    step_dependent_dynamics=True
+)
+
+# Simulation loop with jax.lax.scan
+def step_fn(carry, t):
+    # Slice reference trajectory for current horizon
+    ref_horizon = jax.lax.dynamic_slice(reference, (t, 0), (horizon, 6))
+
+    # Build cost function for this step
+    cost_fn = cost_builder(ref_horizon)
+
+    action, new_state = mppi.command(
+        ...,
+        running_cost=cost_fn
+    )
+    return ...
+```
+
+## 3. Custom Waypoint Trajectory
+
+Tracks a smooth trajectory generated from a set of user-defined waypoints using cubic Hermite splines.
+
+### Running the Example
+
+```bash
+# Default square pattern
+python examples/quadrotor/custom_trajectory.py --visualize
+
+# Custom waypoints (x,y,z tuples separated by semicolons)
+python examples/quadrotor/custom_trajectory.py \
+  --waypoints "0,0,-2; 5,0,-5; 5,5,-5; 0,5,-5; 0,0,-2" \
+  --visualize
+```
+
+## 4. MPPI Variant Comparison (Figure-8)
+
+This advanced example compares three controllers on an aggressive figure-8 (Lemniscate of Gerono) trajectory:
+
+*   **MPPI**: Standard implementation.
+*   **SMPPI (Smooth MPPI)**: Penalizes changes in control action, resulting in smoother flight.
+*   **KMPPI (Kernel MPPI)**: Optimizes control points in a Reproducing Kernel Hilbert Space (RKHS).
+
+### Key Findings
+*   **SMPPI** typically produces significantly smoother control inputs (lower jerk) than standard MPPI.
+*   **KMPPI** can achieve similar performance with fewer optimization parameters by leveraging the kernel structure.
+
+### Running the Example
+
+```bash
+python examples/quadrotor/figure8_comparison.py --visualize --scale 4.0 --period 15.0
+```
+
+:::{.callout-tip}
+## Tuning Tip
+For aggressive maneuvers, you may need to increase `num_samples` (e.g., 2000+) or reduce `lambda` (temperature) to ensure the optimizer finds the narrow valley of valid trajectories.
+:::
