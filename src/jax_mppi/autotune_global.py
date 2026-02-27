@@ -27,6 +27,7 @@ Example:
     >>> best = tuner.optimize_all(iterations=100)
 """
 
+from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
@@ -46,7 +47,7 @@ from .autotune import (
 )
 
 
-class GlobalTunableParameter(TunableParameter):
+class GlobalTunableParameter(TunableParameter, ABC):
     """Parameter with Ray Tune search space definition.
 
     Extends TunableParameter with search space information for global optimization.
@@ -70,7 +71,7 @@ class GlobalTunableParameter(TunableParameter):
 
 
 @dataclass
-class GlobalLambdaParameter(LambdaParameter, GlobalTunableParameter):
+class GlobalLambdaParameter(LambdaParameter):
     """Lambda parameter with global search space."""
 
     search_space: Any = None
@@ -88,7 +89,7 @@ class GlobalLambdaParameter(LambdaParameter, GlobalTunableParameter):
             search_space: Ray Tune search space
             min_value: Minimum value constraint
         """
-        LambdaParameter.__init__(self, holder, min_value)
+        super().__init__(holder, min_value)
         self.search_space = search_space
 
     def get_search_space_dict(self) -> Dict[str, Any]:
@@ -96,7 +97,7 @@ class GlobalLambdaParameter(LambdaParameter, GlobalTunableParameter):
 
 
 @dataclass
-class GlobalNoiseSigmaParameter(NoiseSigmaParameter, GlobalTunableParameter):
+class GlobalNoiseSigmaParameter(NoiseSigmaParameter):
     """Noise sigma parameter with global search space."""
 
     search_space: Any = None
@@ -114,7 +115,7 @@ class GlobalNoiseSigmaParameter(NoiseSigmaParameter, GlobalTunableParameter):
             search_space: Ray Tune search space (applied per-dimension)
             min_value: Minimum value constraint
         """
-        NoiseSigmaParameter.__init__(self, holder, min_value)
+        super().__init__(holder, min_value)
         self.search_space = search_space
 
     def get_search_space_dict(self) -> Dict[str, Any]:
@@ -132,7 +133,7 @@ class GlobalNoiseSigmaParameter(NoiseSigmaParameter, GlobalTunableParameter):
 
 
 @dataclass
-class GlobalMuParameter(MuParameter, GlobalTunableParameter):
+class GlobalMuParameter(MuParameter):
     """Noise mu parameter with global search space."""
 
     search_space: Any = None
@@ -144,7 +145,7 @@ class GlobalMuParameter(MuParameter, GlobalTunableParameter):
             holder: Config/state holder
             search_space: Ray Tune search space (applied per-dimension)
         """
-        MuParameter.__init__(self, holder)
+        super().__init__(holder)
         self.search_space = search_space
 
     def get_search_space_dict(self) -> Dict[str, Any]:
@@ -156,7 +157,7 @@ class GlobalMuParameter(MuParameter, GlobalTunableParameter):
 
 
 @dataclass
-class GlobalHorizonParameter(HorizonParameter, GlobalTunableParameter):
+class GlobalHorizonParameter(HorizonParameter):
     """Horizon parameter with global search space."""
 
     search_space: Any = None
@@ -176,7 +177,7 @@ class GlobalHorizonParameter(HorizonParameter, GlobalTunableParameter):
             min_value: Minimum value constraint
             max_value: Maximum value constraint
         """
-        HorizonParameter.__init__(self, holder, min_value, max_value)
+        super().__init__(holder, min_value, max_value)
         self.search_space = search_space
 
     def get_search_space_dict(self) -> Dict[str, Any]:
@@ -313,7 +314,7 @@ class AutotuneGlobal(Autotune):
         self.best_result = None
         self.iteration_count = 0
 
-    def define_search_space(self) -> dict:
+    def define_search_space(self) -> dict[str, Any]:
         """Define Ray Tune search space from parameters.
 
         Returns:
@@ -322,6 +323,9 @@ class AutotuneGlobal(Autotune):
         search_space = {}
         for param in self.params_to_tune:
             if isinstance(param, GlobalTunableParameter):
+                search_space.update(param.get_search_space_dict())
+            elif hasattr(param, "get_search_space_dict"):
+                # Duck typing check
                 search_space.update(param.get_search_space_dict())
         return search_space
 
@@ -341,7 +345,7 @@ class AutotuneGlobal(Autotune):
         search_space = self.define_search_space()
 
         # Create trainable function for Ray Tune
-        def trainable(config: dict):
+        def trainable(config: dict[str, Any]):
             """Ray Tune trainable function."""
             # Unflatten config to parameter values
             param_values = {}

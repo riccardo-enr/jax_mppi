@@ -198,7 +198,7 @@ def _compute_rollout_costs(
 
     var_discount = config.rollout_var_discount ** jnp.arange(config.horizon)
     var_penalty = config.rollout_var_cost * jnp.sum(
-        var_step_costs * var_discount, axis=1
+        var_step_costs * var_discount[None, :], axis=1
     )
     return jnp.sum(mean_step_costs, axis=1) + terminal_costs + var_penalty
 

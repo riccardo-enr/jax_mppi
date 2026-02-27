@@ -143,7 +143,7 @@ class EvoSaxOptimizer(Optimizer):
                 from evosax import algorithms
 
                 available = algorithms.__all__
-            except:
+            except Exception:
                 available = []
             raise ValueError(
                 f"Unknown strategy '{self.strategy}'. "
@@ -182,8 +182,13 @@ class EvoSaxOptimizer(Optimizer):
             raise RuntimeError("Must call setup_optimization() first")
 
         # Ask: sample population with evosax API
+        if self.rng_key is None:
+            self.rng_key = jax.random.PRNGKey(0)
+
         self.rng_key, subkey = jax.random.split(self.rng_key)
         params = self.es.default_params
+        if self.es_state is None:
+             raise RuntimeError("ES state is None")
         solutions, self.es_state = self.es.ask(subkey, self.es_state, params)
 
         # Evaluate all solutions sequentially

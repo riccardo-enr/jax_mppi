@@ -14,6 +14,11 @@ import jax
 import jax.numpy as jnp
 from jax.tree_util import register_pytree_node_class
 
+from .mppi import (
+    _call_dynamics,
+    _call_running_cost,
+    _state_for_cost,
+)
 from .types import DynamicsFn, RunningCostFn, TerminalCostFn
 
 
@@ -259,14 +264,6 @@ def _shift_control_points(
     shifted_theta, _ = _kernel_interpolate(Tk_shifted, Tk, theta, kernel_fn)
 
     return shifted_theta
-
-
-# Import these from base mppi module
-from .mppi import (
-    _call_dynamics,
-    _call_running_cost,
-    _state_for_cost,
-)
 
 
 def _single_rollout_costs(

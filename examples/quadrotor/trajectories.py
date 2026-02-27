@@ -11,6 +11,8 @@ Frame Convention:
       (e.g., z = -5.0 means 5m altitude)
 """
 
+from typing import Optional
+
 import jax.numpy as jnp
 from jaxtyping import Array, Float
 
@@ -54,7 +56,7 @@ def generate_circle_trajectory(
     period: float,
     duration: float,
     dt: float,
-    center: Float[Array, "2"] | None = None,
+    center: Optional[Float[Array, "2"]] = None,
     phase: float = 0.0,
 ) -> Float[Array, "T 6"]:
     """Generate circular trajectory in horizontal plane (NED frame).
@@ -115,7 +117,7 @@ def generate_lemniscate_trajectory(
     period: float,
     duration: float,
     dt: float,
-    center: Float[Array, "2"] | None = None,
+    center: Optional[Float[Array, "2"]] = None,
     axis: str = "xy",
 ) -> Float[Array, "T 6"]:
     """Generate figure-8 (lemniscate of Gerono) trajectory.
@@ -197,7 +199,7 @@ def generate_helix_trajectory(
     duration: float,
     dt: float,
     start_height: float = 0.0,
-    center: Float[Array, "2"] | None = None,
+    center: Optional[Float[Array, "2"]] = None,
 ) -> Float[Array, "T 6"]:
     """Generate helical (spiral) trajectory.
 
@@ -252,7 +254,7 @@ def generate_helix_trajectory(
 
 def generate_waypoint_trajectory(
     waypoints: Float[Array, "N 3"],
-    velocities: Float[Array, "N 3"] | None = None,
+    velocities: Optional[Float[Array, "N 3"]] = None,
     segment_duration: float = 5.0,
     dt: float = 0.01,
     blend_time: float = 0.5,

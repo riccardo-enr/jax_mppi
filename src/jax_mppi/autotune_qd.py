@@ -65,9 +65,9 @@ class CMAMEOpt(Optimizer):
             behavior_dim: Dimensionality of behavior space
         """
         try:
-            from ribs.archives import GridArchive  # type: ignore
-            from ribs.emitters import EvolutionStrategyEmitter  # type: ignore
-            from ribs.schedulers import Scheduler  # type: ignore
+            import ribs.archives  # noqa: F401
+            import ribs.emitters  # noqa: F401
+            import ribs.schedulers  # noqa: F401
         except ImportError:
             raise ImportError(
                 "CMA-ME optimizer requires 'ribs'. Install with: pip install 'ribs[all]'"
@@ -220,7 +220,7 @@ class CMAMEOpt(Optimizer):
 
         return results
 
-    def get_archive_stats(self) -> dict:
+    def get_archive_stats(self) -> dict[str, Any]:
         """Get statistics about the archive.
 
         Returns:

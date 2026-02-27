@@ -45,7 +45,7 @@ def create_trajectory_tracking_cost(
     Q_pos: Float[Array, "3 3"],
     Q_vel: Float[Array, "3 3"],
     R: Float[Array, "4 4"],
-    reference_trajectory: Float[Array, "T 6"] | None = None,
+    reference_trajectory: Optional[Float[Array, "T 6"]] = None,
     dt: float = 0.01,
 ) -> CostFn:
     """Create trajectory tracking cost function.
@@ -172,7 +172,7 @@ def create_hover_cost(
     Q_att: Float[Array, "4 4"],
     R: Float[Array, "4 4"],
     hover_position: Float[Array, "3"],
-    hover_quaternion: Float[Array, "4"] | None = None,
+    hover_quaternion: Optional[Float[Array, "4"]] = None,
 ) -> CostFn:
     """Create cost function for hover control (stabilization).
 
@@ -226,7 +226,7 @@ def create_terminal_cost(
     Q_vel: Float[Array, "3 3"],
     Q_att: Float[Array, "4 4"],
     goal_position: Float[Array, "3"],
-    goal_quaternion: Float[Array, "4"] | None = None,
+    goal_quaternion: Optional[Float[Array, "4"]] = None,
 ) -> CostFn:
     """Create terminal cost for goal reaching.
 

@@ -31,7 +31,6 @@ for _d in _candidates:
 import jax  # noqa: E402
 import jax.numpy as jnp  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
 from env_setup import create_grid_map  # noqa: E402
 from sim_utils import (  # noqa: E402
     CONTROL_HZ,
@@ -244,8 +243,8 @@ def main() -> None:
     fig_traj = plot_trajectory_2d(
         history_x, grid_array, map_resolution, title="I-MPPI Trajectory"
     )
-    fig_info = plot_info_levels(history_info, DT)
-    fig_controls = plot_control_inputs(actions, DT)
+    _ = plot_info_levels(history_info, DT)
+    _ = plot_control_inputs(actions, DT)
 
     os.makedirs(MEDIA_DIR, exist_ok=True)
 
