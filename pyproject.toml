@@ -59,8 +59,15 @@ markers = [
 line-length = 80
 target-version = "py310"
 
-[tool.ruff.lint]
-per-file-ignores = { "examples/i_mppi/i_mppi_interactive_simulation.ipynb" = ["E402", "F401"], "examples/i_mppi/i_mppi_simulation.py" = ["E402"], "examples/i_mppi/i_mppi_cuda_simulation.py" = ["E402"], "src/jax_mppi/costs/quadrotor.py" = ["F722", "F821"], "src/jax_mppi/costs/basic.py" = ["F722", "F821"], "src/jax_mppi/dynamics/linear.py" = ["F722", "F821"], "src/jax_mppi/dynamics/quadrotor.py" = ["F722", "F841"], "examples/quadrotor/trajectories.py" = ["F722"] }
+[tool.ruff.lint.per-file-ignores]
+"examples/i_mppi/i_mppi_interactive_simulation.ipynb" = ["E402", "F401"]
+"examples/i_mppi/i_mppi_simulation.py" = ["E402"]
+"examples/i_mppi/i_mppi_cuda_simulation.py" = ["E402"]
+"src/jax_mppi/costs/quadrotor.py" = ["F722", "F821"]
+"src/jax_mppi/costs/basic.py" = ["F722", "F821"]
+"src/jax_mppi/dynamics/linear.py" = ["F722", "F821"]
+"src/jax_mppi/dynamics/quadrotor.py" = ["F722", "F841"]
+"examples/quadrotor/trajectories.py" = ["F722"]
 
 [tool.basedpyright]
 include = ["src", "examples"]

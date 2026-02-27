@@ -236,7 +236,7 @@ def run_quadrotor_custom_trajectory(
     if visualize:
         try:
             import matplotlib.pyplot as plt
-            from mpl_toolkits.mplot3d import Axes3D
+            from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
             time = jnp.arange(len(states)) * dt
 

@@ -22,7 +22,7 @@ PENDULUM_DYNAMICS = """
 struct UserDynamics {
     static constexpr float g = 9.81f;
     static constexpr float m = 1.0f;
-    static constexpr float l = 1.0f;
+    static constexpr float length = 1.0f;
 
     __device__ void step(const float* x, const float* u, float* x_next, float dt) {
         // x[0] = theta (angle from upright), x[1] = theta_dot (angular velocity)
@@ -32,8 +32,8 @@ struct UserDynamics {
         float torque = u[0];
 
         // Pendulum dynamics: theta_ddot = (torque - m*g*l*sin(theta)) / (m*l^2)
-        float I = m * l * l;  // moment of inertia
-        float theta_ddot = (torque - m * g * l * sinf(theta)) / I;
+        float inertia = m * length * length;  // moment of inertia
+        float theta_ddot = (torque - m * g * length * sinf(theta)) / inertia;
 
         // Euler integration
         x_next[0] = theta + theta_dot * dt;
@@ -76,14 +76,14 @@ def pendulum_dynamics_python(state, action, dt):
     """Python version for comparison/plotting"""
     g = 9.81
     m = 1.0
-    l = 1.0
+    length = 1.0
 
     theta = state[0]
     theta_dot = state[1]
     torque = action[0]
 
-    I = m * l * l
-    theta_ddot = (torque - m * g * l * np.sin(theta)) / I
+    inertia = m * length * length
+    theta_ddot = (torque - m * g * length * np.sin(theta)) / inertia
 
     next_state = np.array([theta + theta_dot * dt, theta_dot + theta_ddot * dt])
 
@@ -237,11 +237,11 @@ def main():
             screen.fill((245, 245, 245))
             width, height = screen.get_size()
             origin = (width // 2, height // 2)
-            length = int(min(width, height) * 0.35)
+            length_px = int(min(width, height) * 0.35)
             theta = state[0]
-            x = origin[0] + int(length * np.sin(theta))
+            x = origin[0] + int(length_px * np.sin(theta))
             # Theta = 0 should be upright (upwards on screen).
-            y = origin[1] - int(length * np.cos(theta))
+            y = origin[1] - int(length_px * np.cos(theta))
             pygame.draw.line(screen, (30, 30, 30), origin, (x, y), 4)
             pygame.draw.circle(screen, (200, 60, 60), (x, y), 12)
             pygame.draw.circle(screen, (30, 30, 30), origin, 6)
