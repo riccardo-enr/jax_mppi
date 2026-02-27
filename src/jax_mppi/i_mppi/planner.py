@@ -1,3 +1,11 @@
+"""Biased MPPI planner functions.
+
+These functions extend the standard MPPI update rule with a bias term,
+allowing the controller to be guided by a reference trajectory (e.g. from Layer 2).
+
+Reference: "Fast Entropy-Based Informative Trajectory Planning" (Zhang et al. 2020)
+"""
+
 from dataclasses import replace
 from typing import Callable, Optional, Tuple
 
@@ -313,9 +321,6 @@ def biased_kmppi_command(
     # We can use the kernel interpolation matrix to solve for control points
     # that best approximate U_ref
     K_matrix = kernel_fn(kmppi_state.Hs, kmppi_state.Tk)  # (T, num_support_pts)
-    Ktktk = kernel_fn(
-        kmppi_state.Tk, kmppi_state.Tk
-    )  # (num_support_pts, num_support_pts)
 
     # Solve for theta_ref: minimize ||K @ theta_ref - U_ref||^2
     # Solution: theta_ref = (K^T K)^-1 K^T U_ref

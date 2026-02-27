@@ -28,11 +28,11 @@ for _d in _candidates:
             sys.path.insert(0, _d)
         break
 
-import jax
-import jax.numpy as jnp
-import matplotlib.pyplot as plt
-from env_setup import create_grid_map
-from sim_utils import (
+import jax  # noqa: E402
+import jax.numpy as jnp  # noqa: E402
+import matplotlib.pyplot as plt  # noqa: E402
+from env_setup import create_grid_map  # noqa: E402
+from sim_utils import (  # noqa: E402
     CONTROL_HZ,
     DT,
     NOISE_SIGMA,
@@ -44,17 +44,17 @@ from sim_utils import (
     build_sim_fn,
     compute_smoothness,
 )
-from tqdm import tqdm
-from viz_utils import (
+from tqdm import tqdm  # noqa: E402
+from viz_utils import (  # noqa: E402
     create_trajectory_gif,
     plot_control_inputs,
     plot_info_levels,
     plot_trajectory_2d,
 )
 
-from jax_mppi import mppi
-from jax_mppi.i_mppi.environment import GOAL_POS, INFO_ZONES
-from jax_mppi.i_mppi.fsmi import (
+from jax_mppi import mppi  # noqa: E402
+from jax_mppi.i_mppi.environment import GOAL_POS, INFO_ZONES  # noqa: E402
+from jax_mppi.i_mppi.fsmi import (  # noqa: E402
     FSMIConfig,
     FSMITrajectoryGenerator,
     UniformFSMI,

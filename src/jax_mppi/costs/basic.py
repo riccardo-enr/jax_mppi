@@ -1,4 +1,5 @@
 """Basic cost functions for JAX MPPI."""
+from __future__ import annotations
 
 from typing import Callable, Optional
 

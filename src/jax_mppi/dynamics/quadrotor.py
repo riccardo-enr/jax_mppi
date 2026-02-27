@@ -13,6 +13,7 @@ Control (4D): [T, wx_cmd, wy_cmd, wz_cmd]
     - T: thrust magnitude (positive, acts in -Z body direction/upward)
     - w_cmd: angular rate commands in FRD body frame
 """
+from __future__ import annotations
 
 import jax.numpy as jnp
 from jaxtyping import Array, Float
@@ -146,7 +147,7 @@ def quadrotor_dynamics_dt(
         State derivative dx/dt
     """
     # Extract state components
-    pos = state[0:3]
+    # pos = state[0:3]  # unused
     vel = state[3:6]
     quat = state[6:10]  # [qw, qx, qy, qz]
     omega = state[10:13]  # angular velocity in FRD body frame
