@@ -4,6 +4,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 
+from dataclasses import replace
 from jax_mppi import mppi
 
 # Define simple dynamics and cost for testing
@@ -69,7 +70,7 @@ class TestMPPIBasics:
         )
 
         # Manually modify U
-        state = state.replace(U=jnp.ones_like(state.U) * 5.0)
+        state = replace(state, U=jnp.ones_like(state.U) * 5.0)
         assert jnp.all(state.U == 5.0)
 
         # Reset
@@ -142,7 +143,7 @@ class TestMPPICommand:
 
         # Set specific U to track shift
         U_pattern = jnp.arange(config.horizon)[:, None] * 1.0
-        state = state.replace(U=U_pattern)
+        state = replace(state, U=U_pattern)
 
         # Run command with shift=True
         # We need to mock weights computation to predict U_new,

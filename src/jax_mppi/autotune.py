@@ -563,7 +563,7 @@ class Autotune:
         params_to_tune: list[TunableParameter],
         evaluate_fn: Callable[[], EvaluationResult],
         optimizer: Optional[Optimizer] = None,
-        reload_state_fn: Optional[Callable] = None,
+        reload_state_fn: Optional[Callable[[], None]] = None,
     ):
         """Initialize autotuner.
 
@@ -590,7 +590,7 @@ class Autotune:
 
             # Reload state if needed (for multiprocessing)
             if self.reload_state_fn is not None:
-                self.reload_state_fn()
+                _ = self.reload_state_fn()
 
             # Evaluate with current parameters
             result = self.evaluate_fn()

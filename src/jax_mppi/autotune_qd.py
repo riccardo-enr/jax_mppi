@@ -220,7 +220,7 @@ class CMAMEOpt(Optimizer):
 
         return results
 
-    def get_archive_stats(self) -> dict:
+    def get_archive_stats(self) -> dict[str, Any]:
         """Get statistics about the archive.
 
         Returns:

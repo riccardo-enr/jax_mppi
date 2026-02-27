@@ -20,7 +20,7 @@ from pathlib import Path
 
 def run_command(
     cmd: list[str], check: bool = True
-) -> subprocess.CompletedProcess:
+) -> subprocess.CompletedProcess[str]:
     """Run a shell command and return the result."""
     print(f"Running: {' '.join(cmd)}")
     return subprocess.run(cmd, check=check, capture_output=True, text=True)
@@ -127,6 +127,7 @@ def check_git_status() -> bool:
         print("⚠️  Git working directory is not clean:")
         print(result.stdout)
         response = input("Continue anyway? (y/N): ")
+        _ = response.lower() == "y"
         return response.lower() == "y"
 
     return True

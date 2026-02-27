@@ -89,7 +89,7 @@ class GlobalLambdaParameter(LambdaParameter):
             search_space: Ray Tune search space
             min_value: Minimum value constraint
         """
-        LambdaParameter.__init__(self, holder, min_value)
+        super().__init__(holder, min_value)
         self.search_space = search_space
 
     def get_search_space_dict(self) -> Dict[str, Any]:
@@ -115,7 +115,7 @@ class GlobalNoiseSigmaParameter(NoiseSigmaParameter):
             search_space: Ray Tune search space (applied per-dimension)
             min_value: Minimum value constraint
         """
-        NoiseSigmaParameter.__init__(self, holder, min_value)
+        super().__init__(holder, min_value)
         self.search_space = search_space
 
     def get_search_space_dict(self) -> Dict[str, Any]:
@@ -145,7 +145,7 @@ class GlobalMuParameter(MuParameter):
             holder: Config/state holder
             search_space: Ray Tune search space (applied per-dimension)
         """
-        MuParameter.__init__(self, holder)
+        super().__init__(holder)
         self.search_space = search_space
 
     def get_search_space_dict(self) -> Dict[str, Any]:
@@ -177,7 +177,7 @@ class GlobalHorizonParameter(HorizonParameter):
             min_value: Minimum value constraint
             max_value: Maximum value constraint
         """
-        HorizonParameter.__init__(self, holder, min_value, max_value)
+        super().__init__(holder, min_value, max_value)
         self.search_space = search_space
 
     def get_search_space_dict(self) -> Dict[str, Any]:
@@ -314,7 +314,7 @@ class AutotuneGlobal(Autotune):
         self.best_result = None
         self.iteration_count = 0
 
-    def define_search_space(self) -> dict:
+    def define_search_space(self) -> dict[str, Any]:
         """Define Ray Tune search space from parameters.
 
         Returns:
@@ -345,7 +345,7 @@ class AutotuneGlobal(Autotune):
         search_space = self.define_search_space()
 
         # Create trainable function for Ray Tune
-        def trainable(config: dict):
+        def trainable(config: dict[str, Any]):
             """Ray Tune trainable function."""
             # Unflatten config to parameter values
             param_values = {}

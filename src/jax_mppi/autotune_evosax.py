@@ -187,6 +187,8 @@ class EvoSaxOptimizer(Optimizer):
 
         self.rng_key, subkey = jax.random.split(self.rng_key)
         params = self.es.default_params
+        if self.es_state is None:
+             raise RuntimeError("ES state is None")
         solutions, self.es_state = self.es.ask(subkey, self.es_state, params)
 
         # Evaluate all solutions sequentially
