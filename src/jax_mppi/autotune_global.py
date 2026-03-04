@@ -403,6 +403,9 @@ class AutotuneGlobal(Autotune):
         # Get best result
         best_config = analysis.get_best_config(metric="mean_cost", mode="min")
 
+        if best_config is None:
+            raise RuntimeError("No best config found")
+
         # Apply best config and evaluate one more time to get full result
         for param in self.params_to_tune:
             if param.dim() == 1:
