@@ -12,11 +12,17 @@ config:
   MD040: false  # Fenced code language
   MD041: false  # First line in file should be a top level header
   MD060: false  # Table column style
+  MD025: false  # Multiple top-level headings
+  MD034: false  # Bare URLs
+  MD058: false  # Blanks around tables
+  MD053: false  # Link and image reference definitions
 
 globs:
   - "**/*.md"
+  - "**/*.qmd"
 
 ignores:
   - "node_modules"
   - ".venv"
   - ".pixi"
+  - "third_party"

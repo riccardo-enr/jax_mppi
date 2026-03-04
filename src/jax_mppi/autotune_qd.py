@@ -150,7 +150,7 @@ class CMAMEOpt(Optimizer):
         Returns:
             Best result from this iteration
         """
-        if self.scheduler is None:
+        if self.scheduler is None or self.evaluate_fn is None:
             raise RuntimeError("Must call setup_optimization() first")
 
         # Ask for solutions
@@ -174,8 +174,8 @@ class CMAMEOpt(Optimizer):
 
         # Tell scheduler about results
         self.scheduler.tell(
-            objectives=np.array(objectives),
-            behaviors=np.array(behaviors),
+            np.array(objectives),
+            np.array(behaviors),
         )
 
         # Return best result from this iteration
@@ -197,7 +197,7 @@ class CMAMEOpt(Optimizer):
             raise RuntimeError("Must run optimization first")
 
         # Get all elite solutions from archive
-        df = self.archive.as_pandas(include_solutions=True)
+        df = self.archive.as_pandas(include_solutions=True)  # type: ignore
 
         if len(df) == 0:
             return []

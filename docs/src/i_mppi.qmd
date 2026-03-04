@@ -32,7 +32,7 @@ The field of autonomous Unmanned Aerial Vehicle (UAV) exploration has transition
 This document describes the **Hierarchical Informative Model Predictive Path Integral (I-MPPI)** framework. This architecture synthesizes global strategic planning, analytical viewpoint refinement via Fast Shannon Mutual Information (FSMI), and reactive Biased-MPPI control with sensitivity-based feedback.
 
 ::: {.callout-note}
-### Repository Scope
+## Repository Scope
 The focus of this repository is the high-performance JAX implementation of **Layer 2 (Local Refinement)** and **Layer 3/4 (Reactive Control)**. The **Global Planner (Layer 1)**, such as FUEL, is considered an external input that provides the mission context and global waypoints.
 :::
 
@@ -46,10 +46,10 @@ The mathematical derivation of the MPPI algorithm is rooted in the definition of
 
 $$ \mathcal{F}(x_0) = -\lambda \log \mathbb{E}_{\mathbb{P}} \left[ \exp \left( -\frac{1}{\lambda} S(\tau) \right) \right] $$
 
-*   $\tau$: The state-control trajectory $\{x_0, u_0, x_1, u_1, \dots, x_T\}$.
-*   $\mathbb{P}$: The base distribution, representing the stochastic trajectories of the "passive" system.
-*   $S(\tau)$: The cumulative cost (Action) of a trajectory $\tau$.
-*   $\lambda$: The temperature parameter, representing the noise variance.
+- $\tau$: The state-control trajectory $\{x_0, u_0, x_1, u_1, \dots, x_T\}$.
+- $\mathbb{P}$: The base distribution, representing the stochastic trajectories of the "passive" system.
+- $S(\tau)$: The cumulative cost (Action) of a trajectory $\tau$.
+- $\lambda$: The temperature parameter, representing the noise variance.
 
 The "optimal trajectory" is the mean of the distribution $\mathbb{Q}^*$ that minimizes the KL-divergence to the distribution of "low-cost" paths, leading to the thermodynamic weight update rule:
 
@@ -511,7 +511,7 @@ where:
 - $\alpha = 0.02$ is the per-step depletion scaling factor
 - $c_j^{(t)} \in [0, 1]$ is the FOV coverage (optionally entropy-weighted)
 
-### Self-Regulating Feedback Loop
+## Self-Regulating Feedback Loop
 
 With entropy-weighted coverage, the system exhibits a natural feedback loop:
 
@@ -627,9 +627,9 @@ graph TD
     style Map fill:#f3e5f5,stroke:#4a148c
 ```
 
-1.  **Layer 1: Global Guidance (FUEL)**: Maintains a Frontier Information Structure (FIS) and generates global waypoints via TSP.
-2.  **Layer 2: Local Refinement**: Refines global paths into an Informed Reference Trajectory $(\tau_{ref})$ maximizing info gain.
-3.  **Layer 3: Reactive Control (Biased-MPPI)**: Uses a mixture distribution to track $\tau_{ref}$ while maintaining local informativeness.
+1. **Layer 1: Global Guidance (FUEL)**: Maintains a Frontier Information Structure (FIS) and generates global waypoints via TSP.
+2. **Layer 2: Local Refinement**: Refines global paths into an Informed Reference Trajectory $(\tau_{ref})$ maximizing info gain.
+3. **Layer 3: Reactive Control (Biased-MPPI)**: Uses a mixture distribution to track $\tau_{ref}$ while maintaining local informativeness.
 
 # Target Selection
 

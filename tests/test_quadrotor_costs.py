@@ -231,10 +231,10 @@ class TestTimeIndexedTrajectoryCost:
         action = jnp.zeros(4)
 
         # Cost at t=0 (reference is origin) should be low
-        cost_t0 = cost_fn(state, action, t=0)
+        cost_t0 = cost_fn(state, action, 0)
 
         # Cost at t=10 (reference is at x=1.0) should be higher
-        cost_t10 = cost_fn(state, action, t=10)
+        cost_t10 = cost_fn(state, action, 10)
 
         assert cost_t10 > cost_t0
 
@@ -256,8 +256,8 @@ class TestTimeIndexedTrajectoryCost:
         action = jnp.zeros(4)
 
         # Should not crash with out-of-bounds index
-        cost_negative = cost_fn(state, action, t=-5)
-        cost_large = cost_fn(state, action, t=1000)
+        cost_negative = cost_fn(state, action, -5)
+        cost_large = cost_fn(state, action, 1000)
 
         # Should return valid costs
         assert jnp.isfinite(cost_negative)
@@ -278,7 +278,12 @@ class TestHoverCost:
         hover_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
         cost_fn = create_hover_cost(
-            Q_pos, Q_vel, Q_att, R, hover_position, hover_quaternion
+            Q_pos,
+            Q_vel,
+            Q_att,
+            R,
+            hover_position,
+            hover_quaternion=hover_quaternion,
         )
 
         # State at hover position with hover attitude
@@ -356,7 +361,12 @@ class TestHoverCost:
         hover_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
         cost_fn = create_hover_cost(
-            Q_pos, Q_vel, Q_att, R, hover_position, hover_quaternion
+            Q_pos,
+            Q_vel,
+            Q_att,
+            R,
+            hover_position,
+            hover_quaternion=hover_quaternion,
         )
 
         # State with hover attitude
@@ -389,7 +399,7 @@ class TestTerminalCost:
         goal_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
         terminal_cost = create_terminal_cost(
-            Q_pos, Q_vel, Q_att, goal_position, goal_quaternion
+            Q_pos, Q_vel, Q_att, goal_position, goal_quaternion=goal_quaternion
         )
 
         # State at goal
