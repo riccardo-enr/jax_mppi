@@ -278,7 +278,12 @@ class TestHoverCost:
         hover_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
         cost_fn = create_hover_cost(
-            Q_pos, Q_vel, Q_att, R, hover_position, hover_quaternion=hover_quaternion
+            Q_pos,
+            Q_vel,
+            Q_att,
+            R,
+            hover_position,
+            hover_quaternion=hover_quaternion,
         )
 
         # State at hover position with hover attitude
@@ -356,7 +361,12 @@ class TestHoverCost:
         hover_quaternion = jnp.array([1.0, 0.0, 0.0, 0.0])
 
         cost_fn = create_hover_cost(
-            Q_pos, Q_vel, Q_att, R, hover_position, hover_quaternion=hover_quaternion
+            Q_pos,
+            Q_vel,
+            Q_att,
+            R,
+            hover_position,
+            hover_quaternion=hover_quaternion,
         )
 
         # State with hover attitude

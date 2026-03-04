@@ -197,7 +197,7 @@ class CMAMEOpt(Optimizer):
             raise RuntimeError("Must run optimization first")
 
         # Get all elite solutions from archive
-        df = self.archive.as_pandas(include_solutions=True) # type: ignore
+        df = self.archive.as_pandas(include_solutions=True)  # type: ignore
 
         if len(df) == 0:
             return []
