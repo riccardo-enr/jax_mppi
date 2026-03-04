@@ -1,3 +1,12 @@
+---
+title: "Releasing Guide"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 # Releasing Guide
 
 This guide describes how to release a new version of `jax_mppi` to PyPI.

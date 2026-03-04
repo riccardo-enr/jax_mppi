@@ -1,3 +1,12 @@
+---
+title: "Pendulum Swing-Up Example"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 # Pendulum Swing-Up
 
 This example demonstrates how to use `jax_mppi` to control an inverted pendulum. The goal is to swing the pendulum up from a hanging position and stabilize it at the top.

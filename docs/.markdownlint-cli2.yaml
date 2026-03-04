@@ -12,9 +12,11 @@ config:
   MD040: false  # Fenced code language
   MD041: false  # First line in file should be a top level header
   MD060: false  # Table column style
+  MD025: false  # Multiple top-level headings
 
 globs:
   - "**/*.md"
+  - "**/*.qmd"
 
 ignores:
   - "node_modules"
