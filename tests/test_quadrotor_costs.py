@@ -231,10 +231,10 @@ class TestTimeIndexedTrajectoryCost:
         action = jnp.zeros(4)
 
         # Cost at t=0 (reference is origin) should be low
-        cost_t0 = cost_fn(state, action, t=0)
+        cost_t0 = cost_fn(state, action, 0)
 
         # Cost at t=10 (reference is at x=1.0) should be higher
-        cost_t10 = cost_fn(state, action, t=10)
+        cost_t10 = cost_fn(state, action, 10)
 
         assert cost_t10 > cost_t0
 
@@ -256,8 +256,8 @@ class TestTimeIndexedTrajectoryCost:
         action = jnp.zeros(4)
 
         # Should not crash with out-of-bounds index
-        cost_negative = cost_fn(state, action, t=-5)
-        cost_large = cost_fn(state, action, t=1000)
+        cost_negative = cost_fn(state, action, -5)
+        cost_large = cost_fn(state, action, 1000)
 
         # Should return valid costs
         assert jnp.isfinite(cost_negative)

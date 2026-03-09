@@ -8,7 +8,7 @@ from jax_mppi import autotune, mppi
 
 # Check if optional autotuning dependencies are available
 try:
-    import cma  # noqa: F401
+    import cma  # type: ignore
 
     HAS_CMA = True
 except ImportError:
@@ -25,12 +25,12 @@ class TestParameterBasics:
     def test_tunable_parameter_is_abstract(self):
         """TunableParameter cannot be instantiated directly."""
         with pytest.raises(TypeError):
-            autotune.TunableParameter()
+            autotune.TunableParameter()  # type: ignore
 
     def test_optimizer_is_abstract(self):
         """Optimizer cannot be instantiated directly."""
         with pytest.raises(TypeError):
-            autotune.Optimizer()
+            autotune.Optimizer()  # type: ignore
 
     def test_evaluation_result_creation(self):
         """EvaluationResult can be created with all fields."""
