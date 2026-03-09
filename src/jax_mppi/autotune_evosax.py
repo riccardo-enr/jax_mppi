@@ -92,7 +92,7 @@ class EvoSaxOptimizer(Optimizer):
             ImportError: If evosax is not installed
         """
         try:
-            import evosax
+            import evosax  # type: ignore
         except ImportError:
             raise ImportError(
                 "Evosax optimizer requires the 'evosax' package. "
@@ -135,12 +135,12 @@ class EvoSaxOptimizer(Optimizer):
 
         # Get strategy from evosax.algorithms
         try:
-            from evosax import algorithms
+            from evosax import algorithms  # type: ignore
 
             strategy_cls = getattr(algorithms, self.strategy)
         except (AttributeError, ImportError):
             try:
-                from evosax import algorithms
+                from evosax import algorithms  # type: ignore
 
                 available = algorithms.__all__
             except:
@@ -180,6 +180,10 @@ class EvoSaxOptimizer(Optimizer):
         """
         if self.es is None or self.es_state is None:
             raise RuntimeError("Must call setup_optimization() first")
+
+        assert self.es is not None
+        assert self.rng_key is not None
+        assert self.evaluate_fn is not None
 
         # Ask: sample population with evosax API
         self.rng_key, subkey = jax.random.split(self.rng_key)

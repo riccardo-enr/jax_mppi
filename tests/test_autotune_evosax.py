@@ -23,7 +23,7 @@ class TestEvoSaxOptimizer:
     def test_evosax_import_error(self):
         """EvoSaxOptimizer raises ImportError if evosax not available."""
         try:
-            import evosax  # noqa: F401
+            import evosax  # type: ignore  # noqa: F401
 
             pytest.skip("evosax is installed")
         except ImportError:

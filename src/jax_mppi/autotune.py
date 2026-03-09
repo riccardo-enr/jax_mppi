@@ -478,7 +478,7 @@ class CMAESOpt(Optimizer):
             sigma: Initial standard deviation for sampling
         """
         try:
-            import cma
+            import cma  # type: ignore
         except ImportError:
             raise ImportError(
                 "CMA-ES optimizer requires the 'cma' package. Install with: pip install cma"

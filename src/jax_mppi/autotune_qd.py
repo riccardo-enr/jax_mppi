@@ -153,6 +153,8 @@ class CMAMEOpt(Optimizer):
         if self.scheduler is None:
             raise RuntimeError("Must call setup_optimization() first")
 
+        assert self.evaluate_fn is not None
+
         # Ask for solutions
         solutions = self.scheduler.ask()
 

@@ -32,6 +32,8 @@ pytest = "*"
 pytest-benchmark = "*"
 lark = "*"
 gymnasium = { version = "*", extras = ["classic_control"] }
+cma = "*"
+evosax = "*"
 matplotlib = "*"
 ipywidgets = "*"
 tqdm = "*"
