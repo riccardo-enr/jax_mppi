@@ -62,12 +62,14 @@ Instead of hierarchical layers, we run **N parallel MPPI controllers** simultane
 ### 2.2 Portfolio Design Strategies
 
 #### Strategy 1: Exploration-Exploitation Portfolio
+
 | Controller | Info Weight | Goal Weight | Safety Weight | Role |
 |------------|-------------|-------------|---------------|------|
 | Explorer   | 0.7         | 0.1         | 0.2           | Maximize information gain |
 | Balanced   | 0.4         | 0.4         | 0.2           | Balance info + goal |
 | Exploiter  | 0.1         | 0.7         | 0.2           | Reach goal quickly |
 | Cautious   | 0.2         | 0.2         | 0.6           | Prioritize safety |
+
 
 #### Strategy 2: Regional Decomposition
 - Each controller optimizes for different spatial regions

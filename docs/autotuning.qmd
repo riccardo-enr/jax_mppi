@@ -7,8 +7,6 @@ format:
     toc-depth: 3
 ---
 
-# Autotuning Guide
-
 JAX-MPPI includes a robust autotuning framework to optimize MPPI hyperparameters (like temperature $\lambda$, noise covariance $\Sigma$, and planning horizon). The framework supports multiple optimization strategies, including CMA-ES, Ray Tune, and Quality Diversity (QD) methods.
 
 ## Overview
@@ -246,8 +244,8 @@ Ray Tune orchestrates the search using algorithms like:
     $$
 
     where:
-    - $\theta_{next}$ is the next sample to evaluate
-    - $a(\theta)$ is the acquisition function
+      - $\theta_{next}$ is the next sample to evaluate
+      - $a(\theta)$ is the acquisition function
 - **HyperOpt (TPE)**: Models $p(\theta \mid y)$ using Tree-structured Parzen Estimators to sample promising candidates.
 
 These methods are particularly useful for "warm-starting" the local search (CMA-ES) or finding the best family of parameters (e.g., finding the right order of magnitude for $\lambda$).
