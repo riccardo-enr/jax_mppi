@@ -1,17 +1,14 @@
 """Integration tests for autotune with MPPI variants."""
 
+import importlib.util
+
 import jax.numpy as jnp
 import numpy as np
 import pytest
 
 from jax_mppi import autotune, mppi
 
-try:
-    import cma
-
-    HAS_CMA = True
-except ImportError:
-    HAS_CMA = False
+HAS_CMA = importlib.util.find_spec("cma") is not None
 
 
 class TestAutotuneMPPI:
