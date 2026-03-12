@@ -1,4 +1,11 @@
-# Testing Guide
+---
+title: "Testing Guide"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
 
 This guide explains the testing stack for `jax_mppi` and provides instructions on how to run and write tests.
 
