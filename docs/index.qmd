@@ -1,4 +1,11 @@
-# jax_mppi
+---
+title: "jax-mppi"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)

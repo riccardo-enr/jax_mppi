@@ -15,6 +15,7 @@ config:
 
 globs:
   - "**/*.md"
+  - "**/*.qmd"
 
 ignores:
   - "node_modules"
