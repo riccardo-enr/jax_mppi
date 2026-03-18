@@ -193,16 +193,18 @@ class TestParallelImppiStepBenchmark:
         quad = quad.at[6].set(1.0)
         state = jnp.concatenate([quad, jnp.array([100.0, 100.0, 100.0])])
 
-        cost_fn = partial(
+        _base_cost_fn = partial(
             informative_running_cost,
+            target=jnp.zeros(3),
             grid_map=gm.grid,
             grid_origin=origin,
             grid_resolution=resolution,
-            info_field=info_field,
-            field_origin=field_origin,
-            field_res=cfg.field_res,
             uniform_fsmi_fn=uniform.compute,
         )
+
+        def cost_fn(state, action, t):
+            return _base_cost_fn(state, action, t)
+
         dynamics_fn = partial(
             augmented_dynamics_with_grid,
             dt=0.05,
