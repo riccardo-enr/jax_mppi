@@ -204,6 +204,7 @@ class TestParallelImppiStepBenchmark:
 
         def cost_fn(state, action, t):
             return _base_cost_fn(state, action, t)
+
         dynamics_fn = partial(
             augmented_dynamics_with_grid,
             dt=0.05,
