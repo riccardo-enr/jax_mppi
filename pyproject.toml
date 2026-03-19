@@ -73,7 +73,7 @@ Documentation = "https://riccardo-enr.github.io/jax_mppi/"
 [tool.ruff]
 line-length = 80
 target-version = "py312"
-exclude = ["third_party", "build", "dist", "__pycache__"]
+exclude = ["third_party", "build", "dist", "__pycache__", ".pixi", ".venv", "examples"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -106,7 +106,7 @@ ignore-overlong-task-comments = true
 
 [tool.basedpyright]
 pythonVersion = "3.12"
-exclude = ["third_party", "build", "dist", "__pycache__"]
+exclude = ["third_party", "build", "dist", "__pycache__", ".pixi", ".venv", "examples"]
 typeCheckingMode = "basic"
 pythonPlatform = "Linux"
 reportGeneralTypeIssues = false
