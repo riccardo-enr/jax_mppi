@@ -1,12 +1,23 @@
-# Pendulum Swing-Up
+---
+title: "Pendulum Swing-Up"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
 
 This example demonstrates how to use `jax_mppi` to control an inverted pendulum. The goal is to swing the pendulum up from a hanging position and stabilize it at the top.
+
+## Overview
+
+The pendulum swing-up is a classic control problem where the controller must use limited torque to pump energy into the system, swing the pendulum upright, and then stabilize it.
 
 ## Code
 
 The full example code is available in `examples/basic/pendulum.py`.
 
-## Dynamics
+## Theory
 
 The pendulum dynamics are defined as a pure function:
 
@@ -50,6 +61,8 @@ The running cost penalizes deviation from the upright position and high control 
 
 ```python
 def pendulum_cost(state: jax.Array, action: jax.Array) -> jax.Array:
+    """Calculate the cost for a state and action.
+    """
     theta, theta_dot = state[0], state[1]
     torque = action[0]
 
@@ -65,7 +78,7 @@ def pendulum_cost(state: jax.Array, action: jax.Array) -> jax.Array:
     return angle_cost + velocity_cost + control_cost
 ```
 
-## Running the Example
+## Quick Start
 
 You can run the example using:
 

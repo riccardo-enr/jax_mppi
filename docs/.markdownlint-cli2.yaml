@@ -15,8 +15,10 @@ config:
 
 globs:
   - "**/*.md"
+  - "**/*.qmd"
 
 ignores:
   - "node_modules"
   - ".venv"
   - ".pixi"
+  - "third_party"

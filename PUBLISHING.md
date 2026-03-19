@@ -7,12 +7,12 @@ This document covers manual publishing and initial setup.
 ## Prerequisites
 
 1. **Create PyPI accounts**:
-   - TestPyPI: https://test.pypi.org/account/register/
-   - PyPI: https://pypi.org/account/register/
+   - TestPyPI: <https://test.pypi.org/account/register/>
+   - PyPI: <https://pypi.org/account/register/>
 
 2. **Generate API tokens** (recommended over passwords):
-   - TestPyPI: https://test.pypi.org/manage/account/token/
-   - PyPI: https://pypi.org/manage/account/token/
+   - TestPyPI: <https://test.pypi.org/manage/account/token/>
+   - PyPI: <https://pypi.org/manage/account/token/>
 
    Save tokens securely - you'll use them for authentication.
 
@@ -170,7 +170,7 @@ gh release create vX.Y.Z dist/* \
   --notes "See CHANGELOG.md for details"
 ```
 
-Or create manually at: https://github.com/riccardo-enr/jax_mppi/releases
+Or create manually at: <https://github.com/riccardo-enr/jax_mppi/releases>
 
 ## Automation (Future)
 

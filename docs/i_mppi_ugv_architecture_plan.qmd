@@ -1,10 +1,15 @@
-# Parallel I-MPPI Architecture for UGV: Design Plan
+---
+title: "Parallel I-MPPI Architecture for UGV: Design Plan"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
 
 **Date**: 2026-02-12
 **Status**: Draft
 **Target**: JAX/Python Implementation
-
----
 
 ## 1. Executive Summary
 
@@ -17,8 +22,6 @@ This document outlines the design and implementation plan for a **parallel I-MPP
 4. **Ground-Based Sensing**: Adapt FSMI for horizontal sensor models (LiDAR, cameras)
 5. **Action Fusion**: Combine parallel controllers' outputs via voting, averaging, or switching
 6. **JAX Parallelism**: Leverage vmap to run N controllers simultaneously on GPU
-
----
 
 ## 2. Architecture Overview
 
@@ -62,6 +65,7 @@ Instead of hierarchical layers, we run **N parallel MPPI controllers** simultane
 ### 2.2 Portfolio Design Strategies
 
 #### Strategy 1: Exploration-Exploitation Portfolio
+
 | Controller | Info Weight | Goal Weight | Safety Weight | Role |
 |------------|-------------|-------------|---------------|------|
 | Explorer   | 0.7         | 0.1         | 0.2           | Maximize information gain |
@@ -123,8 +127,6 @@ def trust_weighted_fusion(actions, uncertainties):
 | Action Fusion | Combine N actions → 1 output | Custom fusion function |
 | Sensor Model | LiDAR/Camera FOV | `jax.vmap` over beams |
 
----
-
 ## 3. UGV Dynamics Models
 
 ### 3.1 Model Selection
@@ -149,8 +151,6 @@ def unicycle_dynamics(state, action, dt):
 
 **Pros**: Simple, fast, good for initial testing
 **Cons**: No dynamics, instantaneous velocity changes
-
----
 
 #### Model 2: Differential Drive Dynamics (Recommended Start)
 **State** (5D): `[x, y, θ, v, ω]`
@@ -181,8 +181,6 @@ def diffdrive_dynamics(state, action, dt, max_v, max_omega, drag_coeff):
 **Cons**: Still simplified dynamics
 **Use Case**: Urban exploration, warehouse robots
 
----
-
 #### Model 3: Ackermann Steering (Car-like)
 **State** (5D): `[x, y, θ, v, δ]`
 **Control** (2D): `[a, δ_dot]` (acceleration, steering rate)
@@ -209,8 +207,6 @@ def ackermann_dynamics(state, action, dt, L_wheelbase, max_v, max_delta):
 **Pros**: Realistic for car-like vehicles
 **Cons**: More complex, turning radius constraints
 **Use Case**: Autonomous cars, large outdoor robots
-
----
 
 ### 3.2 Factory Functions (Following Existing Pattern)
 
@@ -258,8 +254,6 @@ def create_ackermann_dynamics(
     # Implementation
     pass
 ```
-
----
 
 ## 4. UGV-Specific Cost Functions
 
@@ -403,8 +397,6 @@ def create_information_gain_cost(
     return cost
 ```
 
----
-
 ## 5. Sensor Models for Ground Vehicles
 
 ### 5.1 Horizontal LiDAR Model
@@ -510,8 +502,6 @@ def create_camera_frustum_model(config: CameraConfig):
 
     return compute_frustum_info
 ```
-
----
 
 ## 6. Enhanced Grid Map for UGVs
 
@@ -628,8 +618,6 @@ def create_ugv_map_from_heightmap(
         height=occupancy.shape[0]
     )
 ```
-
----
 
 ## 7. Parallel MPPI Controllers
 
@@ -874,8 +862,6 @@ def contextual_fusion(
     return actions[idx]
 ```
 
----
-
 ## 8. Information Gain Computation (FSMI Integration)
 
 ### 8.1 Fast Shannon Mutual Information for UGV
@@ -1039,8 +1025,6 @@ def create_information_field_cache(
     return sample_trajectories, evaluate_fsmi, select_best_trajectory
 ```
 
----
-
 ## 9. Implementation Roadmap
 
 ### Phase 1: Foundation (Week 1-2)
@@ -1068,8 +1052,6 @@ def create_information_field_cache(
 - Cost functions for navigation
 - Passing test suite
 
----
-
 ### Phase 2: Sensing and Mapping (Week 3)
 
 **Files to Create:**
@@ -1091,8 +1073,6 @@ def create_information_field_cache(
 - Multi-layer grid map (occupancy, elevation, traversability)
 - LiDAR sensor model for map updates
 - Terrain loading from images
-
----
 
 ### Phase 3: FSMI Integration (Week 3-4)
 
@@ -1121,8 +1101,6 @@ def create_information_field_cache(
 - Basic navigation example working
 - Obstacle avoidance working
 
----
-
 ### Phase 4: Parallel MPPI Portfolio (Week 4-5)
 
 **Files to Create:**
@@ -1148,8 +1126,6 @@ def create_information_field_cache(
 - Action fusion working (weighted vote, switching, etc.)
 - Information-guided exploration demo
 
----
-
 ### Phase 5: Optimization and Benchmarking (Week 6)
 
 **Files to Create:**
@@ -1167,8 +1143,6 @@ def create_information_field_cache(
 - Performance benchmarks
 - Autotuned parameters for each dynamics model
 - Comparison with quadrotor results
-
----
 
 ## 10. Parallelization Strategy
 
@@ -1261,8 +1235,6 @@ for step in range(num_steps):
 - Single GPU kernel launch per step (efficient)
 - Simple timing model (no async complexity)
 - Easy to debug and reason about
-
----
 
 ## 11. Testing and Validation
 
@@ -1363,8 +1335,6 @@ def benchmark_sample_throughput():
     assert throughput > 100000
 ```
 
----
-
 ## 12. Example Scenarios
 
 ### Scenario 1: Warehouse Exploration
@@ -1388,8 +1358,6 @@ def benchmark_sample_throughput():
 - **Task**: Patrol and detect anomalies
 - **Info Goal**: Maintain situational awareness
 
----
-
 ## 13. Open Questions and Design Decisions
 
 ### Q1: Dynamics Model Choice
@@ -1400,8 +1368,6 @@ def benchmark_sample_throughput():
 
 **Recommendation**: **B** - Differential drive is the sweet spot for most UGV applications and captures inertial effects.
 
----
-
 ### Q2: Sensor Fusion
 **Question**: Should we support multiple sensor types simultaneously?
 
@@ -1410,8 +1376,6 @@ def benchmark_sample_throughput():
 - B. Multi-sensor fusion (LiDAR + camera)
 
 **Recommendation**: **A** for initial implementation, design API for **B** in future.
-
----
 
 ### Q3: Map Update Frequency
 **Question**: When to update the occupancy map from sensor data?
@@ -1423,8 +1387,6 @@ def benchmark_sample_throughput():
 
 **Recommendation**: **B** initially, explore **C** for real-time systems.
 
----
-
 ### Q4: Reference Trajectory Time Alignment
 **Question**: How to handle timing mismatch between Layer 2 (10 Hz) and Layer 3 (50 Hz)?
 
@@ -1434,8 +1396,6 @@ def benchmark_sample_throughput():
 - C. Extrapolate using dynamics model
 
 **Recommendation**: **A** - Linear interpolation for smooth tracking.
-
----
 
 ## 14. Success Metrics
 
@@ -1457,8 +1417,6 @@ def benchmark_sample_throughput():
 3. **Documentation**: Docstrings for all public functions
 4. **Examples**: Working demos for each component
 
----
-
 ## 15. Future Extensions
 
 ### Short-term (1-3 months)
@@ -1479,8 +1437,6 @@ def benchmark_sample_throughput():
 3. **Hardware deployment**: Real-world testing on multiple platforms
 4. **Benchmark suite**: Standardized evaluation environments
 
----
-
 ## 16. References and Related Work
 
 ### Key Papers
@@ -1498,8 +1454,6 @@ def benchmark_sample_throughput():
 - Existing quadrotor I-MPPI in `src/jax_mppi/i_mppi/`
 - FSMI implementation in `fsmi.py`
 - Autotuning framework in `autotune*.py`
-
----
 
 ## Appendix A: File Structure
 
@@ -1534,11 +1488,9 @@ jax_mppi/
 │   ├── test_ugv_sensors.py           # NEW
 │   └── test_ugv_i_mppi.py            # NEW
 └── docs/
-    ├── i_mppi_ugv_architecture_plan.md  # THIS FILE
+    ├── i_mppi_ugv_architecture_plan.qmd # THIS FILE
     └── ugv_tuning_guide.md           # NEW (Phase 5)
 ```
-
----
 
 ## Appendix B: API Design Examples
 
@@ -1719,8 +1671,6 @@ action = contextual_fusion(
 )
 ```
 
----
-
 ## Summary
 
 This plan provides a comprehensive roadmap for implementing **parallel I-MPPI** for UGVs in JAX. The key design principles are:
@@ -1761,9 +1711,3 @@ This plan provides a comprehensive roadmap for implementing **parallel I-MPPI** 
 4. Phase 3: FSMI integration
 5. Phase 4: Parallel MPPI portfolio (main innovation!)
 6. Phase 5: Optimization and benchmarking
-
----
-
-**Document Version**: 2.0 (Revised for Parallel Architecture)
-**Last Updated**: 2026-02-12
-**Author**: Claude (Anthropic)

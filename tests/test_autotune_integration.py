@@ -1,7 +1,10 @@
 """Integration tests for autotune with MPPI variants."""
 
+from importlib.util import find_spec
+
 import jax.numpy as jnp
 import numpy as np
+import pytest
 
 from jax_mppi import autotune, mppi
 
@@ -65,6 +68,10 @@ class TestAutotuneMPPI:
             "Lower lambda should improve cost"
         )
 
+    @pytest.mark.skipif(
+        find_spec("cma") is None,
+        reason="requires cma package (pip install cma)",
+    )
     def test_autotune_runs_successfully(self):
         """Verify that Autotune can run end-to-end with MPPI."""
 
@@ -134,6 +141,10 @@ class TestAutotuneMPPI:
         assert best.params["lambda"][0] > 0.1
         assert best.iteration >= 0
 
+    @pytest.mark.skipif(
+        find_spec("cma") is None,
+        reason="requires cma package (pip install cma)",
+    )
     def test_autotune_multiple_parameters(self):
         """Tune lambda and noise_sigma together."""
 
