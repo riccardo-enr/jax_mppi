@@ -1,8 +1,15 @@
-# Pendulum Swing-Up
+---
+title: "Pendulum Swing-Up"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
 
 This example demonstrates how to use `jax_mppi` to control an inverted pendulum. The goal is to swing the pendulum up from a hanging position and stabilize it at the top.
 
-## Code
+## Overview
 
 The full example code is available in `examples/basic/pendulum.py`.
 
