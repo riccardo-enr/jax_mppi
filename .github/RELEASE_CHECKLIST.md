@@ -28,7 +28,7 @@ GitHub Actions will automatically publish to PyPI! 🚀
 
 ## Post-Release
 
-- [ ] Verify on PyPI: https://pypi.org/project/jax-mppi/
+- [ ] Verify on PyPI: <https://pypi.org/project/jax-mppi/>
 - [ ] Test install: `pip install jax-mppi==X.Y.Z`
 - [ ] Check GitHub release created
 
