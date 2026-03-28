@@ -1,4 +1,11 @@
-# Autotuning Guide
+---
+title: "Autotuning Guide"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
 
 JAX-MPPI includes a robust autotuning framework to optimize MPPI hyperparameters (like temperature $\lambda$, noise covariance $\Sigma$, and planning horizon). The framework supports multiple optimization strategies, including CMA-ES, Ray Tune, and Quality Diversity (QD) methods.
 
