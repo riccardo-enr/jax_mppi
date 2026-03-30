@@ -1,4 +1,12 @@
-# JAX MPPI Implementation Plan
+---
+title: "JAX MPPI Implementation Plan"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 Port `pytorch_mppi` to JAX, producing a functional, JIT-compilable MPPI library.
 

@@ -1,4 +1,12 @@
-# Evosax Integration Plan
+---
+title: "Evosax Integration Plan"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 **Goal:** Add evosax as a JAX-native optimization backend for autotuning in jax-mppi.
 

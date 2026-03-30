@@ -1,4 +1,11 @@
-# Autotuning Guide
+---
+title: "Autotuning Guide"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
 
 JAX-MPPI includes a robust autotuning framework to optimize MPPI hyperparameters (like temperature $\lambda$, noise covariance $\Sigma$, and planning horizon). The framework supports multiple optimization strategies, including CMA-ES, Ray Tune, and Quality Diversity (QD) methods.
 
@@ -51,7 +58,10 @@ See `examples/autotuning/basic.py` and `examples/autotuning/pendulum.py` for com
 
 For more complex search spaces or when you want to use advanced schedulers and search algorithms (like HyperOpt or Bayesian Optimization), use `autotune_global`.
 
-> **Note**: Requires `ray[tune]`, `hyperopt`, and `bayesian-optimization`.
+:::{.callout-note}
+## Requirements
+Requires `ray[tune]`, `hyperopt`, and `bayesian-optimization`.
+:::
 
 ```python
 from ray import tune

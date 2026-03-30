@@ -1,4 +1,12 @@
-# Parallel I-MPPI Architecture Overview
+---
+title: "Parallel I-MPPI Architecture Overview"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 ## High-Level Architecture
 

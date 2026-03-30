@@ -1,4 +1,12 @@
-# CUDA I-MPPI Test Results
+---
+title: "CUDA I-MPPI Test Results"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 **Date:** 2026-02-11
 **Status:** ✅ All tests passing

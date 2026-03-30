@@ -1,4 +1,12 @@
-# Fix CUDA I-MPPI Simulation Issues
+---
+title: "Fix CUDA I-MPPI Simulation Issues"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 ## Context
 

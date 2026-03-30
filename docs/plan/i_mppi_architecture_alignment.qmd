@@ -1,4 +1,12 @@
-# I-MPPI Architecture Alignment Plan
+---
+title: "I-MPPI Architecture Alignment Plan"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 ## Problem Statement
 

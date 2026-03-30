@@ -157,6 +157,7 @@ class CMAMEOpt(Optimizer):
         solutions = self.scheduler.ask()
 
         # Evaluate all solutions
+        assert self.evaluate_fn is not None
         results = []
         objectives = []
         behaviors = []

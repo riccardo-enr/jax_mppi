@@ -1,4 +1,12 @@
-# Plan: Parallel Trajectory Information Gain & Parallel I-MPPI
+---
+title: "Plan: Parallel Trajectory Information Gain & Parallel I-MPPI"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 **Branch:** `feat/parallel-traj-ig`
 **Reference:** `docs/src/i_mppi.qmd` — §Trajectory-Based FSMI, §Parallel I-MPPI Architecture

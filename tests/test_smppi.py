@@ -476,7 +476,8 @@ class TestSMPPIBounds:
         assert state1.action_max is not None
         assert state1.action_min is not None
         # type: ignore to suppress operator '-' not supported for None
-        assert jnp.allclose(state1.action_max, -state1.action_min)  # type: ignore # pyright: ignore[reportOptionalOperand]
+        if state1.action_max is not None and state1.action_min is not None:
+            assert jnp.allclose(state1.action_max, -state1.action_min)  # type: ignore # pyright: ignore[reportOptionalOperand]
 
         # Only max specified
         config2, state2 = smppi.create(
@@ -489,7 +490,8 @@ class TestSMPPIBounds:
         assert state2.action_min is not None
         assert state2.action_max is not None
         # type: ignore to suppress operator '-' not supported for None
-        assert jnp.allclose(state2.action_min, -state2.action_max)  # type: ignore # pyright: ignore[reportOptionalOperand]
+        if state2.action_min is not None and state2.action_max is not None:
+            assert jnp.allclose(state2.action_min, -state2.action_max)  # type: ignore # pyright: ignore[reportOptionalOperand]
 
 
 class TestSMPPIShift:

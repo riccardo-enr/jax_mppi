@@ -1,4 +1,12 @@
-# FSMI Exploration Plan
+---
+title: "FSMI Exploration Plan"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 ## Goal
 
