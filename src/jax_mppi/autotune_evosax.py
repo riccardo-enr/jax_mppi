@@ -182,6 +182,8 @@ class EvoSaxOptimizer(Optimizer):
             raise RuntimeError("Must call setup_optimization() first")
 
         # Ask: sample population with evosax API
+        assert self.rng_key is not None
+        assert self.es is not None
         self.rng_key, subkey = jax.random.split(self.rng_key)
         params = self.es.default_params
         solutions, self.es_state = self.es.ask(subkey, self.es_state, params)
