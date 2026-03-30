@@ -1,4 +1,12 @@
-# Issue #31: Refactor Visualization and Increase Exploration Incentive
+---
+title: "Issue #31: Refactor Visualization and Increase Exploration Incentive"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 ## Problem Summary
 

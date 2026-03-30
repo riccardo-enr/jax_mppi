@@ -1,4 +1,12 @@
-# Parallel I-MPPI Architecture for UGV: Design Plan
+---
+title: "Parallel I-MPPI Architecture for UGV: Design Plan"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 **Date**: 2026-02-12
 **Status**: Draft
@@ -62,6 +70,7 @@ Instead of hierarchical layers, we run **N parallel MPPI controllers** simultane
 ### 2.2 Portfolio Design Strategies
 
 #### Strategy 1: Exploration-Exploitation Portfolio
+
 | Controller | Info Weight | Goal Weight | Safety Weight | Role |
 |------------|-------------|-------------|---------------|------|
 | Explorer   | 0.7         | 0.1         | 0.2           | Maximize information gain |

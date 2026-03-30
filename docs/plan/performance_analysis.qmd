@@ -1,4 +1,12 @@
-# Performance Analysis of JAX-MPPI Autotuning
+---
+title: "Performance Analysis of JAX-MPPI Autotuning"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 This document outlines the performance bottlenecks and issues identified in the autotuning module of `jax_mppi`, specifically focusing on the `evosax` integration.
 

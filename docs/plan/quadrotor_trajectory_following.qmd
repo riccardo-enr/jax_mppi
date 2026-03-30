@@ -1,4 +1,12 @@
-# Quadrotor Trajectory Following with MPPI
+---
+title: "Quadrotor Trajectory Following with MPPI"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 **Status**: ✅ Complete (Phases 1-4)
 **Branch**: `feat/quadrotor-traj-foll-example`

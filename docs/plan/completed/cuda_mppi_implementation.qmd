@@ -1,4 +1,12 @@
-# CUDA/C++ MPPI Implementation Plan
+---
+title: "CUDA/C++ MPPI Implementation Plan"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 ## Objective
 

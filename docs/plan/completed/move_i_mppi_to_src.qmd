@@ -1,4 +1,12 @@
-# Move I-MPPI Modules Into `src/jax_mppi`
+---
+title: "Move I-MPPI Modules Into `src/jax_mppi`"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 ## Steps
 

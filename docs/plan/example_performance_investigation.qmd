@@ -1,4 +1,12 @@
-# Performance Investigation: Quadrotor Examples
+---
+title: "Performance Investigation: Quadrotor Examples"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 This document details the findings regarding performance differences between the quadrotor control examples: `quadrotor_hover.py`, `quadrotor_circle.py`, and `quadrotor_figure8_comparison.py`.
 

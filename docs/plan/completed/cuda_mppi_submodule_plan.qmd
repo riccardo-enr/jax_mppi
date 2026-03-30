@@ -1,4 +1,12 @@
-# Plan: Add cuda_mppi as git submodule
+---
+title: "Plan: Add cuda_mppi as git submodule"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+---
+
 
 ## Status: Completed
 
