@@ -15,7 +15,7 @@ website:
       - text: "I-MPPI"
         href: src/i_mppi.qmd
       - text: "Autotuning"
-        href: autotuning.md
+        href: autotuning.qmd
       - text: "Plans"
         href: plan/index.md
   sidebar:
@@ -32,7 +32,7 @@ website:
       - section: "Algorithms"
         contents:
           - src/i_mppi.qmd
-          - autotuning.md
+          - autotuning.qmd
       - section: "Examples"
         contents:
           - examples/pendulum.md
