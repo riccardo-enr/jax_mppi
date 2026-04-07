@@ -213,16 +213,23 @@ class TestTimeIndexedTrajectoryCost:
         Q_pos = jnp.eye(3) * 10.0
         Q_vel = jnp.eye(3) * 1.0
         R = jnp.eye(4) * 0.01
+        Q_att = jnp.eye(3) * 1.0
+        Q_rates = jnp.eye(3) * 1.0
 
         # Create trajectory: moving in x direction
         T = 100
-        trajectory = jnp.zeros((T, 6))
+        trajectory = jnp.zeros((T, 13))
         trajectory = trajectory.at[:, 0].set(
             jnp.arange(T) * 0.1
         )  # px increases
 
         cost_fn = create_time_indexed_trajectory_cost(
-            Q_pos, Q_vel, R, trajectory
+            Q_pos,
+            Q_vel,
+            Q_att,
+            Q_rates,
+            R,
+            trajectory,  # type: ignore
         )
 
         # State at origin
@@ -243,12 +250,19 @@ class TestTimeIndexedTrajectoryCost:
         Q_pos = jnp.eye(3) * 10.0
         Q_vel = jnp.eye(3) * 1.0
         R = jnp.eye(4) * 0.01
+        Q_att = jnp.eye(3) * 1.0
+        Q_rates = jnp.eye(3) * 1.0
 
         T = 10
-        trajectory = jnp.zeros((T, 6))
+        trajectory = jnp.zeros((T, 13))
 
         cost_fn = create_time_indexed_trajectory_cost(
-            Q_pos, Q_vel, R, trajectory
+            Q_pos,
+            Q_vel,
+            Q_att,
+            Q_rates,
+            R,
+            trajectory,  # type: ignore
         )
 
         state = jnp.zeros(13)
