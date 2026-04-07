@@ -393,7 +393,11 @@ class TestFSMITrajectoryGenerator:
         quad = quad.at[6].set(1.0)
         state = jnp.concatenate([quad, jnp.array([100.0, 100.0])])
         from typing import cast
-        info_data = (cast(jax.Array, gen.grid_map.grid), jnp.array([100.0, 100.0]))
+
+        info_data = (
+            cast(jax.Array, gen.grid_map.grid),
+            jnp.array([100.0, 100.0]),
+        )
         traj, mode = gen.get_reference_trajectory(state, info_data, 20, 0.1)
         assert traj.shape == (20, 3)
 

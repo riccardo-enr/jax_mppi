@@ -422,8 +422,8 @@ class TestSMPPIBounds:
             assert jnp.all(action <= 0.5 * config.u_scale)
 
             # Check action_sequence bounds
-            assert jnp.all(state.action_sequence >= state.action_min - 1e-5) # type: ignore
-            assert jnp.all(state.action_sequence <= state.action_max + 1e-5) # type: ignore
+            assert jnp.all(state.action_sequence >= state.action_min - 1e-5)  # type: ignore
+            assert jnp.all(state.action_sequence <= state.action_max + 1e-5)  # type: ignore
 
     def test_control_bounds_are_respected(self):
         """Test that control velocities respect u_min/u_max."""
@@ -453,8 +453,8 @@ class TestSMPPIBounds:
             )
 
             # Check control velocity bounds
-            assert jnp.all(state.U >= state.u_min - 1e-5) # type: ignore
-            assert jnp.all(state.U <= state.u_max + 1e-5) # type: ignore
+            assert jnp.all(state.U >= state.u_min - 1e-5)  # type: ignore
+            assert jnp.all(state.U <= state.u_max + 1e-5)  # type: ignore
 
     def test_symmetric_bounds_inference(self):
         """Test that symmetric bounds are inferred correctly."""

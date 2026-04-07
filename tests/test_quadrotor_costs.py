@@ -224,7 +224,12 @@ class TestTimeIndexedTrajectoryCost:
         )  # px increases
 
         cost_fn = create_time_indexed_trajectory_cost(
-            Q_pos, Q_vel, Q_att, Q_rates, R, trajectory  # type: ignore
+            Q_pos,
+            Q_vel,
+            Q_att,
+            Q_rates,
+            R,
+            trajectory,  # type: ignore
         )
 
         # State at origin
@@ -252,7 +257,12 @@ class TestTimeIndexedTrajectoryCost:
         trajectory = jnp.zeros((T, 13))
 
         cost_fn = create_time_indexed_trajectory_cost(
-            Q_pos, Q_vel, Q_att, Q_rates, R, trajectory  # type: ignore
+            Q_pos,
+            Q_vel,
+            Q_att,
+            Q_rates,
+            R,
+            trajectory,  # type: ignore
         )
 
         state = jnp.zeros(13)
