@@ -403,24 +403,27 @@ class AutotuneGlobal(Autotune):
         # Get best result
         best_config = analysis.get_best_config(metric="mean_cost", mode="min")
 
-        # Apply best config and evaluate one more time to get full result
-        for param in self.params_to_tune:
-            if param.dim() == 1:
-                value = np.array([best_config[param.name()]])
-            else:
-                value = np.array(
-                    [
-                        best_config[f"{param.name()}_{i}"]
-                        for i in range(param.dim())
-                    ]
-                )
-            validated = param.ensure_valid_value(value)
-            param.apply_parameter_value(validated)
+        if best_config is not None:
+            # Apply best config and evaluate one more time to get full result
+            for param in self.params_to_tune:
+                if param.dim() == 1:
+                    value = np.array([best_config[param.name()]])
+                else:
+                    value = np.array(
+                        [
+                            best_config[f"{param.name()}_{i}"]
+                            for i in range(param.dim())
+                        ]
+                    )
+                validated = param.ensure_valid_value(value)
+                param.apply_parameter_value(validated)
 
-        final_result = self.evaluate_fn()
-        self.best_result = final_result._replace(
-            params=best_config, iteration=iterations
-        )
+            final_result = self.evaluate_fn()
+            self.best_result = final_result._replace(
+                params=best_config, iteration=iterations
+            )
+        else:
+            self.best_result = self.evaluate_fn()
 
         return self.best_result
 

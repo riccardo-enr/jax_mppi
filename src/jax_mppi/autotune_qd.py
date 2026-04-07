@@ -162,7 +162,7 @@ class CMAMEOpt(Optimizer):
         behaviors = []
 
         for solution in solutions:
-            result = self.evaluate_fn(solution)
+            result = self.evaluate_fn(solution) # type: ignore
             results.append(result)
 
             # Objective is negative cost (we want to maximize quality)
@@ -174,8 +174,8 @@ class CMAMEOpt(Optimizer):
 
         # Tell scheduler about results
         self.scheduler.tell(
-            objectives=np.array(objectives),
-            behaviors=np.array(behaviors),
+            objective=np.array(objectives), # type: ignore
+            measures=np.array(behaviors), # type: ignore
         )
 
         # Return best result from this iteration
@@ -197,7 +197,7 @@ class CMAMEOpt(Optimizer):
             raise RuntimeError("Must run optimization first")
 
         # Get all elite solutions from archive
-        df = self.archive.as_pandas(include_solutions=True)
+        df = self.archive.as_pandas(include_solutions=True) # type: ignore
 
         if len(df) == 0:
             return []
